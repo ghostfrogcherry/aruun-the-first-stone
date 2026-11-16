@@ -1,0 +1,68 @@
+GIMP Palette
+Name: Aruun
+Columns: 8
+#
+ 60  34  25	rust_1
+ 90  44  32	rust_2
+122  59  42	rust_3
+154  74  50	rust_4
+184  95  60	rust_5
+208 122  76	rust_6
+185 130  90	sand_1
+205 156 108	sand_2
+224 185 138	sand_3
+138 102  85	sandstone_1
+169 133 112	sandstone_2
+201 167 140	sandstone_3
+220 195 168	sandstone_4
+236 228 210	sandstone_5
+ 46  41  40	stone_1
+ 74  66  64	stone_2
+106  98  92	stone_3
+140 134 124	stone_4
+179 172 160	stone_5
+ 19  13  16	ink_1
+ 56  41  60	ink_2
+ 61  42  30	wood_1
+ 90  63  44	wood_2
+110  75  50	wood_3
+143 106  69	wood_4
+ 74  20  32	crimson_1
+122  28  42	crimson_2
+168  54  58	crimson_3
+207  65  72	crimson_4
+232 110  94	crimson_5
+ 46  27  61	violet_1
+ 75  42  94	violet_2
+109  61 130	violet_3
+144  88 166	violet_4
+185 139 200	violet_5
+ 39  74  44	green_1
+ 61 117  54	green_2
+ 79 107  58	green_3
+ 94 143  60	green_4
+118 168  74	green_5
+169 204 106	green_6
+ 78 154  90	herb_1
+ 23  65  74	water_1
+ 37 107 112	water_2
+ 58 134 168	water_3
+127 201 185	water_4
+ 38  42  71	dusk_1
+ 68  87 129	dusk_2
+137 156 171	dusk_3
+ 74  42  44	hide_1
+123  74  68	hide_2
+168 112 106	hide_3
+207 159 148	hide_4
+124  47  62	cloth_wine
+ 59 100 112	cloth_slate
+227 178  60	cloth_mustard
+230 220 196	cloth_linen
+ 92  67  38	bronze_1
+154 116  54	bronze_2
+210 168  87	bronze_3
+ 63 184 168	glow_teal
+176 108 255	glow_violet
+255 138  42	glow_ember
+255 210 122	glow_lamp

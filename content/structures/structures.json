@@ -1,0 +1,89 @@
+{
+ "_comment": "Structures stored as .vox, painted only in block colours. y = 0 is the floor layer.",
+ "structures": {
+  "vaari_dome_house": {
+   "file": "vaari_dome_house.vox",
+   "voxel_m": 0.25,
+   "size": [
+    30,
+    39,
+    31
+   ],
+   "voxels": 10484,
+   "note": "Round riverside house: sandstone and plaster walls under a clay-tile dome. 7 m across.",
+   "generated_sha256": "5eabdcc09f4ddc0bb03cfbd0f44a95f390aede8ab31521af625437a9bb3df4c9"
+  },
+  "watch_tower": {
+   "file": "watch_tower.vox",
+   "voxel_m": 0.25,
+   "size": [
+    20,
+    81,
+    20
+   ],
+   "voxels": 9284,
+   "note": "Tapering round tower with a lookout gallery, like the ones over the river towns. 15 m tall.",
+   "generated_sha256": "b1d449733d7640ba6014edea0ab3a6f50c72128eb0bfe5eb688f7c9d29ca15c2"
+  },
+  "reed_hut": {
+   "file": "reed_hut.vox",
+   "voxel_m": 0.25,
+   "size": [
+    24,
+    30,
+    24
+   ],
+   "voxels": 3372,
+   "note": "Small round hut with a reed-thatch cone roof: fishers and herders. 4.5 m across.",
+   "generated_sha256": "4290da203e2ea6db61c3c159cea9ea890a828fd3d6fe0a3ee8e24159afb32b03"
+  },
+  "ruin_arch": {
+   "file": "ruin_arch.vox",
+   "voxel_m": 0.25,
+   "size": [
+    28,
+    43,
+    18
+   ],
+   "voxels": 1731,
+   "note": "A broken gateway of the old builders: two pillars, part of an arch, moss, fallen blocks.",
+   "generated_sha256": "2c8db434bee268d97db705ce924e4c0bea8933eda7c1ac148532adb100595eab"
+  },
+  "skyroot_tree": {
+   "file": "skyroot_tree.vox",
+   "voxel_m": 0.25,
+   "size": [
+    49,
+    56,
+    54
+   ],
+   "voxels": 9028,
+   "note": "Flat-topped savannah giant with wide surface roots and crimson leaves. 12 m tall.",
+   "generated_sha256": "3c41caec1d99a08e721e825a3d6b3704aec9ed5d180abc9a08bd225b21263cb8"
+  },
+  "violet_tree": {
+   "file": "violet_tree.vox",
+   "voxel_m": 0.25,
+   "size": [
+    27,
+    54,
+    29
+   ],
+   "voxels": 4629,
+   "note": "Crimson-wood forest tree: tall dark trunk, clumped violet crown. 11 m tall.",
+   "generated_sha256": "c81dd5ae2d40e0e2394dfca7a64f1366c6524ccca3d4c200701d3ec9ee7258f9"
+  },
+  "green_tree": {
+   "file": "green_tree.vox",
+   "voxel_m": 0.25,
+   "size": [
+    24,
+    38,
+    23
+   ],
+   "voxels": 3247,
+   "note": "Broadleaf river tree with a round green crown. 8 m tall.",
+   "generated_sha256": "86a35715a39cd66e230c867d27ba37e0c6e169395d4d8e123855094ebe8af4c9"
+  }
+ }
+}

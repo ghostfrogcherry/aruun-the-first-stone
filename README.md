@@ -54,7 +54,7 @@ godot -- --host --world=mytest       # separate save folder
 ## Where things are
 
 ```
-content/      blocks, words and structures as JSON (data, not code)
+content/      blocks, words and structures as JSON; art as .vox models (data, not code)
 scripts/
   core/         content loading, world constants
   worldgen/     seeded terrain + landmark stamping
@@ -64,8 +64,9 @@ scripts/
   language/     word interpreter (validated effects only)
   player/       player controller and camera
   main/         entry scene: atmosphere, HUD, menu
+  art/          .vox reader, mesher, model library, rigs, art gallery
 tests/        unit tests (godot --headless -s tests/run_tests.gd)
-tools/        content validator (python3 tools/content_validator/validate.py)
+tools/        content validator, art generators and importers (see docs/art/README.md)
 docs/         decisions (ADRs) and design links
 ```
 

@@ -9,7 +9,7 @@ const RADIUS := 0.35 * M
 const EYE := 1.65 * M
 const WALK := 4.5 * M
 const SPRINT := 7.0 * M
-const JUMP_HEIGHT := 1.1 * M
+const JUMP_HEIGHT := 1.6 * M # low gravity: higher, floatier jumps
 const THIRD_PERSON_DISTANCE := 3.5 * M
 const MOUSE_SENS := 0.0025
 const DIG_INTERVAL := 0.18
@@ -188,7 +188,9 @@ func _physics_process(delta: float) -> void:
 		_grounded_world = true
 		return
 
-	var g: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+	# Local gravity: Aruun's 0.38 g by default; Area3D gravity overrides (such as
+	# Earth gravity inside an Occlusion / Confluence site) change it here.
+	var g: float = get_gravity().length()
 	var chest: int = world.vt.get_voxel(Vector3i((global_position + Vector3(0, HEIGHT * 0.5, 0)).floor()))
 	var swimming := chest == ContentDB.block_id("water")
 	if swimming:

@@ -1,0 +1,453 @@
+{
+ "_comment": "Generated from tools/art/palette.py. Index is the MagicaVoxel palette index. Append only.",
+ "colors": [
+  {
+   "index": 1,
+   "key": "rust_1",
+   "hex": "#3c2219",
+   "ramp": "rust",
+   "emissive": false
+  },
+  {
+   "index": 2,
+   "key": "rust_2",
+   "hex": "#5a2c20",
+   "ramp": "rust",
+   "emissive": false
+  },
+  {
+   "index": 3,
+   "key": "rust_3",
+   "hex": "#7a3b2a",
+   "ramp": "rust",
+   "emissive": false
+  },
+  {
+   "index": 4,
+   "key": "rust_4",
+   "hex": "#9a4a32",
+   "ramp": "rust",
+   "emissive": false
+  },
+  {
+   "index": 5,
+   "key": "rust_5",
+   "hex": "#b85f3c",
+   "ramp": "rust",
+   "emissive": false
+  },
+  {
+   "index": 6,
+   "key": "rust_6",
+   "hex": "#d07a4c",
+   "ramp": "rust",
+   "emissive": false
+  },
+  {
+   "index": 7,
+   "key": "sand_1",
+   "hex": "#b9825a",
+   "ramp": "sand",
+   "emissive": false
+  },
+  {
+   "index": 8,
+   "key": "sand_2",
+   "hex": "#cd9c6c",
+   "ramp": "sand",
+   "emissive": false
+  },
+  {
+   "index": 9,
+   "key": "sand_3",
+   "hex": "#e0b98a",
+   "ramp": "sand",
+   "emissive": false
+  },
+  {
+   "index": 10,
+   "key": "sandstone_1",
+   "hex": "#8a6655",
+   "ramp": "sandstone",
+   "emissive": false
+  },
+  {
+   "index": 11,
+   "key": "sandstone_2",
+   "hex": "#a98570",
+   "ramp": "sandstone",
+   "emissive": false
+  },
+  {
+   "index": 12,
+   "key": "sandstone_3",
+   "hex": "#c9a78c",
+   "ramp": "sandstone",
+   "emissive": false
+  },
+  {
+   "index": 13,
+   "key": "sandstone_4",
+   "hex": "#dcc3a8",
+   "ramp": "sandstone",
+   "emissive": false
+  },
+  {
+   "index": 14,
+   "key": "sandstone_5",
+   "hex": "#ece4d2",
+   "ramp": "sandstone",
+   "emissive": false
+  },
+  {
+   "index": 15,
+   "key": "stone_1",
+   "hex": "#2e2928",
+   "ramp": "stone",
+   "emissive": false
+  },
+  {
+   "index": 16,
+   "key": "stone_2",
+   "hex": "#4a4240",
+   "ramp": "stone",
+   "emissive": false
+  },
+  {
+   "index": 17,
+   "key": "stone_3",
+   "hex": "#6a625c",
+   "ramp": "stone",
+   "emissive": false
+  },
+  {
+   "index": 18,
+   "key": "stone_4",
+   "hex": "#8c867c",
+   "ramp": "stone",
+   "emissive": false
+  },
+  {
+   "index": 19,
+   "key": "stone_5",
+   "hex": "#b3aca0",
+   "ramp": "stone",
+   "emissive": false
+  },
+  {
+   "index": 20,
+   "key": "ink_1",
+   "hex": "#130d10",
+   "ramp": "ink",
+   "emissive": false
+  },
+  {
+   "index": 21,
+   "key": "ink_2",
+   "hex": "#38293c",
+   "ramp": "ink",
+   "emissive": false
+  },
+  {
+   "index": 22,
+   "key": "wood_1",
+   "hex": "#3d2a1e",
+   "ramp": "wood",
+   "emissive": false
+  },
+  {
+   "index": 23,
+   "key": "wood_2",
+   "hex": "#5a3f2c",
+   "ramp": "wood",
+   "emissive": false
+  },
+  {
+   "index": 24,
+   "key": "wood_3",
+   "hex": "#6e4b32",
+   "ramp": "wood",
+   "emissive": false
+  },
+  {
+   "index": 25,
+   "key": "wood_4",
+   "hex": "#8f6a45",
+   "ramp": "wood",
+   "emissive": false
+  },
+  {
+   "index": 26,
+   "key": "crimson_1",
+   "hex": "#4a1420",
+   "ramp": "crimson",
+   "emissive": false
+  },
+  {
+   "index": 27,
+   "key": "crimson_2",
+   "hex": "#7a1c2a",
+   "ramp": "crimson",
+   "emissive": false
+  },
+  {
+   "index": 28,
+   "key": "crimson_3",
+   "hex": "#a8363a",
+   "ramp": "crimson",
+   "emissive": false
+  },
+  {
+   "index": 29,
+   "key": "crimson_4",
+   "hex": "#cf4148",
+   "ramp": "crimson",
+   "emissive": false
+  },
+  {
+   "index": 30,
+   "key": "crimson_5",
+   "hex": "#e86e5e",
+   "ramp": "crimson",
+   "emissive": false
+  },
+  {
+   "index": 31,
+   "key": "violet_1",
+   "hex": "#2e1b3d",
+   "ramp": "violet",
+   "emissive": false
+  },
+  {
+   "index": 32,
+   "key": "violet_2",
+   "hex": "#4b2a5e",
+   "ramp": "violet",
+   "emissive": false
+  },
+  {
+   "index": 33,
+   "key": "violet_3",
+   "hex": "#6d3d82",
+   "ramp": "violet",
+   "emissive": false
+  },
+  {
+   "index": 34,
+   "key": "violet_4",
+   "hex": "#9058a6",
+   "ramp": "violet",
+   "emissive": false
+  },
+  {
+   "index": 35,
+   "key": "violet_5",
+   "hex": "#b98bc8",
+   "ramp": "violet",
+   "emissive": false
+  },
+  {
+   "index": 36,
+   "key": "green_1",
+   "hex": "#274a2c",
+   "ramp": "green",
+   "emissive": false
+  },
+  {
+   "index": 37,
+   "key": "green_2",
+   "hex": "#3d7536",
+   "ramp": "green",
+   "emissive": false
+  },
+  {
+   "index": 38,
+   "key": "green_3",
+   "hex": "#4f6b3a",
+   "ramp": "green",
+   "emissive": false
+  },
+  {
+   "index": 39,
+   "key": "green_4",
+   "hex": "#5e8f3c",
+   "ramp": "green",
+   "emissive": false
+  },
+  {
+   "index": 40,
+   "key": "green_5",
+   "hex": "#76a84a",
+   "ramp": "green",
+   "emissive": false
+  },
+  {
+   "index": 41,
+   "key": "green_6",
+   "hex": "#a9cc6a",
+   "ramp": "green",
+   "emissive": false
+  },
+  {
+   "index": 42,
+   "key": "herb_1",
+   "hex": "#4e9a5a",
+   "ramp": "herb",
+   "emissive": false
+  },
+  {
+   "index": 43,
+   "key": "water_1",
+   "hex": "#17414a",
+   "ramp": "water",
+   "emissive": false
+  },
+  {
+   "index": 44,
+   "key": "water_2",
+   "hex": "#256b70",
+   "ramp": "water",
+   "emissive": false
+  },
+  {
+   "index": 45,
+   "key": "water_3",
+   "hex": "#3a86a8",
+   "ramp": "water",
+   "emissive": false
+  },
+  {
+   "index": 46,
+   "key": "water_4",
+   "hex": "#7fc9b9",
+   "ramp": "water",
+   "emissive": false
+  },
+  {
+   "index": 47,
+   "key": "dusk_1",
+   "hex": "#262a47",
+   "ramp": "dusk",
+   "emissive": false
+  },
+  {
+   "index": 48,
+   "key": "dusk_2",
+   "hex": "#445781",
+   "ramp": "dusk",
+   "emissive": false
+  },
+  {
+   "index": 49,
+   "key": "dusk_3",
+   "hex": "#899cab",
+   "ramp": "dusk",
+   "emissive": false
+  },
+  {
+   "index": 50,
+   "key": "hide_1",
+   "hex": "#4a2a2c",
+   "ramp": "hide",
+   "emissive": false
+  },
+  {
+   "index": 51,
+   "key": "hide_2",
+   "hex": "#7b4a44",
+   "ramp": "hide",
+   "emissive": false
+  },
+  {
+   "index": 52,
+   "key": "hide_3",
+   "hex": "#a8706a",
+   "ramp": "hide",
+   "emissive": false
+  },
+  {
+   "index": 53,
+   "key": "hide_4",
+   "hex": "#cf9f94",
+   "ramp": "hide",
+   "emissive": false
+  },
+  {
+   "index": 54,
+   "key": "cloth_wine",
+   "hex": "#7c2f3e",
+   "ramp": "cloth",
+   "emissive": false
+  },
+  {
+   "index": 55,
+   "key": "cloth_slate",
+   "hex": "#3b6470",
+   "ramp": "cloth",
+   "emissive": false
+  },
+  {
+   "index": 56,
+   "key": "cloth_mustard",
+   "hex": "#e3b23c",
+   "ramp": "cloth",
+   "emissive": false
+  },
+  {
+   "index": 57,
+   "key": "cloth_linen",
+   "hex": "#e6dcc4",
+   "ramp": "cloth",
+   "emissive": false
+  },
+  {
+   "index": 58,
+   "key": "bronze_1",
+   "hex": "#5c4326",
+   "ramp": "bronze",
+   "emissive": false
+  },
+  {
+   "index": 59,
+   "key": "bronze_2",
+   "hex": "#9a7436",
+   "ramp": "bronze",
+   "emissive": false
+  },
+  {
+   "index": 60,
+   "key": "bronze_3",
+   "hex": "#d2a857",
+   "ramp": "bronze",
+   "emissive": false
+  },
+  {
+   "index": 61,
+   "key": "glow_teal",
+   "hex": "#3fb8a8",
+   "ramp": "glow",
+   "emissive": true
+  },
+  {
+   "index": 62,
+   "key": "glow_violet",
+   "hex": "#b06cff",
+   "ramp": "glow",
+   "emissive": true
+  },
+  {
+   "index": 63,
+   "key": "glow_ember",
+   "hex": "#ff8a2a",
+   "ramp": "glow",
+   "emissive": true
+  },
+  {
+   "index": 64,
+   "key": "glow_lamp",
+   "hex": "#ffd27a",
+   "ramp": "glow",
+   "emissive": true
+  }
+ ]
+}
