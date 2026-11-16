@@ -4,6 +4,7 @@ extends CharacterBody3D
 ## Units are voxels: 1 unit = 0.25 m, so a 1.8 m person is 7.2 units tall.
 
 const M := WorldConfig.UNITS_PER_METER
+const DevTools := preload("res://scripts/dev/dev_tools.gd")
 const HEIGHT := 1.8 * M
 const RADIUS := 0.35 * M
 const EYE := 1.65 * M
@@ -21,6 +22,10 @@ const DIG_INTERVAL := 0.18
 const BLAST_RADIUS := 6.0
 const BLAST_COOLDOWN := 1.0
 const SEND_INTERVAL := 0.05
+## Highest ledge the player walks up without jumping: 2 voxels (0.5 m). Terrain made of
+## 0.25 m voxels is full of one- and two-voxel steps, so this has to feel automatic.
+const STEP_MAX := 2.0
+const FLY_SPEED := 10.0 * M
 
 var is_local := false
 var world                   # world_authority.gd (untyped: its RPC methods are looked up at runtime)
@@ -42,6 +47,11 @@ var _send_timer := 0.0
 var _remote_pos := Vector3.ZERO
 var _remote_yaw := 0.0
 var _grounded_world := false
+var _eye_drop := 0.0          # camera lag after a step up, eased back to 0
+
+## Dev tools (scripts/dev/dev_tools.gd) switch these.
+var fly := false
+var noclip := false           # flying straight through terrain
 
 
 func _ready() -> void:
@@ -54,12 +64,16 @@ func _ready() -> void:
 		shape.shape = capsule
 		shape.position.y = HEIGHT / 2.0
 		add_child(shape)
+		safe_margin = 0.05
 		_build_camera()
 		_build_highlight()
 		var viewer := VoxelViewer.new()
 		viewer.view_distance = WorldConfig.VIEW_DISTANCE_VOXELS
 		add_child(viewer)
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		var dev := DevTools.new()
+		dev.player = self
+		add_child(dev)
 	else:
 		collision_layer = 0
 		collision_mask = 0
@@ -189,6 +203,10 @@ func _physics_process(delta: float) -> void:
 		_grounded_world = false # fell out of the world: put us back
 		global_position = world.spawn_point
 		velocity = Vector3.ZERO
+	if fly:
+		_fly(delta)
+		_send_state(delta)
+		return
 	if not _grounded_world:
 		# Wait until the terrain's collision under us exists, or we fall through.
 		var space := get_world_3d().direct_space_state
@@ -221,24 +239,59 @@ func _physics_process(delta: float) -> void:
 		speed *= 0.5
 	velocity.x = dir.x * speed
 	velocity.z = dir.z * speed
-	floor_snap_length = 1.2
-	# Small voxels: let the player walk up single-voxel (0.25 m) steps.
-	if is_on_floor() and dir != Vector3.ZERO and _step_ahead(dir):
-		velocity.y = maxf(velocity.y, sqrt(2.0 * g * 1.3))
+	floor_snap_length = STEP_MAX + 0.2
+	if dir != Vector3.ZERO and (is_on_floor() or swimming):
+		_step_up(dir * maxf(speed * delta, RADIUS * 0.5))
 	move_and_slide()
+	_send_state(delta)
 
+
+## Walks up small ledges: if the way ahead is blocked but clear STEP_MAX higher, lift
+## the body onto the ledge (the camera eases up after it, so it doesn't jolt).
+## Uses the real collision shape, so it works on diagonals and corners too.
+func _step_up(motion: Vector3) -> void:
+	var here := global_transform
+	if not test_move(here, motion):
+		return # nothing in the way
+	var lift := Vector3(0, STEP_MAX, 0)
+	if test_move(here, lift):
+		return # no headroom
+	var raised := here.translated(lift)
+	if test_move(raised, motion):
+		return # a wall, not a step
+	var hit := KinematicCollision3D.new()
+	if not test_move(raised.translated(motion), -lift, hit):
+		return
+	var rise := STEP_MAX - hit.get_travel().length()
+	if rise <= 0.05 or hit.get_normal().y < 0.7:
+		return
+	global_position.y += rise + 0.02
+	velocity.y = maxf(velocity.y, 0.0)
+	_eye_drop = minf(_eye_drop + rise, STEP_MAX)
+
+
+func _fly(delta: float) -> void:
+	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var look := _camera.global_basis if _camera else global_basis
+	var dir := look * Vector3(input.x, 0, input.y)
+	if Input.is_action_pressed("jump"):
+		dir.y += 1.0
+	if Input.is_physical_key_pressed(KEY_CTRL):
+		dir.y -= 1.0
+	var speed := FLY_SPEED * (4.0 if Input.is_action_pressed("sprint") else 1.0)
+	velocity = dir.normalized() * speed if dir != Vector3.ZERO else Vector3.ZERO
+	if noclip:
+		global_position += velocity * delta
+	else:
+		move_and_slide()
+	_grounded_world = true # landing from a flight needs no terrain wait
+
+
+func _send_state(delta: float) -> void:
 	_send_timer -= delta
 	if _send_timer <= 0.0:
 		_send_timer = SEND_INTERVAL
 		world.player_moved.rpc(global_position, rotation.y, third_person)
-
-
-func _step_ahead(dir: Vector3) -> bool:
-	var ahead := global_position + dir * (RADIUS + 0.6)
-	var foot := Vector3i(ahead.floor())
-	var vt: VoxelTool = world.vt
-	return ContentDB.collides(vt.get_voxel(foot)) and not ContentDB.collides(vt.get_voxel(foot + Vector3i(0, 1, 0))) \
-		and not ContentDB.collides(vt.get_voxel(foot + Vector3i(0, 2, 0)))
 
 
 func _process(delta: float) -> void:
@@ -249,6 +302,8 @@ func _process(delta: float) -> void:
 		return
 	if world.vt == null:
 		return
+	_eye_drop = move_toward(_eye_drop, 0.0, delta * maxf(8.0, _eye_drop * 10.0))
+	_pivot.position.y = EYE - _eye_drop
 	var origin := _camera.global_position
 	var forward := -_camera.global_basis.z
 	var reach := WorldConfig.REACH_VOXELS + (THIRD_PERSON_DISTANCE if third_person else 0.0)
