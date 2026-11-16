@@ -1,0 +1,15 @@
+{
+  "_comment": "Block ids are stable: never renumber, only append. Index 0 must be air. Colours follow the palette rule: rusty reds, muted greens, stone greys, earthy browns; teal/purple only for magick.",
+  "blocks": [
+    {"id": 0, "key": "air",             "name": "Air",             "solid": false},
+    {"id": 1, "key": "red_soil",        "name": "Red soil",        "solid": true, "color": "#9a4a32", "hardness": 1},
+    {"id": 2, "key": "rust_rock",       "name": "Rust rock",       "solid": true, "color": "#7a3b2a", "hardness": 2},
+    {"id": 3, "key": "deep_stone",      "name": "Deep stone",      "solid": true, "color": "#4a4240", "hardness": 3},
+    {"id": 4, "key": "moss",            "name": "Moss",            "solid": true, "color": "#6b7348", "hardness": 1},
+    {"id": 5, "key": "dust_sand",       "name": "Dust sand",       "solid": true, "color": "#b9825a", "hardness": 1},
+    {"id": 6, "key": "ancient_stone",   "name": "Ancient stone",   "solid": true, "color": "#8c867c", "hardness": 4},
+    {"id": 7, "key": "inscribed_stone", "name": "Inscribed stone", "solid": true, "color": "#3fb8a8", "hardness": 99, "emissive": true, "inscription": "word_rise"},
+    {"id": 8, "key": "timber",          "name": "Timber",          "solid": true, "color": "#6e4b32", "hardness": 1}
+  ],
+  "placeable": ["red_soil", "rust_rock", "ancient_stone", "timber", "moss"]
+}
