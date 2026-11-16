@@ -6,6 +6,10 @@ extends RefCounted
 const VOXEL_SIZE_M := 0.25
 ## Multiply metres by this to get world units (voxels).
 const UNITS_PER_METER := 1.0 / VOXEL_SIZE_M
+## Aruun's surface gravity: 0.38 g (canon). 9.81 m/s^2 * 0.38 * 4 units/m = 14.9.
+## project.godot's physics/3d/default_gravity must match this.
+const GRAVITY_G := 0.38
+const GRAVITY := 9.81 * GRAVITY_G * UNITS_PER_METER
 ## Bump when worldgen output changes, so old saves can be detected and migrated.
 const GENERATION_VERSION := 1
 
