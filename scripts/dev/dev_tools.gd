@@ -95,6 +95,11 @@ func _spawn(id: String) -> void:
 	if id == "" or spot == null:
 		_say("Look at the ground to spawn something.")
 		return
+	if GameData.creatures.has(id):
+		# A creature the game knows: ask the host for a real one, with its behaviour.
+		player.world.sim.request_debug.rpc_id(1, "spawn_at %s %d %d %d" % [id, int(spot.x), int(spot.y), int(spot.z)])
+		_say("Spawned a living %s." % id)
+		return
 	var node := ModelLibrary.instantiate(id, ModelLibrary.info(id).get("category", "") == "props")
 	if node == null:
 		return

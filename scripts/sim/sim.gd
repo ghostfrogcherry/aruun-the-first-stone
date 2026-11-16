@@ -269,7 +269,7 @@ func hello(guid: String, display_name: String) -> void:
 	_send(id, &"receive_setup", [ruleset_id, world_time, known])
 	entities.send_all_to(id)
 	push_inventory(id)
-	_tell(id, "%s rules. Tab opens your bag, F1 lists the controls." % ruleset.name)
+	_tell(id, "%s rules. Tab opens your bag, F2 lists the controls." % ruleset.name)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -1088,6 +1088,11 @@ func debug(id: int, cmd: String) -> String:
 				var at := p.global_position - p.global_basis.z * 6.0 * M + Vector3(0, 4, 0)
 				entities.spawn_creature(a[1], at)
 				return "Spawned"
+			return "Unknown creature"
+		"spawn_at":
+			if a.size() > 4 and GameData.creatures.has(a[1]):
+				entities.spawn_creature(a[1], Vector3(float(a[2]) + 0.5, float(a[3]) + 1.0, float(a[4]) + 0.5))
+				return ""
 			return "Unknown creature"
 		"ruleset":
 			if a.size() > 1 and GameData.ruleset_ids().has(a[1]):

@@ -37,7 +37,8 @@ saving, and drop-in co-op.
 | Pick up, harvest, drink, read an inscription, help a friend up | E |
 | Speak the chosen word / next word | Q / R |
 | Bag and crafting | Tab |
-| Controls on screen | F1 |
+| Controls on screen | F2 |
+| Dev tools: fly, noclip, teleport, spawn any model (G spawns living creatures) | F1 |
 | Blast (test destruction) | B |
 | Save | F5 (also on quit) |
 | Free the mouse | Esc |

@@ -38,7 +38,7 @@ func _ready() -> void:
 	_add_key("dodge", KEY_CTRL)
 	_add_key("inventory", KEY_TAB)
 	_add_key("next_word", KEY_R)
-	_add_key("help", KEY_F1)
+	_add_key("help", KEY_F2)
 	_add_key("debug_kit", KEY_F9)
 	_add_key("debug_time", KEY_F10)
 	_add_key("debug_spawn", KEY_F11)
