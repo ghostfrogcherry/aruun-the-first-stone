@@ -171,10 +171,20 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	if not is_local:
 		return
+	if global_position.y < -400.0:
+		_grounded_world = false # fell out of the world: put us back
+		global_position = world.spawn_point
+		velocity = Vector3.ZERO
 	if not _grounded_world:
-		# Wait until terrain under us has loaded, or we fall through the world.
-		var feet := Vector3i(global_position.floor())
-		_grounded_world = world.vt != null and world.vt.is_area_editable(AABB(Vector3(feet - Vector3i(4, 16, 4)), Vector3(8, 24, 8)))
+		# Wait until the terrain's collision under us exists, or we fall through.
+		var space := get_world_3d().direct_space_state
+		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(
+			global_position + Vector3(0, 4, 0), global_position - Vector3(0, 200, 0)))
+		if hit.is_empty():
+			return
+		global_position = hit.position + Vector3(0, 0.1, 0)
+		velocity = Vector3.ZERO
+		_grounded_world = true
 		return
 
 	var g: float = ProjectSettings.get_setting("physics/3d/default_gravity")

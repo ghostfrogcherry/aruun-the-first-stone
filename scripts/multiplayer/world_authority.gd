@@ -62,9 +62,9 @@ func start_as_server() -> void:
 	for op in _read_journal():
 		_journal.append(op)
 		_pending.append(op) # replay: the journal is the source of truth for edits
-	_journal_file = FileAccess.open(_save_dir + "/journal.txt", FileAccess.READ_WRITE)
-	if _journal_file == null:
-		_journal_file = FileAccess.open(_save_dir + "/journal.txt", FileAccess.WRITE)
+	var journal_path := _save_dir + "/journal.txt"
+	var mode := FileAccess.READ_WRITE if FileAccess.file_exists(journal_path) else FileAccess.WRITE
+	_journal_file = FileAccess.open(journal_path, mode)
 	_journal_file.seek_end()
 	_spawn_local_player()
 	for id in multiplayer.get_peers():
