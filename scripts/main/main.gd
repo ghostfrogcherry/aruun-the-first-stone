@@ -172,3 +172,7 @@ func _build_menu() -> void:
 		var a := address.text.strip_edges()
 		Net.join(a if a != "" else "127.0.0.1"))
 	box.add_child(join)
+	var gallery := Button.new()
+	gallery.text = "Art gallery"
+	gallery.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/art/gallery.tscn"))
+	box.add_child(gallery)

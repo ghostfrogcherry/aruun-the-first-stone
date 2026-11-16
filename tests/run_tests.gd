@@ -8,7 +8,7 @@ var _count := 0
 
 func _initialize() -> void:
 	for path in ["res://tests/unit/test_floating_pieces.gd", "res://tests/unit/test_edit_rules.gd",
-			"res://tests/unit/test_language.gd"]:
+			"res://tests/unit/test_language.gd", "res://tests/unit/test_art_pipeline.gd"]:
 		var suite = load(path).new()
 		for m in suite.get_method_list():
 			if String(m.name).begins_with("test_"):
