@@ -22,3 +22,11 @@ poorly. Keeping terrain at scale 1 keeps raycasts, edits and physics in the same
 - 16x more voxels per square metre than 0.5 m, 64x more than 1 m: view distance and chunk
   size must be benchmarked (tech design: compare 16^3 and 32^3 blocks).
 - The player auto-steps up single voxels so 0.25 m bumps don't block walking.
+
+## Addendum (2026-11-16): Earth-strong player
+
+The player is an Earth human, so their strength does not change with gravity. Jumping uses a
+fixed take-off speed (`JUMP_SPEED` in player.gd, set for a 1.6 m jump at 0.38 g). Inside an
+Occlusion site's Earth gravity the same legs only reach about 0.6 m, which is part of why those
+sites are harder than the rest of Aruun. Later strength-based systems (carry weight, fall
+damage, throwing) should follow the same rule: fixed human strength, local gravity.

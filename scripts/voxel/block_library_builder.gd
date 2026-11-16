@@ -2,7 +2,10 @@ class_name BlockLibraryBuilder
 extends RefCounted
 ## Builds the Voxel Tools blocky library from content/blocks/blocks.json.
 ## Blocks are flat palette colours (vertex colour), so no textures are needed:
-## the look comes from small voxels, the palette and lighting.
+## the look comes from small voxels, the palette and lighting. Opaque blocks use the
+## shared voxel_surface shader, which gives each voxel a slightly different brightness.
+
+const SHADER := preload("res://shaders/voxel_surface.gdshader")
 
 static func build(blocks: Array) -> VoxelBlockyLibrary:
 	var library := VoxelBlockyLibrary.new()
@@ -10,6 +13,8 @@ static func build(blocks: Array) -> VoxelBlockyLibrary:
 	base.vertex_color_use_as_albedo = true
 	base.vertex_color_is_srgb = true # block colours are sRGB hex; without this they wash out
 	base.roughness = 0.95
+	var solid := _shader_material(0.0) # the shader converts the sRGB colours itself
+	var glow := _shader_material(1.6)
 
 	for b in blocks:
 		var model: VoxelBlockyModel
@@ -31,18 +36,25 @@ static func build(blocks: Array) -> VoxelBlockyLibrary:
 				cube.transparency_index = 1 # faces between two water voxels are culled
 				cube.culls_neighbors = false # ground under water still renders
 			elif b.get("emissive", false):
-				var glow := base.duplicate() as StandardMaterial3D
-				glow.emission_enabled = true
-				glow.emission = Color(b.color)
-				glow.emission_energy_multiplier = 1.6
 				cube.set_material_override(0, glow)
 			else:
-				cube.set_material_override(0, base)
+				cube.set_material_override(0, solid)
 			model = cube
 		var index := library.add_model(model)
 		assert(index == int(b.id), "Block ids must be contiguous from 0")
 	library.bake()
 	return library
+
+
+static func _shader_material(emission: float) -> ShaderMaterial:
+	var mat := ShaderMaterial.new()
+	mat.shader = SHADER
+	mat.set_shader_parameter("cell_size", 1.0)
+	mat.set_shader_parameter("world_cells", true)
+	mat.set_shader_parameter("value_jitter", 0.07)
+	mat.set_shader_parameter("roughness", 0.95)
+	mat.set_shader_parameter("emission_energy", emission)
+	return mat
 
 
 ## Two crossed, double-sided quads: grass tufts and flowers that you walk through.
