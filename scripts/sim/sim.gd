@@ -1053,3 +1053,26 @@ func debug(id: int, cmd: String) -> String:
 			damage_player(id, float(a[1]) if a.size() > 1 else 10.0, player_pos(id), "condition")
 			return "Ouch"
 	return "Unknown command"
+
+
+# =============================================================================
+# Sky: every peer turns the sun from the shared clock
+# =============================================================================
+
+func _process(_delta: float) -> void:
+	if not active:
+		return
+	var tod := time_of_day()
+	var up := -cos(tod * TAU)                          # 1 at noon, -1 at midnight
+	var day := smoothstep(-0.12, 0.25, up)             # 0 night .. 1 full day
+	var dusk := 1.0 - clampf(absf(up) * 4.0, 0.0, 1.0) # 1 near sunrise and sunset
+	for sun in get_tree().get_nodes_in_group("sun"):
+		var light := sun as DirectionalLight3D
+		light.rotation = Vector3(-asin(clampf(maxf(up, 0.08), -1.0, 1.0)), tod * TAU + 0.6, 0.0)
+		light.light_energy = lerpf(0.3, 1.4, day)   # at night it stands in for the moons
+		light.light_color = Color("#fff1dc").lerp(Color("#ff9a62"), dusk * 0.8).lerp(Color("#8fa6ff"), 1.0 - day)
+	for node in get_tree().get_nodes_in_group("world_env"):
+		var env: Environment = (node as WorldEnvironment).environment
+		env.ambient_light_energy = lerpf(0.55, 1.0, day)
+		env.background_energy_multiplier = lerpf(0.3, 1.0, day)
+		env.fog_light_color = Color("#bcd0dc").lerp(Color("#e8a888"), dusk * 0.6) * lerpf(0.35, 1.0, day)

@@ -177,10 +177,14 @@ func _run(main: Node) -> void:
 		check(sim.entities.ents.has(stalker) and sim.entities.ents[stalker].pos.distance_to(me.global_position) > far,
 			"the push throws the nightstalker back")
 		var hp := c.hp
-		for i in 80:
+		for i in 150:
 			await wait(0.1)
 			if c.hp < hp:
 				break
+			if i % 10 == 9 and sim.entities._srv.has(stalker):
+				var r: Dictionary = sim.entities._srv[stalker]
+				print("    stalker %s, %.1f m away, %.1f m higher, grounded %s" % [r.state,
+					r.pos.distance_to(me.global_position) / M, (r.pos.y - me.global_position.y) / M, r.grounded])
 		check(c.hp < hp, "the nightstalker closes in and wounds the player")
 		sim.set_guard(true)
 		check(sim._rt[1].guard, "the player can raise a guard")
