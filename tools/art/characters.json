@@ -1,5 +1,5 @@
 {
-  "_comment": "People made with tools/art/make_character.py. tunic and skirt are ramp:level from the palette; sash is a palette key; skin is a level of the hide ramp (1 dark to 4 pale).",
+  "_comment": "People made with tools/art/make_character.py. tunic and skirt are ramp:level from the palette; sash is a palette key; skin is a level of the hide ramp (1 dark to 4 pale). body: \"vaari\" (default) or \"human\"; humans also take skin_key and hair (palette keys), and skirt is their trousers.",
   "characters": [
     {
       "id": "vaari_river_villager",
@@ -24,6 +24,16 @@
       "sash": "glow_teal",
       "skin": 4,
       "seed": 33
+    },
+    {
+      "id": "human_castaway",
+      "body": "human",
+      "tunic": "water:2",
+      "skirt": "stone:2",
+      "sash": "wood_2",
+      "skin_key": "hide_4",
+      "hair": "wood_1",
+      "seed": 5
     }
   ]
 }

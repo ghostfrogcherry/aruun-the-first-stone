@@ -2257,6 +2257,211 @@
      ]
     }
    }
+  },
+  "human_castaway": {
+   "file": "creatures/human_castaway.vox",
+   "category": "creatures",
+   "voxel_m": 0.0625,
+   "size": [
+    12,
+    32,
+    6
+   ],
+   "height_m": 2.0,
+   "generated_sha256": "af2d3c4977231fb119d0930ef00b44d8549b91e8ce3fccab3c2a916ca06281c7",
+   "note": "dict() -> new empty dictionary dict(mapping) -> new dictionary initialized from a mapping object's (key, value) pairs dict(iterable) -> new dictionary initialized as if via: d = {} for k, v in iterable: d[k] = v dict(**kwargs) -> new dictionary initialized with the name=value pairs in the keyword argument list. For example: dict(one=1, two=2)",
+   "rig": {
+    "parts": {
+     "torso": {
+      "parent": "",
+      "pivot": [
+       0,
+       12,
+       0
+      ]
+     },
+     "head": {
+      "parent": "torso",
+      "pivot": [
+       0,
+       25,
+       0
+      ]
+     },
+     "arm_l": {
+      "parent": "torso",
+      "pivot": [
+       -5,
+       23,
+       0
+      ]
+     },
+     "leg_l": {
+      "parent": "torso",
+      "pivot": [
+       -1.5,
+       10,
+       0
+      ]
+     },
+     "arm_r": {
+      "parent": "torso",
+      "pivot": [
+       5,
+       23,
+       0
+      ]
+     },
+     "leg_r": {
+      "parent": "torso",
+      "pivot": [
+       1.5,
+       10,
+       0
+      ]
+     }
+    },
+    "clips": {
+     "idle": [
+      {
+       "part": "torso",
+       "bob": 0.2,
+       "freq": 0.28,
+       "phase": 0.0
+      },
+      {
+       "part": "head",
+       "axis": "y",
+       "amp": 9,
+       "freq": 0.1,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "arm_l",
+       "axis": "x",
+       "amp": 3,
+       "freq": 0.28,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "arm_r",
+       "axis": "x",
+       "amp": 3,
+       "freq": 0.28,
+       "phase": 0.5,
+       "offset": 0.0
+      }
+     ],
+     "walk": [
+      {
+       "part": "leg_l",
+       "axis": "x",
+       "amp": 30,
+       "freq": 1.1,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_r",
+       "axis": "x",
+       "amp": 30,
+       "freq": 1.1,
+       "phase": 0.5,
+       "offset": 0.0
+      },
+      {
+       "part": "arm_l",
+       "axis": "x",
+       "amp": 24,
+       "freq": 1.1,
+       "phase": 0.5,
+       "offset": 0.0
+      },
+      {
+       "part": "arm_r",
+       "axis": "x",
+       "amp": 24,
+       "freq": 1.1,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "torso",
+       "bob": 0.45,
+       "freq": 2.2,
+       "phase": 0.0
+      }
+     ],
+     "run": [
+      {
+       "part": "leg_l",
+       "axis": "x",
+       "amp": 48,
+       "freq": 1.9,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_r",
+       "axis": "x",
+       "amp": 48,
+       "freq": 1.9,
+       "phase": 0.5,
+       "offset": 0.0
+      },
+      {
+       "part": "arm_l",
+       "axis": "x",
+       "amp": 40,
+       "freq": 1.9,
+       "phase": 0.5,
+       "offset": 20
+      },
+      {
+       "part": "arm_r",
+       "axis": "x",
+       "amp": 40,
+       "freq": 1.9,
+       "phase": 0,
+       "offset": 20
+      },
+      {
+       "part": "torso",
+       "axis": "x",
+       "amp": 2,
+       "freq": 1.9,
+       "phase": 0,
+       "offset": -8
+      },
+      {
+       "part": "torso",
+       "bob": 0.8,
+       "freq": 3.8,
+       "phase": 0.0
+      }
+     ],
+     "swing": [
+      {
+       "part": "arm_r",
+       "axis": "x",
+       "amp": 70,
+       "freq": 1.6,
+       "phase": 0,
+       "offset": 60
+      },
+      {
+       "part": "torso",
+       "axis": "y",
+       "amp": 12,
+       "freq": 1.6,
+       "phase": 0.1,
+       "offset": 0.0
+      }
+     ]
+    }
+   }
   }
  }
 }

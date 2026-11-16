@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Small character maker: outfits a Vaari from the Aruun palette and adds it to the game.
+"""Small character maker: outfits a Vaari or a human from the Aruun palette and adds it to the game.
 
     python3 tools/art/make_character.py lyceum_warden --tunic stone:2 --skirt violet:2 --sash glow_teal --skin 4
+    python3 tools/art/make_character.py scout --body human --tunic green:3 --skirt wood:2 --hair ink_1
     python3 tools/art/make_character.py --colours        # list what you can pick from
 
 It writes content/models/creatures/<id>.vox (rigged: torso, head, arms, legs; clips idle,
@@ -28,6 +29,9 @@ def main():
     ap.add_argument("--skirt", default="cloth:1", help="ramp:level for the lower garment")
     ap.add_argument("--sash", default="cloth_mustard", help="palette key for the sash")
     ap.add_argument("--skin", type=int, default=3, choices=(1, 2, 3, 4), help="hide ramp level, 1 dark to 4 pale")
+    ap.add_argument("--body", default="vaari", choices=("vaari", "human"))
+    ap.add_argument("--skin-key", default="hide_4", help="humans only: palette key for skin, e.g. hide_4, sandstone_3, wood_3")
+    ap.add_argument("--hair", default="wood_1", help="humans only: palette key for hair")
     ap.add_argument("--seed", type=int, default=None, help="changes the cloth weave and ragged hem")
     ap.add_argument("--colours", action="store_true", help="list ramps and keys, then exit")
     args = ap.parse_args()
@@ -46,6 +50,7 @@ def main():
     path = HERE / "characters.json"
     data = json.loads(path.read_text())
     row = {"id": args.id, "tunic": args.tunic, "skirt": args.skirt, "sash": args.sash, "skin": args.skin,
+           "body": args.body, "skin_key": args.skin_key, "hair": args.hair,
            "seed": args.seed if args.seed is not None else sum(map(ord, args.id)) % 97}
     data["characters"] = [c for c in data["characters"] if c["id"] != args.id] + [row]
     path.write_text(json.dumps(data, indent=2) + "\n")

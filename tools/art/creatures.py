@@ -376,7 +376,71 @@ def _vaari(tunic, skirt, sash, skin_level, seed):
     return parts, {"parts": rig, "clips": clips}
 
 
+def _human(tunic, trousers, sash, skin_key, hair_key, seed):
+    """Earth-born human (about 1.75 m): shorter and sturdier than a Vaari. The stranded player."""
+    skin = flat(skin_key)
+    torso = Vox()
+    torso.box(-4, 13, -2, 3, 23, 1, ramp(*tunic, 0.3, seed + 1))                   # chest and belly
+    for (x, z) in ((-4, -2), (3, -2), (-4, 1), (3, 1)):
+        torso.box(x, 13, z, x, 15, z, flat("ink_1"))
+        torso.erase(x, 13, z), torso.erase(x, 14, z), torso.erase(x, 15, z)
+    torso.box(-4, 12, -2, 3, 12, 1, flat("wood_2"))                                # belt
+    torso.set(-1, 12, -2, flat("bronze_3"))
+    torso.repaint(flat(sash), lambda x, y, z: 13 <= y <= 23 and abs((x + 0.5) * 1.1 - (y - 18)) < 1.2)   # strap
+    torso.box(-1, 24, -1, 0, 24, 0, skin)                                          # neck
+    torso.box(-3, 10, -2, 2, 11, 1, ramp(*trousers, 0.3, seed + 2))                # hips
+
+    head = Vox()
+    head.box(-3, 25, -3, 2, 30, 2, skin)
+    for (x, z) in ((-3, -3), (2, -3), (-3, 2), (2, 2)):
+        head.erase(x, 25, z), head.erase(x, 30, z)
+    head.box(-3, 29, -3, 2, 31, 2, flat(hair_key))                                 # hair
+    head.box(-3, 26, 0, 2, 28, 2, flat(hair_key))
+    head.box(-2, 31, -2, 1, 31, 1, flat(hair_key))
+    head.box(-2, 29, -3, 1, 29, -3, skin)                                          # forehead
+    for x in (-2, 1):
+        head.set(x, 28, -3, flat("ink_1"))
+    head.set(-1, 26, -3, flat("hide_2")), head.set(0, 26, -3, flat("hide_2"))
+
+    parts = [("torso", torso), ("head", head)]
+    rig = {"torso": {"parent": "", "pivot": [0, 12, 0]},
+           "head": {"parent": "torso", "pivot": [0, 25, 0]}}
+    for name, s in (("l", -1), ("r", 1)):
+        x0 = -6 if s < 0 else 4
+        arm = Vox()
+        arm.box(x0, 18, -1, x0 + 1, 23, 0, ramp(*tunic, 0.3, seed + 3))            # sleeve
+        arm.box(x0, 12, -1, x0 + 1, 17, 0, skin)
+        arm.box(x0, 15, -1, x0 + 1, 15, 0, flat("wood_2"))                         # wrist wrap
+        lx = -3 if s < 0 else 0
+        leg = Vox()
+        leg.box(lx, 3, -1, lx + 2, 10, 1, ramp(*trousers, 0.3, seed + 4))
+        leg.box(lx, 0, -2, lx + 2, 2, 1, flat("wood_1"))                           # boot
+        leg.box(lx, 3, -1, lx + 2, 3, 1, flat("wood_2"))
+        parts += [(f"arm_{name}", arm), (f"leg_{name}", leg)]
+        rig[f"arm_{name}"] = {"parent": "torso", "pivot": [x0 + 1, 23, 0]}
+        rig[f"leg_{name}"] = {"parent": "torso", "pivot": [lx + 1.5, 10, 0]}
+    clips = {
+        "idle": [bob("torso", 0.2, 0.28), rot("head", "y", 9, 0.1), rot("arm_l", "x", 3, 0.28), rot("arm_r", "x", 3, 0.28, 0.5)],
+        "walk": [rot("leg_l", "x", 30, 1.1), rot("leg_r", "x", 30, 1.1, 0.5), rot("arm_l", "x", 24, 1.1, 0.5),
+                 rot("arm_r", "x", 24, 1.1), bob("torso", 0.45, 2.2)],
+        "run": [rot("leg_l", "x", 48, 1.9), rot("leg_r", "x", 48, 1.9, 0.5), rot("arm_l", "x", 40, 1.9, 0.5, 20),
+                rot("arm_r", "x", 40, 1.9, 0, 20), rot("torso", "x", 2, 1.9, 0, -8), bob("torso", 0.8, 3.8)],
+        "swing": [rot("arm_r", "x", 70, 1.6, 0, 60), rot("torso", "y", 12, 1.6, 0.1)],
+    }
+    return parts, {"parts": rig, "clips": clips}
+
+
 def character(spec):
+    if spec.get("body") == "human":
+        def pair(value):
+            name, _, level = value.partition(":")
+            return (name, int(level or 2))
+        return _human(pair(spec["tunic"]), pair(spec["skirt"]), spec["sash"], spec.get("skin_key", "hide_4"),
+                      spec.get("hair", "wood_1"), int(spec.get("seed", 10)))
+    return _character_vaari(spec)
+
+
+def _character_vaari(spec):
     """Builds a Vaari from a row of tools/art/characters.json (see make_character.py)."""
     def split(value):
         name, _, level = value.partition(":")
