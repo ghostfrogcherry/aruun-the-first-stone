@@ -87,7 +87,7 @@ func _apply_trees(out_buffer: VoxelBuffer, origin: Vector3i, size: Vector3i) -> 
 						var cur := out_buffer.get_voxel(x, y, z, CHANNEL)
 						if cur != air and cur != tall:
 							continue
-						var in_trunk := w.x >= t.x and w.x < t.x + thick and w.z >= t.z and w.z < t.z + thick and w.y < top
+						var in_trunk: bool = w.x >= t.x and w.x < t.x + thick and w.z >= t.z and w.z < t.z + thick and w.y < top
 						if in_trunk:
 							out_buffer.set_voxel(bark, x, y, z, CHANNEL)
 							continue
