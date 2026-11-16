@@ -29,15 +29,17 @@ static func find(grid: PackedInt32Array, size: Vector3i, max_piece: int) -> Arra
 		if x == 0 or z == 0 or y == 0 or x == sx - 1 or z == sz - 1 or y == size.y - 1:
 			mark[i] = 1
 			queue.append(i)
-	_flood(grid, size, mark, queue, 1, -1)
+	_flood(grid, size, mark, queue, 1)
 
 	var pieces: Array = []
 	for i in count:
 		if grid[i] == 0 or mark[i] != 0:
 			continue
+		# Flood the whole piece even when it is too big, so its other voxels are
+		# marked and never picked up as separate small pieces.
 		var piece := PackedInt32Array([i])
 		mark[i] = 2
-		_flood(grid, size, mark, piece, 2, max_piece)
+		_flood(grid, size, mark, piece, 2)
 		if piece.size() <= max_piece:
 			pieces.append(piece)
 	return pieces
@@ -45,14 +47,12 @@ static func find(grid: PackedInt32Array, size: Vector3i, max_piece: int) -> Arra
 
 ## Breadth-first flood. `queue` doubles as the output list.
 static func _flood(grid: PackedInt32Array, size: Vector3i, mark: PackedByteArray,
-		queue: PackedInt32Array, value: int, limit: int) -> void:
+		queue: PackedInt32Array, value: int) -> void:
 	var sx := size.x
 	var sz := size.z
 	var layer := sx * sz
 	var head := 0
 	while head < queue.size():
-		if limit > 0 and queue.size() > limit:
-			return
 		var i := queue[head]
 		head += 1
 		var x := i % sx
