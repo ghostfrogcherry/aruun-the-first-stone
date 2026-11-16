@@ -9,7 +9,12 @@ const RADIUS := 0.35 * M
 const EYE := 1.65 * M
 const WALK := 4.5 * M
 const SPRINT := 7.0 * M
-const JUMP_HEIGHT := 1.6 * M # low gravity: higher, floatier jumps
+const JUMP_HEIGHT := 1.6 * M # on Aruun. The legs are Earth-strong: see JUMP_SPEED.
+## Fixed take-off speed: an Earth human's legs don't change with the world. Gives a
+## 1.6 m jump in Aruun's 0.38 g but only ~0.6 m in Earth gravity inside Occlusion sites.
+static var JUMP_SPEED := sqrt(2.0 * WorldConfig.GRAVITY * JUMP_HEIGHT)
+const AVATAR := "human_castaway"
+const AVATAR_HEIGHT_M := 1.8   # the model is authored 2 m tall
 const THIRD_PERSON_DISTANCE := 3.5 * M
 const MOUSE_SENS := 0.0025
 const DIG_INTERVAL := 0.18
@@ -28,6 +33,8 @@ var _pivot: Node3D
 var _arm: SpringArm3D
 var _camera: Camera3D
 var _visual: Node3D
+var _rig: VoxelRig            # null if the avatar model is missing (box figure instead)
+var _last_pos := Vector3.ZERO
 var _highlight: MeshInstance3D
 var _dig_timer := 0.0
 var _blast_timer := 0.0
@@ -60,9 +67,16 @@ func _ready() -> void:
 
 
 func _build_visual() -> void:
-	# Segmented voxel figure: separate pieces, animated in code later.
 	_visual = Node3D.new()
 	add_child(_visual)
+	if ModelLibrary.has(AVATAR):
+		# The stranded Earth human from the art pipeline: animated voxel parts.
+		_rig = ModelLibrary.instantiate(AVATAR) as VoxelRig
+		var model_h := float(ModelLibrary.info(AVATAR).get("height_m", AVATAR_HEIGHT_M))
+		_rig.scale = Vector3.ONE * (AVATAR_HEIGHT_M / model_h)
+		_visual.add_child(_rig)
+		return
+	# Fallback: segmented box figure.
 	var skin := Color("#c98b6b")
 	var cloth := Color("#5b6f5a") if is_local else Color("#6a4a7a")
 	_add_box(_visual, Vector3(1.6, 2.8, 1.0), Vector3(0, 4.4, 0), cloth)          # torso
@@ -198,7 +212,7 @@ func _physics_process(delta: float) -> void:
 	elif not is_on_floor():
 		velocity.y -= g * delta
 	elif Input.is_action_just_pressed("jump"):
-		velocity.y = sqrt(2.0 * g * JUMP_HEIGHT)
+		velocity.y = JUMP_SPEED
 
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var dir := (transform.basis * Vector3(input.x, 0, input.y)).normalized()
@@ -228,6 +242,7 @@ func _step_ahead(dir: Vector3) -> bool:
 
 
 func _process(delta: float) -> void:
+	_animate(delta)
 	if not is_local:
 		global_position = global_position.lerp(_remote_pos, clampf(delta * 12.0, 0.0, 1.0))
 		rotation.y = lerp_angle(rotation.y, _remote_yaw, clampf(delta * 12.0, 0.0, 1.0))
@@ -252,3 +267,22 @@ func _process(delta: float) -> void:
 		if Input.is_action_just_pressed("blast") and _blast_timer <= 0.0:
 			_blast_timer = BLAST_COOLDOWN
 			world.request_blast.rpc_id(1, centre, BLAST_RADIUS)
+
+
+## Picks the avatar's clip from how fast it actually moved (works for remote players too).
+func _animate(delta: float) -> void:
+	if _rig == null or delta <= 0.0:
+		return
+	var moved := global_position - _last_pos
+	_last_pos = global_position
+	var speed := Vector2(moved.x, moved.z).length() / delta
+	var clip := "idle"
+	if speed > (WALK + SPRINT) * 0.5:
+		clip = "run"
+	elif speed > WALK * 0.2:
+		clip = "walk"
+	if is_local and Input.is_action_pressed("dig") and target:
+		clip = "swing"
+	if clip != _rig.current_clip:
+		_rig.play(clip)
+	_rig.speed_scale = clampf(speed / WALK, 0.6, 1.6) if clip == "walk" else 1.0
