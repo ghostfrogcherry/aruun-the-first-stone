@@ -1660,7 +1660,6 @@
    ],
    "height_m": 2.25,
    "generated_sha256": "cc879c38a3e4ab40dfe988c78c66150ee3e7710c28344b2fcbce47a889c8babc",
-   "note": "dict() -> new empty dictionary dict(mapping) -> new dictionary initialized from a mapping object's (key, value) pairs dict(iterable) -> new dictionary initialized as if via: d = {} for k, v in iterable: d[k] = v dict(**kwargs) -> new dictionary initialized with the name=value pairs in the keyword argument list. For example: dict(one=1, two=2)",
    "rig": {
     "parts": {
      "torso": {
@@ -1863,7 +1862,6 @@
    ],
    "height_m": 2.25,
    "generated_sha256": "b844b32464d5f611c4e5922322ed1078d9569528c40978110d057ec4f95dada7",
-   "note": "dict() -> new empty dictionary dict(mapping) -> new dictionary initialized from a mapping object's (key, value) pairs dict(iterable) -> new dictionary initialized as if via: d = {} for k, v in iterable: d[k] = v dict(**kwargs) -> new dictionary initialized with the name=value pairs in the keyword argument list. For example: dict(one=1, two=2)",
    "rig": {
     "parts": {
      "torso": {
@@ -2066,7 +2064,6 @@
    ],
    "height_m": 2.25,
    "generated_sha256": "5f02b18525f5f0d8d5f32fd2fc771fdd2ab6debd8900978cdf22b5f5817805ed",
-   "note": "dict() -> new empty dictionary dict(mapping) -> new dictionary initialized from a mapping object's (key, value) pairs dict(iterable) -> new dictionary initialized as if via: d = {} for k, v in iterable: d[k] = v dict(**kwargs) -> new dictionary initialized with the name=value pairs in the keyword argument list. For example: dict(one=1, two=2)",
    "rig": {
     "parts": {
      "torso": {
@@ -2269,7 +2266,6 @@
    ],
    "height_m": 2.0,
    "generated_sha256": "af2d3c4977231fb119d0930ef00b44d8549b91e8ce3fccab3c2a916ca06281c7",
-   "note": "dict() -> new empty dictionary dict(mapping) -> new dictionary initialized from a mapping object's (key, value) pairs dict(iterable) -> new dictionary initialized as if via: d = {} for k, v in iterable: d[k] = v dict(**kwargs) -> new dictionary initialized with the name=value pairs in the keyword argument list. For example: dict(one=1, two=2)",
    "rig": {
     "parts": {
      "torso": {
@@ -2461,6 +2457,972 @@
       }
      ]
     }
+   }
+  },
+  "reedhopper": {
+   "file": "creatures/reedhopper.vox",
+   "category": "creatures",
+   "voxel_m": 0.0625,
+   "size": [
+    10,
+    19,
+    16
+   ],
+   "height_m": 1.19,
+   "generated_sha256": "e34ae9e95388ae9c337bf2667afc07c935acab8f5a55135b9cf0f6e49af2b40a",
+   "note": "Small hopping grazer of the reed beds. Passive prey.",
+   "rig": {
+    "parts": {
+     "body": {
+      "parent": "",
+      "pivot": [
+       0,
+       7,
+       1
+      ]
+     },
+     "head": {
+      "parent": "body",
+      "pivot": [
+       0,
+       9.5,
+       -3
+      ]
+     },
+     "ear_l": {
+      "parent": "head",
+      "pivot": [
+       -1.4,
+       12.5,
+       -3.5
+      ]
+     },
+     "leg_l": {
+      "parent": "body",
+      "pivot": [
+       -3.4,
+       6.5,
+       3
+      ]
+     },
+     "ear_r": {
+      "parent": "head",
+      "pivot": [
+       1.4,
+       12.5,
+       -3.5
+      ]
+     },
+     "leg_r": {
+      "parent": "body",
+      "pivot": [
+       3.4,
+       6.5,
+       3
+      ]
+     }
+    },
+    "clips": {
+     "idle": [
+      {
+       "part": "ear_l",
+       "axis": "z",
+       "amp": 8,
+       "freq": 0.9,
+       "phase": 0.0,
+       "offset": 4
+      },
+      {
+       "part": "ear_r",
+       "axis": "z",
+       "amp": -8,
+       "freq": 0.9,
+       "phase": 0.3,
+       "offset": -4
+      },
+      {
+       "part": "head",
+       "axis": "x",
+       "amp": 6,
+       "freq": 0.35,
+       "phase": 0,
+       "offset": 8
+      },
+      {
+       "part": "body",
+       "bob": 0.15,
+       "freq": 0.6,
+       "phase": 0.0
+      }
+     ],
+     "alert": [
+      {
+       "part": "ear_l",
+       "axis": "z",
+       "amp": 2,
+       "freq": 3.0,
+       "phase": 0,
+       "offset": -8
+      },
+      {
+       "part": "ear_r",
+       "axis": "z",
+       "amp": -2,
+       "freq": 3.0,
+       "phase": 0,
+       "offset": 8
+      },
+      {
+       "part": "head",
+       "axis": "x",
+       "amp": 1,
+       "freq": 0.5,
+       "phase": 0,
+       "offset": -14
+      }
+     ],
+     "hop": [
+      {
+       "part": "leg_l",
+       "axis": "x",
+       "amp": 42,
+       "freq": 1.6,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_r",
+       "axis": "x",
+       "amp": 42,
+       "freq": 1.6,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "body",
+       "axis": "x",
+       "amp": 12,
+       "freq": 1.6,
+       "phase": 0.2,
+       "offset": 0.0
+      },
+      {
+       "part": "body",
+       "bob": 3.0,
+       "freq": 1.6,
+       "phase": 0.25
+      },
+      {
+       "part": "ear_l",
+       "axis": "x",
+       "amp": 18,
+       "freq": 1.6,
+       "phase": 0.5,
+       "offset": 20
+      },
+      {
+       "part": "ear_r",
+       "axis": "x",
+       "amp": 18,
+       "freq": 1.6,
+       "phase": 0.5,
+       "offset": 20
+      }
+     ]
+    }
+   },
+   "design": {
+    "name": "Reedhopper",
+    "role": "Passive prey. First food and hide for a new player.",
+    "size": "0.6 m tall with ears up",
+    "where": "Riverbanks and reed beds, in groups of 3 to 6, by day.",
+    "behaviour": "Grazes and freezes when watched. Bolts in long low-gravity hops when you come within 6 m or when one of the group is hit. Hides in vermillion reeds, where its red back disappears.",
+    "attacks": "None.",
+    "counter": "Approach crouched from downwind, or throw a spear. A Graviturge can pin one mid-hop.",
+    "drops": "raw_meat, hide (small)",
+    "alien_touch": "Four tiny forelimbs for feeding, two huge hind legs; feathery ear-gills."
+   }
+  },
+  "glassback": {
+   "file": "creatures/glassback.vox",
+   "category": "creatures",
+   "voxel_m": 0.0625,
+   "size": [
+    23,
+    23,
+    30
+   ],
+   "height_m": 1.44,
+   "generated_sha256": "00a05ce4262ae9acc4e9c18bbaae176466a5c0e343e3d9aeb23509d3540fef11",
+   "note": "Six-legged armoured grazer with a crystal garden on its shell. Charges when provoked.",
+   "rig": {
+    "parts": {
+     "body": {
+      "parent": "",
+      "pivot": [
+       0,
+       7,
+       2
+      ]
+     },
+     "head": {
+      "parent": "body",
+      "pivot": [
+       0,
+       6.5,
+       -9
+      ]
+     },
+     "leg_l1": {
+      "parent": "body",
+      "pivot": [
+       -6.5,
+       6,
+       -5
+      ]
+     },
+     "leg_l2": {
+      "parent": "body",
+      "pivot": [
+       -6.5,
+       6,
+       2
+      ]
+     },
+     "leg_l3": {
+      "parent": "body",
+      "pivot": [
+       -6.5,
+       6,
+       9
+      ]
+     },
+     "leg_r1": {
+      "parent": "body",
+      "pivot": [
+       6.5,
+       6,
+       -5
+      ]
+     },
+     "leg_r2": {
+      "parent": "body",
+      "pivot": [
+       6.5,
+       6,
+       2
+      ]
+     },
+     "leg_r3": {
+      "parent": "body",
+      "pivot": [
+       6.5,
+       6,
+       9
+      ]
+     }
+    },
+    "clips": {
+     "idle": [
+      {
+       "part": "head",
+       "axis": "x",
+       "amp": 5,
+       "freq": 0.2,
+       "phase": 0,
+       "offset": 10
+      },
+      {
+       "part": "head",
+       "axis": "y",
+       "amp": 8,
+       "freq": 0.11,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "body",
+       "bob": 0.2,
+       "freq": 0.3,
+       "phase": 0.0
+      }
+     ],
+     "walk": [
+      {
+       "part": "leg_l1",
+       "axis": "y",
+       "amp": 16,
+       "freq": 0.9,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_l1",
+       "axis": "z",
+       "amp": 5.6,
+       "freq": 0.9,
+       "phase": 0.25,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_l2",
+       "axis": "y",
+       "amp": 16,
+       "freq": 0.9,
+       "phase": 0.5,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_l2",
+       "axis": "z",
+       "amp": 5.6,
+       "freq": 0.9,
+       "phase": 0.75,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_l3",
+       "axis": "y",
+       "amp": 16,
+       "freq": 0.9,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_l3",
+       "axis": "z",
+       "amp": 5.6,
+       "freq": 0.9,
+       "phase": 0.25,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_r1",
+       "axis": "y",
+       "amp": -16,
+       "freq": 0.9,
+       "phase": 0.5,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_r1",
+       "axis": "z",
+       "amp": -5.6,
+       "freq": 0.9,
+       "phase": 0.75,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_r2",
+       "axis": "y",
+       "amp": -16,
+       "freq": 0.9,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_r2",
+       "axis": "z",
+       "amp": -5.6,
+       "freq": 0.9,
+       "phase": 0.25,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_r3",
+       "axis": "y",
+       "amp": -16,
+       "freq": 0.9,
+       "phase": 0.5,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_r3",
+       "axis": "z",
+       "amp": -5.6,
+       "freq": 0.9,
+       "phase": 0.75,
+       "offset": 0.0
+      },
+      {
+       "part": "body",
+       "axis": "z",
+       "amp": 2,
+       "freq": 0.9,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "body",
+       "bob": 0.25,
+       "freq": 1.8,
+       "phase": 0.0
+      },
+      {
+       "part": "head",
+       "axis": "x",
+       "amp": 3,
+       "freq": 0.9,
+       "phase": 0,
+       "offset": 6
+      }
+     ],
+     "charge": [
+      {
+       "part": "leg_l1",
+       "axis": "y",
+       "amp": 26,
+       "freq": 2.4,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_l1",
+       "axis": "z",
+       "amp": 9.1,
+       "freq": 2.4,
+       "phase": 0.25,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_l2",
+       "axis": "y",
+       "amp": 26,
+       "freq": 2.4,
+       "phase": 0.5,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_l2",
+       "axis": "z",
+       "amp": 9.1,
+       "freq": 2.4,
+       "phase": 0.75,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_l3",
+       "axis": "y",
+       "amp": 26,
+       "freq": 2.4,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_l3",
+       "axis": "z",
+       "amp": 9.1,
+       "freq": 2.4,
+       "phase": 0.25,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_r1",
+       "axis": "y",
+       "amp": -26,
+       "freq": 2.4,
+       "phase": 0.5,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_r1",
+       "axis": "z",
+       "amp": -9.1,
+       "freq": 2.4,
+       "phase": 0.75,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_r2",
+       "axis": "y",
+       "amp": -26,
+       "freq": 2.4,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_r2",
+       "axis": "z",
+       "amp": -9.1,
+       "freq": 2.4,
+       "phase": 0.25,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_r3",
+       "axis": "y",
+       "amp": -26,
+       "freq": 2.4,
+       "phase": 0.5,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_r3",
+       "axis": "z",
+       "amp": -9.1,
+       "freq": 2.4,
+       "phase": 0.75,
+       "offset": 0.0
+      },
+      {
+       "part": "head",
+       "axis": "x",
+       "amp": 2,
+       "freq": 2.4,
+       "phase": 0,
+       "offset": 22
+      },
+      {
+       "part": "body",
+       "axis": "x",
+       "amp": 2,
+       "freq": 2.4,
+       "phase": 0,
+       "offset": 6
+      },
+      {
+       "part": "body",
+       "bob": 0.6,
+       "freq": 4.8,
+       "phase": 0.0
+      }
+     ]
+    }
+   },
+   "design": {
+    "name": "Glassback",
+    "role": "Defensive tank. Dangerous only if provoked or cornered.",
+    "size": "1.4 m long, 0.9 m tall",
+    "where": "Rocky slopes and highland meadows, alone or in pairs.",
+    "behaviour": "Slow six-legged grazer that grows glasswort-like crystal on its shell to store water. Ignores you until hit or crowded for a few seconds, then lowers its head and charges in a straight line.",
+    "attacks": "Charge (heavy knockback, long recovery). Shell spikes hurt anything that strikes its back.",
+    "counter": "Sidestep the charge and hit the soft flank or belly while it recovers. Lifting it with gravity magick flips it onto its back for a few seconds.",
+    "drops": "glasswort_leaf, hide, raw_meat; crystal shards (future crafting)",
+    "alien_touch": "All six legs kept; crystal garden on its back."
+   }
+  },
+  "duskmoth": {
+   "file": "creatures/duskmoth.vox",
+   "category": "creatures",
+   "voxel_m": 0.0625,
+   "size": [
+    24,
+    9,
+    18
+   ],
+   "height_m": 0.56,
+   "generated_sha256": "d74f5207d3a7b02950f0938563307e02f9147f6956c9cb5de129b216b0573d89",
+   "note": "Four-winged night flier drawn to light. Comes in swarms.",
+   "rig": {
+    "parts": {
+     "body": {
+      "parent": "",
+      "pivot": [
+       0,
+       6,
+       0
+      ]
+     },
+     "wing_l_fore": {
+      "parent": "body",
+      "pivot": [
+       -1.5,
+       6,
+       -1
+      ]
+     },
+     "wing_l_hind": {
+      "parent": "body",
+      "pivot": [
+       -1.5,
+       6,
+       4
+      ]
+     },
+     "wing_r_fore": {
+      "parent": "body",
+      "pivot": [
+       1.5,
+       6,
+       -1
+      ]
+     },
+     "wing_r_hind": {
+      "parent": "body",
+      "pivot": [
+       1.5,
+       6,
+       4
+      ]
+     }
+    },
+    "clips": {
+     "idle": [
+      {
+       "part": "wing_r_fore",
+       "axis": "z",
+       "amp": 38,
+       "freq": 2.2,
+       "phase": 0.0,
+       "offset": 12
+      },
+      {
+       "part": "wing_l_fore",
+       "axis": "z",
+       "amp": -38,
+       "freq": 2.2,
+       "phase": 0.0,
+       "offset": -12
+      },
+      {
+       "part": "wing_r_hind",
+       "axis": "z",
+       "amp": 30.400000000000002,
+       "freq": 2.2,
+       "phase": -0.12,
+       "offset": 7.199999999999999
+      },
+      {
+       "part": "wing_l_hind",
+       "axis": "z",
+       "amp": -30.400000000000002,
+       "freq": 2.2,
+       "phase": -0.12,
+       "offset": -7.199999999999999
+      },
+      {
+       "part": "body",
+       "bob": 1.2,
+       "freq": 1.1,
+       "phase": 0.0
+      },
+      {
+       "part": "body",
+       "axis": "x",
+       "amp": 5,
+       "freq": 0.55,
+       "phase": 0,
+       "offset": -12
+      }
+     ],
+     "dive": [
+      {
+       "part": "wing_r_fore",
+       "axis": "z",
+       "amp": 16,
+       "freq": 4.0,
+       "phase": 0.0,
+       "offset": 38
+      },
+      {
+       "part": "wing_l_fore",
+       "axis": "z",
+       "amp": -16,
+       "freq": 4.0,
+       "phase": 0.0,
+       "offset": -38
+      },
+      {
+       "part": "wing_r_hind",
+       "axis": "z",
+       "amp": 12.8,
+       "freq": 4.0,
+       "phase": -0.12,
+       "offset": 22.8
+      },
+      {
+       "part": "wing_l_hind",
+       "axis": "z",
+       "amp": -12.8,
+       "freq": 4.0,
+       "phase": -0.12,
+       "offset": -22.8
+      },
+      {
+       "part": "body",
+       "axis": "x",
+       "amp": 3,
+       "freq": 2.0,
+       "phase": 0,
+       "offset": 28
+      }
+     ],
+     "rest": [
+      {
+       "part": "wing_r_fore",
+       "axis": "z",
+       "amp": 4,
+       "freq": 0.3,
+       "phase": 0.0,
+       "offset": 62
+      },
+      {
+       "part": "wing_l_fore",
+       "axis": "z",
+       "amp": -4,
+       "freq": 0.3,
+       "phase": 0.0,
+       "offset": -62
+      },
+      {
+       "part": "wing_r_hind",
+       "axis": "z",
+       "amp": 3.2,
+       "freq": 0.3,
+       "phase": -0.12,
+       "offset": 37.199999999999996
+      },
+      {
+       "part": "wing_l_hind",
+       "axis": "z",
+       "amp": -3.2,
+       "freq": 0.3,
+       "phase": -0.12,
+       "offset": -37.199999999999996
+      }
+     ]
+    }
+   },
+   "design": {
+    "name": "Duskmoth",
+    "role": "Night nuisance in swarms. Makes campfires and lamps a choice.",
+    "size": "1.3 m wingspan",
+    "where": "Forest edges and meadows from dusk to dawn, 3 to 8 together.",
+    "behaviour": "Drifts on four wings and is drawn to light: campfires, lamps and glowing inscriptions. Circles the light, then dives at whoever stands nearest. Scatters at dawn or if the light goes out.",
+    "attacks": "Dive (light damage). Wing dust briefly blurs vision if three or more hit in a row.",
+    "counter": "Fight in the dark, or lure them with a lamp placed away from camp. Fragile: one or two hits each.",
+    "drops": "wing dust (future: lamp oil, dye), cord fibre",
+    "alien_touch": "Four wings and two grasping legs; lamp-coloured eye spots that glow."
+   }
+  },
+  "echo_sentinel": {
+   "file": "creatures/echo_sentinel.vox",
+   "category": "creatures",
+   "voxel_m": 0.0625,
+   "size": [
+    28,
+    38,
+    24
+   ],
+   "height_m": 2.38,
+   "generated_sha256": "5d2ea767c7a9bcbc36b3d204aa67fcb5cd4998532f256f52fc9c2dd4aec7d751",
+   "note": "Old-builder stonework held aloft by gravity magick around a lit core. Guards the ruins.",
+   "rig": {
+    "parts": {
+     "torso": {
+      "parent": "",
+      "pivot": [
+       0,
+       26,
+       0
+      ]
+     },
+     "head": {
+      "parent": "torso",
+      "pivot": [
+       0,
+       36,
+       0
+      ]
+     },
+     "arm_l": {
+      "parent": "torso",
+      "pivot": [
+       -11.5,
+       31,
+       0
+      ]
+     },
+     "arm_r": {
+      "parent": "torso",
+      "pivot": [
+       11.5,
+       31,
+       0
+      ]
+     },
+     "orbit": {
+      "parent": "",
+      "pivot": [
+       0,
+       6,
+       0
+      ]
+     }
+    },
+    "clips": {
+     "idle": [
+      {
+       "part": "torso",
+       "bob": 1.2,
+       "freq": 0.35,
+       "phase": 0.0
+      },
+      {
+       "part": "head",
+       "bob": 0.5,
+       "freq": 0.35,
+       "phase": 0.3
+      },
+      {
+       "part": "arm_l",
+       "bob": 0.9,
+       "freq": 0.35,
+       "phase": 0.55
+      },
+      {
+       "part": "arm_r",
+       "bob": 0.9,
+       "freq": 0.35,
+       "phase": 0.7
+      },
+      {
+       "part": "orbit",
+       "axis": "y",
+       "amp": 180,
+       "freq": 0.05,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "orbit",
+       "bob": 0.6,
+       "freq": 0.5,
+       "phase": 0.0
+      },
+      {
+       "part": "head",
+       "axis": "y",
+       "amp": 14,
+       "freq": 0.12,
+       "phase": 0.0,
+       "offset": 0.0
+      }
+     ],
+     "walk": [
+      {
+       "part": "torso",
+       "bob": 0.8,
+       "freq": 0.6,
+       "phase": 0.0
+      },
+      {
+       "part": "torso",
+       "axis": "x",
+       "amp": 2,
+       "freq": 0.6,
+       "phase": 0,
+       "offset": 8
+      },
+      {
+       "part": "arm_l",
+       "axis": "x",
+       "amp": 10,
+       "freq": 0.6,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "arm_r",
+       "axis": "x",
+       "amp": 10,
+       "freq": 0.6,
+       "phase": 0.5,
+       "offset": 0.0
+      },
+      {
+       "part": "orbit",
+       "axis": "y",
+       "amp": 180,
+       "freq": 0.12,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "head",
+       "bob": 0.4,
+       "freq": 0.6,
+       "phase": 0.3
+      }
+     ],
+     "slam": [
+      {
+       "part": "arm_l",
+       "axis": "x",
+       "amp": 80,
+       "freq": 0.7,
+       "phase": 0,
+       "offset": 70
+      },
+      {
+       "part": "arm_r",
+       "axis": "x",
+       "amp": 80,
+       "freq": 0.7,
+       "phase": 0,
+       "offset": 70
+      },
+      {
+       "part": "torso",
+       "axis": "x",
+       "amp": 10,
+       "freq": 0.7,
+       "phase": 0.05,
+       "offset": 6
+      },
+      {
+       "part": "torso",
+       "bob": 1.5,
+       "freq": 0.7,
+       "phase": 0.5
+      },
+      {
+       "part": "orbit",
+       "axis": "y",
+       "amp": 180,
+       "freq": 0.3,
+       "phase": 0.0,
+       "offset": 0.0
+      }
+     ],
+     "dormant": [
+      {
+       "part": "arm_l",
+       "axis": "z",
+       "amp": 0.5,
+       "freq": 0.1,
+       "phase": 0,
+       "offset": -6
+      },
+      {
+       "part": "arm_r",
+       "axis": "z",
+       "amp": 0.5,
+       "freq": 0.1,
+       "phase": 0,
+       "offset": 6
+      },
+      {
+       "part": "head",
+       "axis": "x",
+       "amp": 0.5,
+       "freq": 0.1,
+       "phase": 0,
+       "offset": 18
+      }
+     ]
+    }
+   },
+   "design": {
+    "name": "Echo Sentinel",
+    "role": "Ruin guardian and mini-boss. Teaches the gravity magick lesson before the real boss.",
+    "size": "2.6 m tall, hovering",
+    "where": "Ancient ruins only. Dormant as a pile of stones until someone enters its hall.",
+    "behaviour": "Old-builder stonework held together by gravity magick around a lit core. Hovers, keeps its distance, then closes to slam. Its stones fall apart for a moment after each slam and when it is staggered.",
+    "attacks": "Fist slam (shockwave on the ground), thrown orbit stones, a pull that drags you in before a slam.",
+    "counter": "The core is exposed from behind and whenever the stones part. Blocks are immune to weapons; use the gravity word to drop a fist or pull stones away, then strike the core.",
+    "drops": "ancient_stone, bronze fittings, an Avarra word fragment",
+    "alien_touch": "Not alive: teal Avarra glow marks it as magick."
    }
   }
  }

@@ -20,7 +20,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import palette as P            # noqa: E402
 import voxlib                  # noqa: E402
-import props, flora, items, creatures, structures   # noqa: E402,E401
+import props, flora, items, creatures, structures, mobs   # noqa: E402,E401
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 MODELS = ROOT / "content/models"
@@ -31,7 +31,7 @@ MODEL_VOXEL_M = 0.0625
 TERRAIN_VOXEL_M = 0.25
 
 CATEGORIES = [("props", props.PROPS), ("props", {"flint_nodule": items.flint_nodule}), ("flora", flora.FLORA),
-              ("crops", flora.CROPS), ("items", items.ITEMS), ("creatures", creatures.CREATURES)]
+              ("crops", flora.CROPS), ("items", items.ITEMS), ("creatures", creatures.CREATURES), ("creatures", mobs.MOBS)]
 
 
 def sha(path):
@@ -136,10 +136,12 @@ def main():
             entry = {"file": f"{category}/{model_id}.vox", "category": category, "voxel_m": MODEL_VOXEL_M,
                      "size": [sx, sy, sz], "height_m": round(sy * MODEL_VOXEL_M, 2), "generated_sha256": digest}
             base = fn if not hasattr(fn, "__defaults__") or fn.__name__ != "<lambda>" else fn.__defaults__[0]
-            if doc_of(base):
+            if callable(base) and doc_of(base):
                 entry["note"] = doc_of(base)
             if rig:
                 entry["rig"] = rig
+            if model_id in mobs.DESIGN:
+                entry["design"] = mobs.DESIGN[model_id]
             if hand and model_id in old:
                 entry = dict(old[model_id])
             manifest[model_id] = entry
@@ -171,8 +173,20 @@ def main():
         "_comment": "Structures stored as .vox, painted only in block colours. y = 0 is the floor layer.",
         "structures": smanifest}, indent=1) + "\n")
 
+    lines = ["# Mobs", "", "Generated from `tools/art/mobs.py` by `tools/art/build.py`. Edit the sheet there, or tell us what to change.",
+             "Stats are left to the gameplay code; this is the intent.", "", "![mobs](../art/preview_mobs.png)", ""]
+    for model_id, d in mobs.DESIGN.items():
+        lines += [f"## {d['name']} (`{model_id}`)", "", f"**{d['role']}**", "",
+                  f"- Size: {d['size']}", f"- Where: {d['where']}", f"- Behaviour: {d['behaviour']}",
+                  f"- Attacks: {d['attacks']}", f"- How to beat it: {d['counter']}", f"- Drops: {d['drops']}",
+                  f"- Alien touch: {d['alien_touch']}",
+                  f"- Animation clips: {', '.join(manifest[model_id]['rig']['clips'])}", ""]
+    (ROOT / "docs/design/mobs.md").write_text("\n".join(lines))
+
     if IMAGES:
         bg = (74, 92, 78)
+        sheet([voxlib.render([v for _, v in fn()[0]], scale=7, view=view) for fn in mobs.MOBS.values() for view in ("front", "back")],
+              ROOT / "docs/art/preview_mobs.png", bg)
         sheet(previews.get("props", []) + previews.get("flora", []), ROOT / "docs/art/preview_props.png", bg)
         sheet(previews.get("crops", []) + previews.get("items", []), ROOT / "docs/art/preview_items.png", bg)
         sheet(previews.get("creatures", []), ROOT / "docs/art/preview_creatures.png", bg)
