@@ -368,7 +368,8 @@ func _commit(ops: Array, already_applied := false) -> void:
 func apply_ops(ops: Array) -> void:
 	for op in ops:
 		_journal.append(op)
-		if not _apply_op(op, true):
+		# Keep order: once anything is waiting, everything after it waits too.
+		if not _pending.is_empty() or not _apply_op(op, true):
 			_pending.append(op)
 
 
