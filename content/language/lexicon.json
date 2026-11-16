@@ -1,0 +1,18 @@
+{
+  "_comment": "PROVISIONAL placeholder word. Do not use names that already mean something in Aruun canon (Keth, Vael, Kethra...). Replace with real Avarra once the language design settles.",
+  "words": [
+    {
+      "id": "word_rise",
+      "display": "Ahm (placeholder)",
+      "meaning": "Rise",
+      "discipline": "graviturge",
+      "effect": "raise_column",
+      "params": {"height": 12, "radius": 2, "block": "rust_rock"},
+      "range_voxels": 48,
+      "cooldown_s": 1.5
+    }
+  ],
+  "effects": [
+    {"id": "raise_column", "targets": "solid_voxel", "max_height": 24, "max_radius": 4}
+  ]
+}
