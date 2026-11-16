@@ -161,6 +161,91 @@ for sid, sdef in vox_structures.items():
     if off:
         err(f"structures: '{sid}' uses colours that are not block colours: {', '.join(off[:5])}")
 
+# --- Survival content: items, recipes, structures, rulesets, plants, creatures ---
+items_doc = load(CONTENT / "items/items.json")
+block_keys = {b["key"] for b in blocks.get("blocks", [])}
+# The game adds an item for every solid block that can be dug, so those count too.
+item_keys = {i["key"] for i in items_doc.get("items", [])} | {
+    b["key"] for b in blocks.get("blocks", []) if b.get("solid") and not b.get("fluid") and b.get("hardness", 0) < 99}
+ITEM_KINDS = {"material", "food", "seed", "tool", "weapon", "gear", "structure", "block"}
+plants_doc = load(CONTENT / "farming/plants.json")
+plant_keys = {p["key"] for p in plants_doc.get("plants", [])}
+structure_keys = set(items_doc.get("structures", {}))
+rules_doc = load(CONTENT / "survival/rulesets.json")
+buff_keys = set(rules_doc.get("buffs", {}))
+seen = set()
+for it in items_doc.get("items", []):
+    k = it.get("key", "?")
+    if k in seen:
+        err(f"items: '{k}' is defined twice")
+    seen.add(k)
+    if it.get("kind") not in ITEM_KINDS:
+        err(f"items: '{k}' has unknown kind '{it.get('kind')}'")
+    if it.get("kind") in ("tool", "weapon"):
+        for f in ("damage", "reach_m", "arc_deg", "stamina", "cooldown_s", "poise", "knockback"):
+            if f not in it:
+                err(f"items: '{k}' is a {it['kind']} without '{f}'")
+    if it.get("kind") == "seed" and it.get("plant") not in plant_keys:
+        err(f"items: seed '{k}' grows unknown plant '{it.get('plant')}'")
+    if it.get("kind") == "structure" and it.get("structure") not in structure_keys:
+        err(f"items: '{k}' sets down unknown structure '{it.get('structure')}'")
+    buff = it.get("use", {}).get("buff")
+    if buff and buff not in buff_keys:
+        err(f"items: '{k}' gives unknown buff '{buff}'")
+for bk, drops in items_doc.get("block_drops", {}).items():
+    if bk == "_comment":
+        continue
+    if bk not in block_keys:
+        err(f"block_drops: unknown block '{bk}'")
+    for d in drops:
+        if d.get("item") not in item_keys:
+            err(f"block_drops: '{bk}' drops unknown item '{d.get('item')}'")
+stations = {v.get("station") for v in items_doc.get("structures", {}).values()}
+seen = set()
+for r in items_doc.get("recipes", []):
+    rid = r.get("id", "?")
+    if rid in seen:
+        err(f"recipes: '{rid}' is defined twice")
+    seen.add(rid)
+    for k in list(r.get("in", {})) + [r.get("out")]:
+        if k not in item_keys:
+            err(f"recipes: '{rid}' uses unknown item '{k}'")
+    if r.get("station") and r["station"] not in stations:
+        err(f"recipes: '{rid}' needs station '{r['station']}' that no structure provides")
+for p in plants_doc.get("plants", []):
+    for y in p.get("yields", []):
+        if y.get("item") not in item_keys:
+            err(f"plants: '{p['key']}' yields unknown item '{y.get('item')}'")
+    for g in p.get("ground", []):
+        if g not in block_keys:
+            err(f"plants: '{p['key']}' grows in unknown block '{g}'")
+    if p.get("wild", {}).get("where", "land") not in ("shore", "mesa", "meadow", "land"):
+        err(f"plants: '{p['key']}' has unknown wild place '{p['wild']['where']}'")
+for c in load(CONTENT / "creatures/creatures.json").get("creatures", []):
+    if c.get("behavior") not in ("herd", "hunter"):
+        err(f"creatures: '{c.get('key')}' has unknown behavior '{c.get('behavior')}'")
+    if c.get("behavior") == "hunter" and "attack" not in c:
+        err(f"creatures: hunter '{c.get('key')}' has no attack")
+    for d in c.get("drops", []):
+        if d.get("item") not in item_keys:
+            err(f"creatures: '{c.get('key')}' drops unknown item '{d.get('item')}'")
+rulesets = rules_doc.get("rulesets", {})
+if rules_doc.get("default") not in rulesets:
+    err("rulesets: 'default' names a ruleset that does not exist")
+for rid, r in rulesets.items():
+    if "extends" in r and r["extends"] not in rulesets:
+        err(f"rulesets: '{rid}' extends unknown ruleset '{r['extends']}'")
+    for k in r.get("starting_items", {}):
+        if k not in item_keys:
+            err(f"rulesets: '{rid}' starts with unknown item '{k}'")
+    for w in r.get("starting_words", []):
+        if w not in {x["id"] for x in lex.get("words", [])}:
+            err(f"rulesets: '{rid}' starts with unknown word '{w}'")
+    for cid, c in r.get("conditions", {}).items():
+        for b in c.get("bands", []) + c.get("bands_add", []):
+            if not (0 <= b.get("from", -1) < b.get("to", -1) <= 101):
+                err(f"rulesets: '{rid}' condition '{cid}' band '{b.get('name')}' has a bad range")
+
 if errors:
     print("\n".join("ERROR " + e for e in errors))
     sys.exit(1)

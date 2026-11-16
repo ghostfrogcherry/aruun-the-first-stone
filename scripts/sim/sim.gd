@@ -393,7 +393,7 @@ func _environment_flags(id: int, pos: Vector3) -> Dictionary:
 	# Inside an Occlusion site Earth's gravity returns, and a castaway loses the
 	# strength Aruun's light pull gave them.
 	var body := _player(id) as CharacterBody3D
-	if body and body.get_gravity().length() > WorldConfig.GRAVITY * 1.5:
+	if body and body.get_gravity().length() > (WorldConfig.GRAVITY + WorldConfig.EARTH_GRAVITY) * 0.5:
 		flags["earth_gravity"] = true
 	var alt: Dictionary = ruleset.altitude
 	if pos.y > float(alt.thin_air_above):

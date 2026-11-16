@@ -34,8 +34,7 @@ func _on_session_started(is_server: bool) -> void:
 	if _menu:
 		_menu.visible = false
 	if is_server:
-		world.start_as_server()
-		_show_message("World ready. Find the old stone circle; its glowing inscription teaches a word.")
+		world.start_as_server() # the world shows the arrival messages
 	else:
 		_show_message("Connected. Loading the host's world...")
 

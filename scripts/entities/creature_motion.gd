@@ -13,6 +13,10 @@ const SKIN := 0.01
 ## "wall": horizontal speed lost against walls this step}.
 static func step(pos: Vector3, vel: Vector3, dt: float, radius: float, height: float,
 		step_up: int, gravity: float, solid: Callable) -> Dictionary:
+	if not _free(pos, radius, height, solid):
+		# Buried (spawned inside something, or terrain landed on it): rise until free.
+		pos.y = floorf(pos.y) + 1.0
+		return {"pos": pos, "vel": Vector3.ZERO, "grounded": false, "impact": 0.0, "wall": 0.0}
 	var grounded := _solid_under(pos, radius, solid)
 	var wall := 0.0
 	vel.y -= gravity * dt

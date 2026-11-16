@@ -9,6 +9,7 @@ var _count := 0
 func _initialize() -> void:
 	for path in ["res://tests/unit/test_floating_pieces.gd", "res://tests/unit/test_edit_rules.gd",
 			"res://tests/unit/test_language.gd", "res://tests/unit/test_art_pipeline.gd",
+			"res://tests/unit/test_player_strength.gd",
 			"res://tests/unit/test_inventory.gd", "res://tests/unit/test_conditions.gd",
 			"res://tests/unit/test_farming.gd", "res://tests/unit/test_combat.gd",
 			"res://tests/unit/test_collapse.gd"]:

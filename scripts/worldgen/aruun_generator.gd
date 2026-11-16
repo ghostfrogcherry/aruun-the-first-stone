@@ -7,11 +7,26 @@ const CHANNEL := VoxelBuffer.CHANNEL_TYPE
 var _field: HeightField
 var _ids := {}                       # layer key -> block id
 var _stamps: Array = []              # [{ "aabb": AABB, "voxels": Dictionary(Vector3i -> id) }]
+var _art_trees := {}                 # "green" / "crimson" / "giant" -> {"voxels": Array, "size": Vector3i}
+var _art_reach := 0                  # widest art tree half-size, for chunk overlap tests
+
+## Share of tree cells that grow a handmade art tree instead of a procedural one.
+const ART_TREE_CHANCE := 0.4
 
 
 func setup(world_seed: int, layer_ids: Dictionary) -> void:
 	_field = HeightField.new(world_seed)
 	_ids = layer_ids
+
+
+## Handmade trees from content/structures (StructureLoader.load_voxels output).
+## kind: "green", "crimson" or "giant". Call before the terrain starts generating.
+func add_art_tree(kind: String, voxels: Array) -> void:
+	var size := Vector3i.ZERO
+	for v in voxels:
+		size = Vector3i(maxi(size.x, v[0] + 1), maxi(size.y, v[1] + 1), maxi(size.z, v[2] + 1))
+	_art_trees[kind] = {"voxels": voxels, "size": size}
+	_art_reach = maxi(_art_reach, maxi(size.x, size.z) / 2 + 1)
 
 
 ## Adds a handbuilt structure at a world-space voxel origin.
@@ -61,7 +76,7 @@ func _generate_block(out_buffer: VoxelBuffer, origin: Vector3i, lod: int) -> voi
 ## Trees are placed per 5 m cell, so any chunk can rebuild the parts of every
 ## tree that reach into it without knowing about its neighbours.
 func _apply_trees(out_buffer: VoxelBuffer, origin: Vector3i, size: Vector3i) -> void:
-	var reach := HeightField.TREE_REACH
+	var reach := maxi(HeightField.TREE_REACH, _art_reach)
 	var cell := HeightField.TREE_CELL
 	var air: int = _ids["air"]
 	var tall: int = _ids["tall_grass"]
@@ -69,7 +84,11 @@ func _apply_trees(out_buffer: VoxelBuffer, origin: Vector3i, size: Vector3i) -> 
 	for cz in range(floori(float(origin.z - reach) / cell), floori(float(origin.z + size.z + reach) / cell) + 1):
 		for cx in range(floori(float(origin.x - reach) / cell), floori(float(origin.x + size.x + reach) / cell) + 1):
 			var t := _field.tree_in_cell(cx, cz)
-			if t.is_empty():
+			if t.is_empty() or _in_stamp(t.x, t.z):
+				continue
+			var art := _art_tree_for(cx, cz, t)
+			if not art.is_empty():
+				_place_art_tree(out_buffer, origin, size, art, t)
 				continue
 			var top: int = t.base + t.trunk
 			var r: int = t.radius
@@ -97,6 +116,45 @@ func _apply_trees(out_buffer: VoxelBuffer, origin: Vector3i, size: Vector3i) -> 
 						var edge := r * (0.8 + 0.25 * _field.hash01(w.x * 7 + w.y, w.z, 31))
 						if w.y >= top - r / 2 and d.length() < edge:
 							out_buffer.set_voxel(leaf, x, y, z, CHANNEL)
+
+
+func _art_tree_for(cx: int, cz: int, t: Dictionary) -> Dictionary:
+	if _field.hash01(cx, cz, 27) >= ART_TREE_CHANCE:
+		return {}
+	var kind := "green"
+	if t.crimson:
+		kind = "giant" if _field.hash01(cx, cz, 28) < 0.3 else "crimson"
+	return _art_trees.get(kind, {})
+
+
+## Art trees stand centred on the tree's spot, floor layer on the ground, and only
+## fill air (like procedural trees), so they never cut into terrain or each other.
+func _place_art_tree(out_buffer: VoxelBuffer, origin: Vector3i, size: Vector3i, art: Dictionary, t: Dictionary) -> void:
+	var dims: Vector3i = art.size
+	var base := Vector3i(t.x - dims.x / 2, t.base, t.z - dims.z / 2) - origin
+	if base.y > size.y or base.y + dims.y < 0 or base.x > size.x or base.x + dims.x < 0 \
+			or base.z > size.z or base.z + dims.z < 0:
+		return
+	var air: int = _ids["air"]
+	var tall: int = _ids["tall_grass"]
+	for v in art.voxels:
+		var x: int = base.x + v[0]
+		var y: int = base.y + v[1]
+		var z: int = base.z + v[2]
+		if x < 0 or y < 0 or z < 0 or x >= size.x or y >= size.y or z >= size.z:
+			continue
+		var cur := out_buffer.get_voxel(x, y, z, CHANNEL)
+		if cur == air or cur == tall:
+			out_buffer.set_voxel(v[3], x, y, z, CHANNEL)
+
+
+## True when a tree at (x, z) would grow into a stamped structure's site.
+func _in_stamp(x: int, z: int) -> bool:
+	for s in _stamps:
+		var box: AABB = s.aabb
+		if x > box.position.x - 8 and x < box.end.x + 8 and z > box.position.z - 8 and z < box.end.z + 8:
+			return true
+	return false
 
 
 func _apply_stamps(out_buffer: VoxelBuffer, origin: Vector3i, size: Vector3i) -> void:

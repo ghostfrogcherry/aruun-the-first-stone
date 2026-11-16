@@ -29,6 +29,21 @@ var vt: VoxelTool
 var players: Node3D
 var debris: Node3D
 var sim: Node                     # characters, survival, combat, entities
+const BreachScript := preload("res://scripts/gameplay/breach.gd")
+## Handmade trees from content/structures, by the kind of tree they replace.
+const ART_TREES := {"green": "green_tree", "crimson": "violet_tree", "giant": "skyroot_tree"}
+## The demo town around the First Stone: structure id, distance from the circle, angle (turns).
+const DEMO_TOWN := [
+	["ruin_arch", 30.0, 0.62],
+	["vaari_dome_house", 62.0, 0.05],
+	["vaari_dome_house", 66.0, 0.18],
+	["reed_hut", 56.0, 0.30],
+	["reed_hut", 70.0, 0.92],
+	["watch_tower", 82.0, 0.11],
+	["vaari_dome_house", 74.0, 0.82],
+]
+const ARRIVAL_OFFSET_Z := 11.0    # voxels from the stele, inside the ring (radius 14)
+
 var spawn_point := Vector3.ZERO
 var landmark_origin := Vector3i.ZERO
 
@@ -101,8 +116,11 @@ func _build(seed_value: int, with_stream: bool) -> void:
 	var field := HeightField.new(world_seed)
 	landmark_origin = _pick_landmark_site(field)
 	gen.add_stamp(landmark_origin, _landmark_voxels())
-	spawn_point = Vector3(landmark_origin) + Vector3(24, 0, 6)
-	spawn_point.y = field.height_at(int(spawn_point.x), int(spawn_point.z)) + 10
+	_add_demo_town(gen, field)
+	for kind in ART_TREES:
+		gen.add_art_tree(kind, ContentDB.load_structure(ART_TREES[kind]).voxels)
+	# Arrival: the player wakes inside the stone circle, facing the stele, as the breach closes.
+	spawn_point = Vector3(landmark_origin) + Vector3(0.5, 3, ARRIVAL_OFFSET_Z)
 
 	var mesher := VoxelMesherBlocky.new()
 	mesher.library = BlockLibraryBuilder.build(ContentDB.blocks)
@@ -168,12 +186,76 @@ func _landmark_voxels() -> Array:
 	return out
 
 
+## Places the demo town's buildings around the circle on dry land, each on a levelled
+## site with a foundation. Sizes come from the .vox files, never hard-coded. Seeded, so
+## every peer builds the same town.
+func _add_demo_town(gen, field: HeightField) -> void:
+	var placed: Array[Rect2] = [Rect2(landmark_origin.x - 18, landmark_origin.z - 18, 36, 36)]
+	for entry in DEMO_TOWN:
+		var data := ContentDB.load_structure(entry[0])
+		if data.voxels.is_empty():
+			continue
+		var dims := Vector3i.ZERO
+		for v in data.voxels:
+			dims = Vector3i(maxi(dims.x, v[0] + 1), maxi(dims.y, v[1] + 1), maxi(dims.z, v[2] + 1))
+		for attempt in 6: # nudge round the circle until the spot is dry and free
+			var a := TAU * (float(entry[2]) + attempt * 0.07)
+			var d: float = entry[1] + attempt * 4.0
+			var cx := landmark_origin.x + int(cos(a) * d)
+			var cz := landmark_origin.z + int(sin(a) * d)
+			var rect := Rect2(cx - dims.x / 2 - 2, cz - dims.z / 2 - 2, dims.x + 4, dims.z + 4)
+			if placed.any(func(r: Rect2): return r.intersects(rect)):
+				continue
+			var site := _site_heights(field, rect)
+			if site.lo <= HeightField.SEA_LEVEL + 1 or site.hi - site.lo > 8:
+				continue
+			# Doors face -z in the files: turn nothing, the town reads fine at any heading.
+			var origin := Vector3i(cx - dims.x / 2, int(round((site.lo + site.hi) * 0.5)) + 1, cz - dims.z / 2)
+			gen.add_stamp(origin, _sited(data.voxels, dims, origin.y - site.lo + 2))
+			placed.append(rect)
+			break
+
+
+func _site_heights(field: HeightField, rect: Rect2) -> Dictionary:
+	var lo := 1 << 30
+	var hi := -lo
+	for z in range(int(rect.position.y), int(rect.end.y) + 1, 4):
+		for x in range(int(rect.position.x), int(rect.end.x) + 1, 4):
+			var h := field.height_at(x, z)
+			lo = mini(lo, h)
+			hi = maxi(hi, h)
+	return {"lo": lo, "hi": hi}
+
+
+## A structure on a levelled pad: clears the air above its footprint (plus a 2 voxel
+## margin) and lays a rock foundation `depth` voxels deep under it.
+func _sited(voxels: Array, dims: Vector3i, depth: int) -> Array:
+	var out: Array = []
+	var rock := ContentDB.block_id("rust_rock")
+	var grass := ContentDB.block_id("grass")
+	for z in range(-2, dims.z + 2):
+		for x in range(-2, dims.x + 2):
+			for y in range(-depth, 0):
+				out.append([x, y, z, grass if y == -1 else rock])
+			for y in range(0, dims.y + 4):
+				out.append([x, y, z, 0])
+	out.append_array(voxels)
+	return out
+
+
 # --- Players -----------------------------------------------------------------
 
 func _spawn_local_player() -> void:
 	var id := multiplayer.get_unique_id()
 	var p := _make_player(id, true)
 	p.global_position = spawn_point
+	# Arrival: a closing breach in the ring. Inside it, Earth's gravity still holds.
+	var breach := BreachScript.new()
+	add_child(breach)
+	breach.global_position = Vector3(landmark_origin) + Vector3(0.5, 6, ARRIVAL_OFFSET_Z * 0.5)
+	message.emit("You fall through light and cold air. The breach is closing behind you.")
+	get_tree().create_timer(BreachScript.HOLD + BreachScript.CLOSE + 1.0).timeout.connect(func():
+		message.emit("The way home is shut. The stone before you glows with writing: press E to read it."))
 	_known_words[id] = PackedStringArray()
 
 
