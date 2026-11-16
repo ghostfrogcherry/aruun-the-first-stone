@@ -42,7 +42,11 @@ func collides(id: int) -> bool:
 
 
 ## Returns { "id": String, "voxels": Array[[x, y, z, block_id]] }.
+## Ids not listed in STRUCTURES are .vox buildings and trees from the art pipeline
+## (content/structures/structures.json), which come back in the same shape.
 func load_structure(structure_id: String) -> Dictionary:
+	if not STRUCTURES.has(structure_id):
+		return StructureLoader.load_voxels(structure_id, blocks)
 	var data := _read_json(STRUCTURES[structure_id])
 	var out: Array = []
 	for v in data.get("voxels", []):

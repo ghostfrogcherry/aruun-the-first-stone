@@ -1,0 +1,29 @@
+{
+  "_comment": "People made with tools/art/make_character.py. tunic and skirt are ramp:level from the palette; sash is a palette key; skin is a level of the hide ramp (1 dark to 4 pale).",
+  "characters": [
+    {
+      "id": "vaari_river_villager",
+      "tunic": "dusk:2",
+      "skirt": "cloth:1",
+      "sash": "cloth_mustard",
+      "skin": 3,
+      "seed": 10
+    },
+    {
+      "id": "vaari_caravan_villager",
+      "tunic": "sandstone:4",
+      "skirt": "water:2",
+      "sash": "cloth_wine",
+      "skin": 2,
+      "seed": 20
+    },
+    {
+      "id": "lyceum_warden",
+      "tunic": "stone:2",
+      "skirt": "violet:2",
+      "sash": "glow_teal",
+      "skin": 4,
+      "seed": 33
+    }
+  ]
+}
