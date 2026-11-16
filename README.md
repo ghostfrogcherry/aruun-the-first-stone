@@ -1,9 +1,10 @@
 # Aruun
 
-A co-op voxel survival RPG set on Aruun, the Living Red World. Small 0.25 m voxels, real-time
+A co-op voxel survival RPG set on Aruun, the Living Red World: Mars when it was alive, green and full of water. Small 0.25 m voxels, real-time
 play in first or third person, a world you can dig, build and break.
 
-**Current milestone: M0, The First Stone.** A small seeded region with one handbuilt ruin,
+**Current milestone: M0, The First Stone.** A small seeded region of meadows, forests, lakes and
+red mesas with one handbuilt ruin,
 digging and building, destruction with falling debris, one ancient word to learn and speak,
 saving, and drop-in co-op.
 
@@ -29,7 +30,7 @@ saving, and drop-in co-op.
 | First or third person | V |
 | Dig (round bite) | Hold left mouse |
 | Place block | Right mouse |
-| Choose block | 1 to 5 |
+| Choose block | 1 to 7 |
 | Blast (test destruction) | B |
 | Read an inscription | E (on the glowing stone) |
 | Speak a learned word | Q (at a surface) |

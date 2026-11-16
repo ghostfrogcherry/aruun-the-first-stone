@@ -35,7 +35,7 @@ func _on_session_started(is_server: bool) -> void:
 		_menu.visible = false
 	if is_server:
 		world.start_as_server()
-		_show_message("World ready. Find the stone circle; the glowing inscription teaches a word.")
+		_show_message("World ready. Find the old stone circle; its glowing inscription teaches a word.")
 	else:
 		_show_message("Connected. Loading the host's world...")
 
@@ -77,11 +77,12 @@ func _notification(what: int) -> void:
 # --- Look --------------------------------------------------------------------
 
 func _build_atmosphere() -> void:
+	# A living world: clear, breathable sky with a warm horizon, not a dust bowl.
 	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color("#b9694c")
-	sky_mat.sky_horizon_color = Color("#e3a57a")
-	sky_mat.ground_horizon_color = Color("#8a4a35")
-	sky_mat.ground_bottom_color = Color("#3a2420")
+	sky_mat.sky_top_color = Color("#4f86c6")
+	sky_mat.sky_horizon_color = Color("#d9c6b0")
+	sky_mat.ground_horizon_color = Color("#9a8a72")
+	sky_mat.ground_bottom_color = Color("#3b3a2c")
 	sky_mat.sun_angle_max = 20.0
 	var sky := Sky.new()
 	sky.sky_material = sky_mat
@@ -90,15 +91,15 @@ func _build_atmosphere() -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.8
+	env.ambient_light_energy = 1.0
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.ssao_enabled = true          # small voxels read much better with AO
 	env.ssao_radius = 2.0
 	env.glow_enabled = true          # makes inscriptions glow
 	env.glow_bloom = 0.1
 	env.fog_enabled = true
-	env.fog_light_color = Color("#d79a72")
-	env.fog_density = 0.0035
+	env.fog_light_color = Color("#bcd0dc")
+	env.fog_density = 0.0015
 	env.fog_aerial_perspective = 0.4
 	var we := WorldEnvironment.new()
 	we.environment = env
@@ -106,8 +107,8 @@ func _build_atmosphere() -> void:
 
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-38, 35, 0)
-	sun.light_color = Color("#ffd9b8")
-	sun.light_energy = 1.3
+	sun.light_color = Color("#fff1dc")
+	sun.light_energy = 1.4
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 600.0
 	add_child(sun)

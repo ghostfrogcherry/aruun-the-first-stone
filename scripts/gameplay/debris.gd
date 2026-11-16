@@ -19,6 +19,7 @@ static func _setup() -> void:
 		return
 	_material = StandardMaterial3D.new()
 	_material.vertex_color_use_as_albedo = true
+	_material.vertex_color_is_srgb = true
 	_material.roughness = 0.95
 	_chip_mesh = BoxMesh.new()
 	_chip_mesh.size = Vector3.ONE * CHIP_SIZE

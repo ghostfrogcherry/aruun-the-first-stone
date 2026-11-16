@@ -35,6 +35,12 @@ func is_solid(id: int) -> bool:
 	return block(id).get("solid", false)
 
 
+## True if players and debris bump into it (grass, flowers and water don't).
+func collides(id: int) -> bool:
+	var b := block(id)
+	return b.get("solid", false) and b.get("collision", true)
+
+
 ## Returns { "id": String, "voxels": Array[[x, y, z, block_id]] }.
 func load_structure(structure_id: String) -> Dictionary:
 	var data := _read_json(STRUCTURES[structure_id])
