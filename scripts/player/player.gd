@@ -178,7 +178,12 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var g: float = ProjectSettings.get_setting("physics/3d/default_gravity")
-	if not is_on_floor():
+	var chest: int = world.vt.get_voxel(Vector3i((global_position + Vector3(0, HEIGHT * 0.5, 0)).floor()))
+	var swimming := chest == ContentDB.block_id("water")
+	if swimming:
+		# Simple swimming: slow sinking, Space to rise, heavy drag.
+		velocity.y = lerpf(velocity.y, (WALK * 0.5) if Input.is_action_pressed("jump") else -WALK * 0.15, clampf(delta * 3.0, 0.0, 1.0))
+	elif not is_on_floor():
 		velocity.y -= g * delta
 	elif Input.is_action_just_pressed("jump"):
 		velocity.y = sqrt(2.0 * g * JUMP_HEIGHT)
@@ -186,6 +191,8 @@ func _physics_process(delta: float) -> void:
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var dir := (transform.basis * Vector3(input.x, 0, input.y)).normalized()
 	var speed := SPRINT if Input.is_action_pressed("sprint") else WALK
+	if swimming:
+		speed *= 0.5
 	velocity.x = dir.x * speed
 	velocity.z = dir.z * speed
 	floor_snap_length = 1.2
@@ -204,8 +211,8 @@ func _step_ahead(dir: Vector3) -> bool:
 	var ahead := global_position + dir * (RADIUS + 0.6)
 	var foot := Vector3i(ahead.floor())
 	var vt: VoxelTool = world.vt
-	return vt.get_voxel(foot) != 0 and vt.get_voxel(foot + Vector3i(0, 1, 0)) == 0 \
-		and vt.get_voxel(foot + Vector3i(0, 2, 0)) == 0
+	return ContentDB.collides(vt.get_voxel(foot)) and not ContentDB.collides(vt.get_voxel(foot + Vector3i(0, 1, 0))) \
+		and not ContentDB.collides(vt.get_voxel(foot + Vector3i(0, 2, 0)))
 
 
 func _process(delta: float) -> void:

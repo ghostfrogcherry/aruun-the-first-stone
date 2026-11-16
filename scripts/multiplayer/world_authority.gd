@@ -30,6 +30,7 @@ var _journal: Array = []          # every accepted op, in order (server + client
 var _pending: Array = []          # ops waiting for their area to load
 var _known_words := {}            # peer id -> PackedStringArray (server only)
 var _protected := PackedInt32Array()
+var _water := -1
 var _save_dir := ""
 var _journal_file: FileAccess
 
@@ -83,9 +84,7 @@ func receive_world_info(seed_value: int, generation_version: int, journal: Array
 
 func _build(seed_value: int, with_stream: bool) -> void:
 	world_seed = seed_value
-	var layer_ids := {}
-	for key in ["air", "red_soil", "rust_rock", "deep_stone", "moss", "dust_sand"]:
-		layer_ids[key] = ContentDB.block_id(key)
+	var layer_ids := ContentDB.block_ids.duplicate()
 
 	var gen := Generator.new()
 	gen.setup(world_seed, layer_ids)
@@ -112,6 +111,7 @@ func _build(seed_value: int, with_stream: bool) -> void:
 	vt = terrain.get_voxel_tool()
 	vt.channel = CHANNEL
 	_protected = EditRules.protected_ids(ContentDB.blocks)
+	_water = ContentDB.block_id("water")
 	world_ready.emit()
 
 
@@ -133,6 +133,8 @@ func _pick_landmark_site(field: HeightField) -> Vector3i:
 			var h := field.height_at(cx + int(cos(b) * 16.0), cz + int(sin(b) * 16.0))
 			lo = mini(lo, h)
 			hi = maxi(hi, h)
+		if lo <= HeightField.SEA_LEVEL + 2:
+			continue # keep the ruin on dry land
 		if hi - lo < best_slope:
 			best_slope = hi - lo
 			best = Vector3i(cx, lo + 1, cz)
@@ -242,7 +244,10 @@ func request_place(pos: Vector3i, block_id: int) -> void:
 		return
 	var why := EditRules.check_reach(from, pos)
 	if why == EditRules.OK:
-		why = EditRules.check_place(_voxel_at(pos), block_id, ContentDB.placeable)
+		var current := _voxel_at(pos)
+		if current > 0 and not ContentDB.collides(current):
+			current = 0 # grass, flowers and water can be built over
+		why = EditRules.check_place(current, block_id, ContentDB.placeable)
 	if why == EditRules.OK and _overlaps_player(pos):
 		why = "a player is standing there"
 	if why != EditRules.OK:
@@ -453,7 +458,7 @@ func _sphere_cells(center: Vector3, radius: float) -> Dictionary:
 				if (Vector3(p) + Vector3(0.5, 0.5, 0.5)).distance_to(center) > radius:
 					continue
 				var id := _voxel_at(p)
-				if id > 0 and not _protected.has(id):
+				if id > 0 and id != _water and not _protected.has(id):
 					cells.append(p)
 					ids.append(id)
 	return {"cells": cells, "ids": ids}
@@ -470,7 +475,8 @@ func _loose_pieces_around(c: Vector3i, r: int) -> Array:
 	for y in size.y:
 		for z in size.z:
 			for x in size.x:
-				grid[i] = vt.get_voxel(lo + Vector3i(x, y, z))
+				var v := vt.get_voxel(lo + Vector3i(x, y, z))
+				grid[i] = 0 if v == _water else v # water never holds anything up or falls
 				i += 1
 	var out: Array = []
 	for piece in FloatingPieces.find(grid, size, WorldConfig.FLOATING_MAX_PIECE):

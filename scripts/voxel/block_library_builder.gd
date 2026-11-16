@@ -14,10 +14,22 @@ static func build(blocks: Array) -> VoxelBlockyLibrary:
 		var model: VoxelBlockyModel
 		if not b.get("solid", false):
 			model = VoxelBlockyModelEmpty.new()
+		elif b.get("shape", "") == "cross":
+			model = _cross_model(b)
 		else:
 			var cube := VoxelBlockyModelCube.new()
 			cube.color = Color(b.get("color", "#ff00ff"))
-			if b.get("emissive", false):
+			if not b.get("collision", true):
+				cube.collision_enabled = false # walk-through: grass, flowers, water
+			if b.get("transparent", false):
+				var clear := base.duplicate() as StandardMaterial3D
+				clear.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+				clear.albedo_color = Color(1, 1, 1, float(b.get("alpha", 0.6)))
+				clear.roughness = 0.1
+				cube.set_material_override(0, clear)
+				cube.transparency_index = 1 # faces between two water voxels are culled
+				cube.culls_neighbors = false # ground under water still renders
+			elif b.get("emissive", false):
 				var glow := base.duplicate() as StandardMaterial3D
 				glow.emission_enabled = true
 				glow.emission = Color(b.color)
@@ -30,3 +42,38 @@ static func build(blocks: Array) -> VoxelBlockyLibrary:
 		assert(index == int(b.id), "Block ids must be contiguous from 0")
 	library.bake()
 	return library
+
+
+## Two crossed, double-sided quads: grass tufts and flowers that you walk through.
+static func _cross_model(b: Dictionary) -> VoxelBlockyModelMesh:
+	var verts := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	var quads := [
+		[Vector3(0.1, 0, 0.1), Vector3(0.9, 0, 0.9), Vector3(0.9, 1, 0.9), Vector3(0.1, 1, 0.1)],
+		[Vector3(0.9, 0, 0.1), Vector3(0.1, 0, 0.9), Vector3(0.1, 1, 0.9), Vector3(0.9, 1, 0.1)],
+	]
+	for q in quads:
+		var n: Vector3 = (q[1] - q[0]).cross(q[3] - q[0]).normalized()
+		for k in [0, 2, 1, 0, 3, 2]:
+			verts.append(q[k])
+			normals.append(n)
+			uvs.append(Vector2(q[k].x, 1.0 - q[k].y))
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var mat := StandardMaterial3D.new()
+	mat.vertex_color_use_as_albedo = true
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.roughness = 1.0
+	var model := VoxelBlockyModelMesh.new()
+	model.mesh = mesh
+	model.color = Color(b.get("color", "#ff00ff"))
+	model.collision_enabled = false
+	model.culls_neighbors = false
+	model.set_material_override(0, mat)
+	return model
