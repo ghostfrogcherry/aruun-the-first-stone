@@ -79,7 +79,10 @@ func start_as_server() -> void:
 	DirAccess.make_dir_recursive_absolute(_save_dir)
 	var meta := _load_meta()
 	if meta.is_empty():
-		meta = {"seed": randi(), "generation_version": WorldConfig.GENERATION_VERSION}
+		var seed_value: int = Net.new_world_seed if Net.new_world_seed >= 0 else randi() & 0x7FFFFFFF
+		meta = {"seed": seed_value, "seed_text": Net.new_world_seed_text,
+			"generation_version": WorldConfig.GENERATION_VERSION,
+			"created": Time.get_datetime_string_from_system()}
 		_save_meta(meta)
 	elif int(meta.generation_version) != WorldConfig.GENERATION_VERSION:
 		message.emit("World was made with worldgen v%s; this build is v%d. Terrain may not match." % [meta.generation_version, WorldConfig.GENERATION_VERSION])

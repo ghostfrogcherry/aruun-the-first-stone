@@ -4,6 +4,7 @@ extends Node
 ##
 ## Command line (after `--`):  --host [--port=7777]   |   --join=1.2.3.4[:7777]
 ##                             --world=<name>  (save folder, default "first_stone")
+##                             --seed=<number or words>  (only used when the world is new)
 
 signal session_started(is_server: bool)
 signal session_failed(reason: String)
@@ -12,6 +13,25 @@ const DEFAULT_PORT := 7777
 const MAX_CLIENTS := 7
 
 var world_name := "first_stone"
+## Seed for a world that doesn't exist yet; -1 picks a random one. Saved worlds keep theirs.
+var new_world_seed := -1
+var new_world_seed_text := ""
+
+
+## Any text works as a seed: numbers are used as they are, words are hashed.
+static func seed_from_text(text: String) -> int:
+	text = text.strip_edges()
+	if text == "":
+		return -1
+	if text.is_valid_int():
+		return absi(text.to_int()) & 0x7FFFFFFF
+	return text.hash() & 0x7FFFFFFF
+
+
+func leave_session() -> void:
+	if multiplayer.multiplayer_peer:
+		multiplayer.multiplayer_peer.close()
+	multiplayer.multiplayer_peer = null
 
 
 func start_single_player() -> void:
@@ -58,6 +78,9 @@ func parse_args() -> Dictionary:
 				out.address = target
 		elif arg.begins_with("--port="):
 			out.port = int(arg.trim_prefix("--port="))
+		elif arg.begins_with("--seed="):
+			new_world_seed_text = arg.trim_prefix("--seed=")
+			new_world_seed = seed_from_text(new_world_seed_text)
 		elif arg.begins_with("--world="):
 			world_name = arg.trim_prefix("--world=").validate_filename()
 	return out
