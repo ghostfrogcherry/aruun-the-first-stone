@@ -70,7 +70,7 @@ func _run(main: Node) -> void:
 	ent = sim.entities
 	cdb = root.get_node("ContentDB")
 	world.message.connect(func(t): print("    > ", t))
-	sim.local_fx.connect(func(k, d): if k == "hurt": print("    hurt %.0f from %s (player at %s)" % [d.amount, d.from, me.global_position]))
+	sim.local_fx.connect(_on_fx)
 	for i in 300:
 		await wait(0.1)
 		me = world.players.get_node_or_null("1")
@@ -335,6 +335,11 @@ func _run(main: Node) -> void:
 					loot = true
 	check(loot, "and it leaves a word fragment")
 	_finish()
+
+
+func _on_fx(kind: String, data: Dictionary) -> void:
+	if kind == "hurt":
+		print("    hurt %.0f from %s (player at %s)" % [data.amount, data.from, me.global_position])
 
 
 func _slot_of(key: String) -> int:
