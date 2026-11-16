@@ -1,5 +1,4 @@
 ; Engine configuration file.
-; Godot 4.x. Pin the exact engine + Voxel Tools versions in docs/decisions/0001-engine-stack.md.
 
 config_version=5
 
@@ -8,7 +7,7 @@ config_version=5
 config/name="Aruun"
 config/description="Aruun - voxel survival RPG. Milestone 01: The First Stone."
 run/main_scene="res://scenes/main/main.tscn"
-config/features=PackedStringArray("4.4", "Forward Plus")
+config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]
 
@@ -90,7 +89,6 @@ save_world={
 
 [physics]
 
-; World units are voxels (1 unit = 0.25 m), so gravity is 9.8 m/s^2 * 4.
 3d/default_gravity=39.2
 
 [rendering]
