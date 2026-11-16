@@ -445,6 +445,9 @@ func _process(delta: float) -> void:
 	_root.visible = true
 	_flash_left = maxf(_flash_left - delta, 0.0)
 	_flash.color = Color(_flash_color.r, _flash_color.g, _flash_color.b, minf(_flash_left, 0.3))
+	if sim.view.get("buffs", {}).has("dusted"):
+		# Wing scales in the eyes: a pale haze that pulses until it clears.
+		_flash.color = Color(0.93, 0.88, 0.62, 0.5 + 0.12 * sin(Time.get_ticks_msec() * 0.006))
 	_prompt.text = "" if actions.ui_open else actions.prompt
 	var t: float = sim.time_of_day()
 	var minutes := int(t * 24.0 * 60.0)

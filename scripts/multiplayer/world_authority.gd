@@ -44,6 +44,7 @@ const DEMO_TOWN := [
 ]
 const ARRIVAL_OFFSET_Z := 11.0    # voxels from the stele, inside the ring (radius 14)
 
+var town_sites := {}              # structure id -> Vector3i ground centre of its site (first of each)
 var spawn_point := Vector3.ZERO
 var landmark_origin := Vector3i.ZERO
 
@@ -212,6 +213,8 @@ func _add_demo_town(gen, field: HeightField) -> void:
 			# Doors face -z in the files: turn nothing, the town reads fine at any heading.
 			var origin := Vector3i(cx - dims.x / 2, int(round((site.lo + site.hi) * 0.5)) + 1, cz - dims.z / 2)
 			gen.add_stamp(origin, _sited(data.voxels, dims, origin.y - site.lo + 2))
+			if not town_sites.has(entry[0]):
+				town_sites[entry[0]] = Vector3i(cx, origin.y, cz)
 			placed.append(rect)
 			break
 

@@ -222,9 +222,16 @@ for p in plants_doc.get("plants", []):
     if p.get("wild", {}).get("where", "land") not in ("shore", "mesa", "meadow", "land"):
         err(f"plants: '{p['key']}' has unknown wild place '{p['wild']['where']}'")
 for c in load(CONTENT / "creatures/creatures.json").get("creatures", []):
-    if c.get("behavior") not in ("herd", "hunter"):
+    if c.get("behavior") not in ("herd", "hunter", "skittish", "defender", "swarm", "guardian"):
         err(f"creatures: '{c.get('key')}' has unknown behavior '{c.get('behavior')}'")
-    if c.get("behavior") == "hunter" and "attack" not in c:
+    if c.get("spawn", {}).get("when") not in ("day", "night", "never"):
+        err(f"creatures: '{c.get('key')}' has unknown spawn time '{c.get('spawn', {}).get('when')}'")
+    if c.get("spawn", {}).get("where", "land") not in ("shore", "mesa", "meadow", "land"):
+        err(f"creatures: '{c.get('key')}' has unknown spawn place '{c['spawn'].get('where')}'")
+    buff = c.get("attack", {}).get("applies", {}).get("buff")
+    if buff and buff not in buff_keys:
+        err(f"creatures: '{c.get('key')}' applies unknown buff '{buff}'")
+    if c.get("behavior") in ("hunter", "defender", "swarm") and "attack" not in c:
         err(f"creatures: hunter '{c.get('key')}' has no attack")
     for d in c.get("drops", []):
         if d.get("item") not in item_keys:

@@ -230,6 +230,9 @@ func _physics_process(delta: float) -> void:
 	if dodge != Vector3.ZERO:
 		velocity.x = dodge.x
 		velocity.z = dodge.z
+	var push: Vector3 = actions.push_velocity()
+	velocity.x += push.x
+	velocity.z += push.z
 	floor_snap_length = 1.2
 	# Small voxels: let the player walk up single-voxel (0.25 m) steps.
 	if is_on_floor() and dir != Vector3.ZERO and _step_ahead(dir):

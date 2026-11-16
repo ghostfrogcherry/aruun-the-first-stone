@@ -5,6 +5,9 @@ extends Node3D
 ## ModelLibrary has a model with the same key, that model is used instead.
 
 const M := WorldConfig.UNITS_PER_METER
+## Animation codes the server sends (see MobBrains). A creature's "clips" table
+## in creatures.json maps these names to its model's clip names.
+const ANIMS := ["idle", "walk", "run", "windup", "stagger", "alert", "hop", "charge", "dive", "rest", "dormant", "slam"]
 
 static var _mats := {}
 static var _box: BoxMesh
@@ -43,6 +46,10 @@ func _setup(e: Dictionary) -> void:
 		"plant":
 			_def = GameData.plants[e.def]
 			_build_plant(int(e.get("stage", 0)))
+		"shot":
+			_spin = true
+			_piece(_rig, Vector3.ONE * 2.2, Vector3(0, 0, 0), "#8c867c")
+			_piece(_rig, Vector3.ONE * 1.2, Vector3(0, 0, 0), "#3fb8a8", true)
 		"drop":
 			_spin = true
 			var it := GameData.item(e.def)
@@ -201,11 +208,12 @@ func _build_structure(key: String) -> void:
 
 func set_anim(a: int) -> void:
 	if a != _anim and _model:
-		var clip: String = ["idle", "walk", "run", "idle", "idle"][clampi(a, 0, 4)]
+		var want: String = ANIMS[clampi(a, 0, ANIMS.size() - 1)]
+		var clip: String = _def.get("clips", {}).get(want, want)
 		_model.speed_scale = 1.0
 		if not _model.clips().has(clip):
-			_model.speed_scale = 1.8 if clip == "run" else 1.0   # no run clip: a fast walk
-			clip = "walk" if clip == "run" else "idle"
+			_model.speed_scale = 1.8 if want == "run" else 1.0   # no run clip: a fast walk
+			clip = "walk" if want == "run" else "idle"
 		if _model.clips().has(clip):
 			_model.play(clip)
 	_anim = a

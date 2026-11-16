@@ -1,5 +1,5 @@
 {
-  "_comment": "Creatures from the Aruun bestiary. Sizes and distances in metres, speeds in m/s, times in seconds. 'behavior': herd (grazes, flees when hurt) or hunter (pursues players). Stats are first-pass tuning.",
+  "_comment": "Creatures from the Aruun bestiary. Sizes and distances in metres, speeds in m/s, times in seconds. 'behavior': herd (grazes, flees when hurt), hunter (pursues players), skittish (freezes, then flees in hops), defender (ignores you until provoked, then charges), swarm (flies, gathers at fires, dives) or guardian (a fixed drill of attacks; see docs/design/mob_behaviours.md). 'clips' maps the game's animation names to a model's clip names where they differ. Stats are first-pass tuning.",
   "creatures": [
     {"key": "redstrider", "name": "Redstrider", "behavior": "herd", "hp": 55, "mass": 1.6,
       "height_m": 2.6, "radius_m": 0.55, "walk_mps": 1.6, "run_mps": 7.5, "jump_m": 1.0,
@@ -13,6 +13,55 @@
       "attack": {"damage": 12, "reach_m": 2.2, "arc_deg": 70, "windup_s": 0.55, "cooldown_s": 1.5, "lunge_mps": 5.0},
       "group": [1, 1], "spawn": {"when": "night", "where": "land"},
       "drops": [{"item": "hide", "min": 1, "max": 2}, {"item": "raw_meat", "min": 0, "max": 1}],
-      "look": {"shape": "stalker", "color": "#4a3a5c", "accent": "#c9b26a"}}
+      "look": {"shape": "stalker", "color": "#4a3a5c", "accent": "#c9b26a"}},
+    {"key": "reedhopper", "name": "Reedhopper", "behavior": "skittish", "hp": 12, "mass": 0.3,
+      "height_m": 0.6, "radius_m": 0.25, "walk_mps": 1.2, "run_mps": 8.5, "jump_m": 2.2,
+      "sense_m": 10, "poise": 4, "group": [3, 6], "spawn": {"when": "day", "where": "shore"},
+      "brain": {"alert_s": 1.2, "flee_within_m": 6, "hops_per_burst": 3, "pause_between_bursts_s": 0.8,
+        "flee_distance_m": 30},
+      "drops": [{"item": "raw_meat", "min": 1, "max": 1}, {"item": "hide", "min": 0, "max": 1}],
+      "clips": {"walk": "hop", "run": "hop", "stagger": "alert"},
+      "look": {"shape": "strider", "color": "#b5483a", "accent": "#e8cfa8"}},
+
+    {"key": "glassback", "name": "Glassback", "behavior": "defender", "hp": 140, "mass": 4.0,
+      "height_m": 0.9, "radius_m": 0.8, "walk_mps": 0.9, "run_mps": 6.0, "jump_m": 0.0,
+      "sense_m": 8, "poise": 60, "group": [1, 2], "spawn": {"when": "day", "where": "mesa"},
+      "armour": {"shell_damage_mult": 0.3, "shell_reflect_damage": 4, "flipped_damage_mult": 1.5},
+      "brain": {"crowd_within_m": 3, "crowd_warn_s": 2, "crowd_provoke_s": 4, "calm_after_s": 12, "calm_beyond_m": 16,
+        "flip_s": 4, "milk": {"item": "glasswort_leaf", "count": 1, "regrow_s": 300}},
+      "attack": {"damage": 22, "windup_s": 1.0, "speed_mps": 6.0, "max_distance_m": 12, "turn_rate_deg_s": 20,
+        "knockback_mps": 7.0, "recover_s": 2.0, "wall_stun_s": 2.5, "breaks_power": 2},
+      "drops": [{"item": "glasswort_leaf", "min": 2, "max": 3}, {"item": "hide", "min": 2, "max": 2},
+        {"item": "raw_meat", "min": 2, "max": 3}, {"item": "crystal_shard", "min": 1, "max": 2}],
+      "clips": {"run": "walk", "windup": "charge", "stagger": "idle"},
+      "look": {"shape": "stalker", "color": "#6f8f86", "accent": "#bfe8dc"}},
+
+    {"key": "duskmoth", "name": "Duskmoth", "behavior": "swarm", "hp": 8, "mass": 0.1, "fly": true,
+      "height_m": 0.4, "radius_m": 0.4, "walk_mps": 3.0, "run_mps": 9.0, "jump_m": 0.0, "fly_height_m": [2, 4],
+      "sense_m": 10, "poise": 2, "group": [3, 8], "max_per_player": 8, "spawn": {"when": "night", "where": "meadow"},
+      "brain": {"sense_light_m": 30, "tether_ward_m": 8, "orbit_radius_m": [3, 5], "dive_within_m_of_light": 6,
+        "dive_every_s": [4, 6], "max_divers": 2, "ignores_buff": "calm"},
+      "attack": {"damage": 5, "windup_s": 0.6, "speed_mps": 9.0, "low_after_dive_s": 0.8,
+        "applies": {"buff": "dusted", "after_hits": 3, "within_s": 10}},
+      "drops": [{"item": "wing_dust", "min": 1, "max": 1}, {"item": "plant_fibre", "min": 0, "max": 1}],
+      "clips": {"walk": "idle", "run": "idle", "windup": "dive", "stagger": "rest"},
+      "look": {"shape": "stalker", "color": "#5a4a78", "accent": "#e8d890"}},
+
+    {"key": "echo_sentinel", "name": "Echo Sentinel", "behavior": "guardian", "hp": 320, "hp_per_extra_player_mult": 0.6,
+      "mass": 8.0, "height_m": 2.4, "radius_m": 0.9, "walk_mps": 2.2, "run_mps": 2.2, "jump_m": 0.0,
+      "sense_m": 8, "poise": 100, "group": [1, 1], "spawn": {"when": "never", "where": "land"},
+      "armour": {"stone_damage_mult": 0.0, "core_back_damage_mult": 1.0, "core_exposed_damage_mult": 1.5},
+      "brain": {"wake_within_m": 8, "assemble_s": 2.5, "keeps_distance_m": [6, 9], "leash_m": 22,
+        "reset_after_empty_s": 10, "pattern": ["throw", "throw", "slam"], "between_moves_s": 2.0,
+        "pull_below_hp": 0.6, "frenzy_below_hp": 0.25, "stagger_s": 3.0},
+      "attacks": {
+        "throw": {"damage": 14, "windup_s": 0.8, "speed_mps": 10, "returned_core_damage": 20, "returned_poise_damage": 50},
+        "slam": {"damage": 26, "windup_s": 1.1, "radius_m": 3.5, "exposed_s": 2.5, "frenzy_exposed_s": 3.5,
+          "knockback_mps": 6.0, "breaks_power": 2},
+        "pull": {"windup_s": 1.2, "range_m": 10, "drag_mps": 5.0, "lasts_s": 1.5}},
+      "drops": [{"item": "ancient_stone", "min": 4, "max": 6}, {"item": "bronze_fitting", "min": 1, "max": 2},
+        {"item": "word_fragment", "min": 1, "max": 1}],
+      "clips": {"run": "walk", "windup": "slam", "stagger": "dormant", "rest": "dormant"},
+      "look": {"shape": "strider", "color": "#8c867c", "accent": "#3fb8a8"}}
   ]
 }
