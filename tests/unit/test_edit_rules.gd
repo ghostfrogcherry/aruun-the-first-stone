@@ -29,3 +29,8 @@ func test_blast_radius_capped() -> String:
 func test_protected_ids() -> String:
 	var ids := EditRules.protected_ids([{"id": 1, "hardness": 2}, {"id": 7, "hardness": 99}])
 	return "" if ids == PackedInt32Array([7]) else "expected [7], got %s" % ids
+
+
+func test_project_gravity_matches_aruun() -> String:
+	var g: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+	return "" if absf(g - WorldConfig.GRAVITY) < 0.05 else "project gravity %s != WorldConfig.GRAVITY %s" % [g, WorldConfig.GRAVITY]

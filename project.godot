@@ -89,7 +89,7 @@ save_world={
 
 [physics]
 
-3d/default_gravity=39.2
+3d/default_gravity=14.9
 
 [rendering]
 

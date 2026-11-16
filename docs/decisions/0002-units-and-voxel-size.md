@@ -6,7 +6,12 @@ Status: accepted for M0, revisit after the spike. Date: 2026-11-16.
 - One voxel = 0.25 m. Small voxels are a core part of Aruun's look and set it apart from
   1 m block games.
 - **One world unit = one voxel.** The terrain is never scaled. Everything else is scaled to
-  match: a 1.8 m person is 7.2 units, gravity is 39.2 units/s^2, walk speed is 18 units/s.
+  match: a 1.8 m person is 7.2 units, walk speed is 18 units/s.
+- Gravity is Aruun's canon 0.38 g: 3.73 m/s^2 = 14.9 units/s^2 (decided by Bruh 2026-11-16).
+  Jumps reach about 1.6 m and falls are slow; debris drifts down.
+- Inside an Occlusion / Confluence site, Earth gravity (1 g = 39.2 units/s^2) applies. Build those
+  sites with an Area3D using gravity_space_override = REPLACE; the player reads get_gravity(), so
+  it already follows local gravity.
   Constants live in `scripts/core/world_config.gd` (`UNITS_PER_METER`).
 
 ## Why
