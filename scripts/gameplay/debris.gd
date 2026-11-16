@@ -53,18 +53,15 @@ static func spawn_chips(parent: Node3D, cells: Array, ids: PackedInt32Array) -> 
 		_expire(body, CHIP_LIFETIME * randf_range(0.7, 1.3))
 
 
-## A loose chunk of world that broke off: one rigid body shaped like the cells.
-static func spawn_piece(parent: Node3D, cells: Array, ids: PackedInt32Array) -> void:
-	_setup()
-	if cells.is_empty():
-		return
+## Builds one mesh shaped like the cells, centred on their middle.
+## Returns {"mesh": ArrayMesh, "centre": Vector3, "hull": PackedVector3Array}.
+static func _piece_mesh(cells: Array, ids: PackedInt32Array) -> Dictionary:
 	var lookup := {}
 	var centre := Vector3.ZERO
 	for i in cells.size():
 		lookup[cells[i]] = ids[i]
 		centre += Vector3(cells[i]) + Vector3(0.5, 0.5, 0.5)
 	centre /= cells.size()
-
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var hull := {}
@@ -80,21 +77,63 @@ static func spawn_piece(parent: Node3D, cells: Array, ids: PackedInt32Array) -> 
 				st.add_vertex(base + q[k])
 			for corner in q:
 				hull[base + corner] = true
+	return {"mesh": st.commit(), "centre": centre, "hull": PackedVector3Array(hull.keys())}
+
+
+## A loose chunk of world that broke off and has nowhere to land: one rigid
+## body shaped like the cells, purely for show.
+static func spawn_piece(parent: Node3D, cells: Array, ids: PackedInt32Array) -> void:
+	_setup()
+	if cells.is_empty():
+		return
+	var built := _piece_mesh(cells, ids)
 	var body := RigidBody3D.new()
 	var mesh := MeshInstance3D.new()
-	mesh.mesh = st.commit()
+	mesh.mesh = built.mesh
 	mesh.material_override = _material
 	var shape := CollisionShape3D.new()
 	var convex := ConvexPolygonShape3D.new()
-	convex.points = PackedVector3Array(hull.keys())
+	convex.points = built.hull
 	shape.shape = convex
 	body.add_child(mesh)
 	body.add_child(shape)
 	body.mass = maxf(1.0, cells.size() * 0.4)
 	parent.add_child(body)
-	body.global_position = centre
+	body.global_position = built.centre
 	body.apply_torque_impulse(Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)) * body.mass * 0.2)
 	_expire(body, PIECE_LIFETIME)
+
+
+## A loose chunk that the server says will fall `drop` voxels and then become
+## terrain again. Every peer plays the same fall; the server's "put" op
+## arrives as it lands, so the mesh is removed just after.
+static func spawn_falling(parent: Node3D, cells: Array, ids: PackedInt32Array, drop: int) -> void:
+	_setup()
+	if cells.is_empty():
+		return
+	var built := _piece_mesh(cells, ids)
+	var mesh := MeshInstance3D.new()
+	mesh.mesh = built.mesh
+	mesh.material_override = _material
+	parent.add_child(mesh)
+	mesh.global_position = built.centre
+	var g: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+	var t := Collapse.fall_time(drop, g)
+	var tween := mesh.create_tween()
+	tween.tween_property(mesh, "global_position:y", built.centre.y - drop, t) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_interval(0.12)
+	tween.tween_callback(mesh.queue_free)
+	# Dust where it hits.
+	var low: Array = []
+	var low_ids := PackedInt32Array()
+	var step := maxi(1, cells.size() / 12)
+	for i in range(0, cells.size(), step):
+		low.append(cells[i] + Vector3i(0, -drop, 0))
+		low_ids.append(ids[i])
+	parent.get_tree().create_timer(t).timeout.connect(func():
+		if is_instance_valid(parent):
+			spawn_chips(parent, low, low_ids))
 
 
 static func _expire(body: Node, seconds: float) -> void:

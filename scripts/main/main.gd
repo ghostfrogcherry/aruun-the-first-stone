@@ -52,11 +52,8 @@ func _process(delta: float) -> void:
 	if me == null:
 		_hud.text = ""
 		return
-	var block: Dictionary = ContentDB.block(ContentDB.placeable[me.selected_block])
-	var words := ", ".join(Array(me.known_words).map(func(w): return ContentDB.words[w].display))
-	_hud.text = "Block [1-%d]: %s    View [V]: %s    Words: %s\nDig: hold left click    Place: right click    Blast: B    Read: E    Speak: Q    Save: F5    %d players" % [
-		ContentDB.placeable.size(), block.name, "third person" if me.third_person else "first person",
-		words if words != "" else "none", world.players.get_child_count()]
+	_hud.text = "View [V]: %s    Controls: F1    %d players" % [
+		"third person" if me.third_person else "first person", world.players.get_child_count()]
 
 
 func _show_message(text: String) -> void:
@@ -102,6 +99,7 @@ func _build_atmosphere() -> void:
 	env.fog_aerial_perspective = 0.4
 	var we := WorldEnvironment.new()
 	we.environment = env
+	we.add_to_group("world_env") # the sim's day and night clock drives these
 	add_child(we)
 
 	var sun := DirectionalLight3D.new()
@@ -110,6 +108,7 @@ func _build_atmosphere() -> void:
 	sun.light_energy = 1.4
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 600.0
+	sun.add_to_group("sun")
 	add_child(sun)
 
 

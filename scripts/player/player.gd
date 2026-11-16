@@ -28,6 +28,7 @@ var third_person := false
 var selected_block := 0    # index into ContentDB.placeable
 var known_words := PackedStringArray()
 var target: VoxelRaycastResult
+var actions: Node          # player_actions.gd: hotbar, combat, items (local player only)
 
 var _pivot: Node3D
 var _arm: SpringArm3D
@@ -60,6 +61,10 @@ func _ready() -> void:
 		viewer.view_distance = WorldConfig.VIEW_DISTANCE_VOXELS
 		add_child(viewer)
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		actions = preload("res://scripts/player/player_actions.gd").new()
+		actions.name = "Actions"
+		actions.player = self
+		add_child(actions)
 	else:
 		collision_layer = 0
 		collision_mask = 0
@@ -150,7 +155,7 @@ func set_remote_state(pos: Vector3, yaw: float, _third: bool) -> void:
 # --- Input -------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not is_local:
+	if not is_local or actions.ui_open:
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		rotate_y(-event.relative.x * MOUSE_SENS)
@@ -163,21 +168,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("toggle_camera"):
 		third_person = not third_person
 		_apply_camera_mode()
-	elif event.is_action_pressed("place") and target:
-		world.request_place.rpc_id(1, target.previous_position, ContentDB.placeable[selected_block])
-	elif event.is_action_pressed("interact") and target:
-		world.request_learn.rpc_id(1, target.position)
-	elif event.is_action_pressed("speak_word") and target:
-		if known_words.is_empty():
-			world.message.emit("You don't know any words yet. Find an inscription and press E.")
-		else:
-			world.request_speak.rpc_id(1, known_words[0], target.position)
+	elif actions.is_down():
+		pass # dead or downed: look around only
+	elif event.is_action_pressed("place"):
+		actions.secondary(target) # place a block, eat, plant, set down (guarding is held)
+	elif event.is_action_pressed("interact"):
+		if not actions.interact(target) and target:
+			world.request_learn.rpc_id(1, target.position)
+	elif event.is_action_pressed("speak_word"):
+		actions.speak(target)
 	elif event.is_action_pressed("save_world"):
 		world.save_world()
-	elif event is InputEventKey and event.pressed and not event.echo:
-		var n := int(event.keycode) - KEY_1
-		if n >= 0 and n < ContentDB.placeable.size():
-			selected_block = n
 
 
 # --- Simulation --------------------------------------------------------------
@@ -211,21 +212,33 @@ func _physics_process(delta: float) -> void:
 		velocity.y = lerpf(velocity.y, (WALK * 0.5) if Input.is_action_pressed("jump") else -WALK * 0.15, clampf(delta * 3.0, 0.0, 1.0))
 	elif not is_on_floor():
 		velocity.y -= g * delta
-	elif Input.is_action_just_pressed("jump"):
-		velocity.y = JUMP_SPEED
+	elif Input.is_action_just_pressed("jump") and not actions.blocks_input():
+		# Fixed leg strength: the same push everywhere, so jumps fall short under Earth gravity.
+		velocity.y = JUMP_SPEED * sqrt(actions.jump_mult())
 
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	if actions.blocks_input():
+		input = Vector2.ZERO
 	var dir := (transform.basis * Vector3(input.x, 0, input.y)).normalized()
-	var speed := SPRINT if Input.is_action_pressed("sprint") else WALK
+	var speed := SPRINT if Input.is_action_pressed("sprint") and actions.can_sprint() else WALK
+	speed *= actions.speed_mult() # conditions, gravity debt, guarding
 	if swimming:
 		speed *= 0.5
 	velocity.x = dir.x * speed
 	velocity.z = dir.z * speed
+	var dodge: Vector3 = actions.dodge_velocity()
+	if dodge != Vector3.ZERO:
+		velocity.x = dodge.x
+		velocity.z = dodge.z
 	floor_snap_length = 1.2
 	# Small voxels: let the player walk up single-voxel (0.25 m) steps.
 	if is_on_floor() and dir != Vector3.ZERO and _step_ahead(dir):
 		velocity.y = maxf(velocity.y, sqrt(2.0 * g * 1.3))
+	var falling := -velocity.y
+	var was_airborne := not is_on_floor()
 	move_and_slide()
+	if was_airborne and is_on_floor() and not swimming:
+		actions.landed(falling)
 
 	_send_timer -= delta
 	if _send_timer <= 0.0:
@@ -261,10 +274,10 @@ func _process(delta: float) -> void:
 	_blast_timer -= delta
 	if target and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var centre := Vector3(target.position) + Vector3(0.5, 0.5, 0.5)
-		if Input.is_action_pressed("dig") and _dig_timer <= 0.0:
+		if Input.is_action_pressed("dig") and _dig_timer <= 0.0 and actions.can_dig():
 			_dig_timer = DIG_INTERVAL
 			world.request_dig.rpc_id(1, centre, WorldConfig.DIG_RADIUS)
-		if Input.is_action_just_pressed("blast") and _blast_timer <= 0.0:
+		if Input.is_action_just_pressed("blast") and _blast_timer <= 0.0 and not actions.blocks_input():
 			_blast_timer = BLAST_COOLDOWN
 			world.request_blast.rpc_id(1, centre, BLAST_RADIUS)
 
