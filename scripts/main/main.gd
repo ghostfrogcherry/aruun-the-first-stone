@@ -102,6 +102,7 @@ func _build_atmosphere() -> void:
 	env.fog_aerial_perspective = 0.4
 	var we := WorldEnvironment.new()
 	we.environment = env
+	we.add_to_group("world_env") # the sim's day and night clock drives these
 	add_child(we)
 
 	var sun := DirectionalLight3D.new()
@@ -110,6 +111,7 @@ func _build_atmosphere() -> void:
 	sun.light_energy = 1.4
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 600.0
+	sun.add_to_group("sun")
 	add_child(sun)
 
 

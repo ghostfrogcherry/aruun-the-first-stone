@@ -1,0 +1,81 @@
+{
+  "_comment": "Items. Every diggable block is also an item automatically (kind 'block', same key as the block), so only non-block items are listed here. Names marked (placeholder) are provisional and not canon. Distances are in metres, times in seconds.",
+  "block_stack": 999,
+  "unarmed": {"damage": 5, "reach_m": 1.6, "arc_deg": 80, "stamina": 6, "cooldown_s": 0.45, "poise": 6, "knockback": 2.0, "guard": 0.35, "dig_power": 1},
+  "items": [
+    {"key": "flint",           "name": "Flint",                  "kind": "material", "stack": 99, "color": "#5a5f66"},
+    {"key": "reed_stalk",      "name": "Vermillion reed stalk",  "kind": "material", "stack": 99, "color": "#c0442f"},
+    {"key": "plant_fibre",     "name": "Plant fibre",            "kind": "material", "stack": 99, "color": "#8fae5a"},
+    {"key": "cord",            "name": "Cord",              "kind": "material", "stack": 99, "color": "#b98a5a"},
+    {"key": "hide",            "name": "Hide",                   "kind": "material", "stack": 50, "color": "#8a5a44"},
+
+    {"key": "glasswort_leaf",  "name": "Glasswort leaf",         "kind": "food", "stack": 30, "color": "#9fd6c8",
+      "use": {"conditions": {"thirst": -35}, "verb": "drink from"}},
+    {"key": "redroot",         "name": "Redroot (placeholder)",  "kind": "food", "stack": 30, "color": "#a8323a",
+      "use": {"conditions": {"hunger": -14}, "verb": "eat"}},
+    {"key": "roast_redroot",   "name": "Roast redroot",          "kind": "food", "stack": 30, "color": "#7a2a22",
+      "use": {"conditions": {"hunger": -32}, "buff": "warm_meal", "verb": "eat"}},
+    {"key": "raw_meat",        "name": "Raw redstrider meat",    "kind": "food", "stack": 30, "color": "#b0504a",
+      "use": {"conditions": {"hunger": -12}, "verb": "eat"}},
+    {"key": "roast_meat",      "name": "Roast redstrider",       "kind": "food", "stack": 30, "color": "#6e3a26",
+      "use": {"conditions": {"hunger": -50}, "buff": "warm_meal", "verb": "eat"}},
+    {"key": "moss_bandage",    "name": "Moss bandage",           "kind": "food", "stack": 20, "color": "#7d8a56",
+      "use": {"buff": "mending", "verb": "apply"}},
+
+    {"key": "grinleaf_bud",    "name": "Grinleaf bud (placeholder)",  "kind": "material", "stack": 60, "color": "#7a9a4a"},
+    {"key": "grinleaf_roll",   "name": "Grinleaf roll (placeholder)", "kind": "food", "stack": 30, "color": "#8a8f5a",
+      "use": {"buff": "calm", "conditions": {"fatigue": -10}, "verb": "smoke"}},
+
+    {"key": "redroot_seed",    "name": "Redroot seed (placeholder)",  "kind": "seed", "stack": 60, "color": "#70242a", "plant": "redroot"},
+    {"key": "glasswort_cutting","name": "Glasswort cutting",          "kind": "seed", "stack": 60, "color": "#7fbfb0", "plant": "glasswort"},
+    {"key": "grinleaf_seed",   "name": "Grinleaf seed (placeholder)", "kind": "seed", "stack": 60, "color": "#56703a", "plant": "grinleaf"},
+    {"key": "reed_shoot",      "name": "Vermillion reed shoot",       "kind": "seed", "stack": 60, "color": "#d05a3f", "plant": "vermillion_reed"},
+
+    {"key": "flint_pick",      "name": "Flint pick",   "kind": "tool",   "stack": 1, "color": "#6a6f76", "durability": 260,
+      "dig_power": 3, "damage": 9, "reach_m": 1.9, "arc_deg": 70, "stamina": 9, "cooldown_s": 0.6, "poise": 10, "knockback": 2.5, "guard": 0.4},
+    {"key": "flint_axe",       "name": "Flint axe",    "kind": "tool", "stack": 1, "color": "#74787e", "durability": 220,
+      "dig_power": 2, "damage": 17, "reach_m": 1.9, "arc_deg": 100, "stamina": 11, "cooldown_s": 0.65, "poise": 18, "knockback": 3.5, "guard": 0.5},
+    {"key": "reed_spear",      "name": "Reed spear",   "kind": "weapon", "stack": 1, "color": "#c9553a", "durability": 180,
+      "dig_power": 1, "damage": 13, "reach_m": 2.9, "arc_deg": 40, "stamina": 9, "cooldown_s": 0.55, "poise": 12, "knockback": 3.0, "guard": 0.45},
+    {"key": "fallhammer",      "name": "Fallhammer",   "kind": "weapon", "stack": 1, "color": "#5d4a7a", "durability": 400,
+      "dig_power": 1, "damage": 30, "reach_m": 2.3, "arc_deg": 90, "stamina": 20, "cooldown_s": 1.05, "poise": 40, "knockback": 6.0, "guard": 0.6,
+      "slam": {"radius": 2.4, "power": 3}},
+
+    {"key": "dust_mask",       "name": "Dust mask",    "kind": "gear", "stack": 1, "color": "#a08060", "grants_flag": "masked"},
+
+    {"key": "campfire_kit",    "name": "Campfire",     "kind": "structure", "stack": 10, "color": "#e07a30", "structure": "campfire"},
+    {"key": "tether_stone",    "name": "Tether stone", "kind": "structure", "stack": 5,  "color": "#3fb8a8", "structure": "tether"}
+  ],
+  "block_drops": {
+    "_comment": "What a dug voxel gives. Blocks not listed give themselves if their hardness is 1 or more, and nothing if it is 0. 'chance' defaults to 1.",
+    "grass":        [{"item": "red_soil"}],
+    "tall_grass":   [{"item": "plant_fibre", "chance": 0.5}],
+    "leaves":       [{"item": "plant_fibre", "chance": 0.08}],
+    "crimson_leaves": [{"item": "plant_fibre", "chance": 0.08}],
+    "grinleaf":     [{"item": "grinleaf_bud"}, {"item": "grinleaf_seed", "chance": 0.5}],
+    "gold_flower":  [],
+    "white_flower": [],
+    "water":        []
+  },
+  "structures": {
+    "campfire": {"name": "Campfire", "heat_m": 5.0, "station": "fire", "light": "#ff9a50", "color": "#e07a30"},
+    "tether":   {"name": "Tether",   "heat_m": 0.0, "station": "tether", "light": "#3fb8a8", "color": "#3fb8a8",
+                 "calm_m": 30.0, "growth_mult": 1.5, "respawn": true}
+  },
+  "recipes": [
+    {"id": "cord",          "out": "cord",          "n": 1, "in": {"plant_fibre": 3}},
+    {"id": "cord_reed",     "out": "cord",          "n": 1, "in": {"reed_stalk": 2}},
+    {"id": "timber",        "out": "timber",        "n": 2, "in": {"bark": 1}},
+    {"id": "flint_pick",    "out": "flint_pick",    "n": 1, "in": {"flint": 2, "reed_stalk": 2, "cord": 1}},
+    {"id": "flint_axe",     "out": "flint_axe",     "n": 1, "in": {"flint": 2, "reed_stalk": 1, "cord": 1}},
+    {"id": "reed_spear",    "out": "reed_spear",    "n": 1, "in": {"reed_stalk": 3, "flint": 1, "cord": 1}},
+    {"id": "moss_bandage",  "out": "moss_bandage",  "n": 1, "in": {"moss": 2, "cord": 1}},
+    {"id": "dust_mask",     "out": "dust_mask",     "n": 1, "in": {"hide": 1, "cord": 2}},
+    {"id": "campfire_kit",  "out": "campfire_kit",  "n": 1, "in": {"bark": 3, "rust_rock": 4}},
+    {"id": "tether_stone",  "out": "tether_stone",  "n": 1, "in": {"rust_rock": 16, "flint": 2}, "needs_word": true},
+    {"id": "roast_redroot", "out": "roast_redroot", "n": 1, "in": {"redroot": 1}, "station": "fire"},
+    {"id": "roast_meat",    "out": "roast_meat",    "n": 1, "in": {"raw_meat": 1}, "station": "fire"},
+    {"id": "grinleaf_roll", "out": "grinleaf_roll", "n": 1, "in": {"grinleaf_bud": 2}, "station": "fire"},
+    {"id": "fallhammer",    "out": "fallhammer",    "n": 1, "in": {"deep_stone": 12, "reed_stalk": 2, "cord": 2, "hide": 1}, "station": "tether"}
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "_comment": "Plants and gatherable nodes. 'wild' places them deterministically from the world seed: 'per_cell' is the average count per 16 m cell; 'where' is shore (just above the waterline), mesa, meadow (grass, not mesa) or land (anywhere dry). Wild grinleaf is a terrain block placed by worldgen, so it has no wild entry here. 'stage_s' is seconds per growth stage; a plant is ripe at the last stage. 'regrow_stage' -1 means the plant is used up when harvested. Canon species come from the Flora field guide; (placeholder) names are provisional.",
+  "cell_voxels": 64,
+  "wild_regrow_s": 900,
+  "plants": [
+    {"key": "vermillion_reed", "name": "Vermillion reed", "stages": 4, "stage_s": 75, "regrow_stage": 1,
+      "ground": ["grass", "red_soil", "moss"], "yields": [{"item": "reed_stalk", "min": 2, "max": 4}, {"item": "reed_shoot", "min": 0, "max": 1}],
+      "wild": {"per_cell": 2.0, "where": "shore"}, "look": {"shape": "reed", "color": "#c0442f", "accent": "#e8795a", "height_m": 2.0}},
+    {"key": "glasswort", "name": "Glasswort", "stages": 4, "stage_s": 110, "regrow_stage": 2,
+      "ground": ["grass", "red_soil", "moss", "dust_sand", "rust_rock"], "yields": [{"item": "glasswort_leaf", "min": 1, "max": 3}, {"item": "glasswort_cutting", "min": 0, "max": 1}],
+      "wild": {"per_cell": 1.2, "where": "mesa"}, "look": {"shape": "bulb", "color": "#9fd6c8", "accent": "#d8f4ec", "height_m": 0.8}},
+    {"key": "redroot", "name": "Redroot (placeholder)", "stages": 4, "stage_s": 90, "regrow_stage": -1,
+      "ground": ["grass", "red_soil", "moss"], "yields": [{"item": "redroot", "min": 2, "max": 3}, {"item": "redroot_seed", "min": 1, "max": 2}],
+      "wild": {"per_cell": 0.6, "where": "meadow"}, "look": {"shape": "bush", "color": "#6b7348", "accent": "#a8323a", "height_m": 0.6}},
+    {"key": "grinleaf", "name": "Grinleaf (placeholder)", "avarra": "oumessa", "stages": 4, "stage_s": 120, "regrow_stage": 1,
+      "ground": ["grass", "red_soil", "moss"], "yields": [{"item": "grinleaf_bud", "min": 2, "max": 4}, {"item": "grinleaf_seed", "min": 0, "max": 2}],  "look": {"shape": "bush", "color": "#5f8a3c", "accent": "#b7c96a", "height_m": 1.1}},
+    {"key": "flint_nodule", "name": "Flint nodule", "stages": 1, "stage_s": 0, "regrow_stage": -1, "node": true,
+      "ground": [], "yields": [{"item": "flint", "min": 1, "max": 3}],
+      "wild": {"per_cell": 0.9, "where": "land"}, "look": {"shape": "rock", "color": "#5a5f66", "accent": "#8a8f96", "height_m": 0.35}}
+  ]
+}

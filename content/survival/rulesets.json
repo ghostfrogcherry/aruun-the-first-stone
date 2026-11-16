@@ -1,0 +1,543 @@
+{
+  "_comment": "Survival rulesets. One Conditions system, tuned by data: 'hardcore' only lists what differs from 'light'. Every condition is a 0-100 severity (0 = fine). Each rate applies while all its 'when' flags are set and none of its 'unless' flags are; values are per minute. Bands apply their mods while the value is inside [from, to). Mods ending in _mult multiply, all others add. Flags the server sets: day, night, exposed, sheltered, near_heat, high_altitude, dusty, sprinting, fighting, resting, at_tether, plus flags from carried gear and buffs (masked, calm). 'earth_weight' rises only inside Occlusion sites, where Earth gravity returns: the castaway is strong on Aruun and ordinary there, so those sites are harder.",
+  "default": "light",
+  "rulesets": {
+    "light": {
+      "name": "Light",
+      "day_length_s": 1200,
+      "build_cost": true,
+      "durability": false,
+      "pvp": false,
+      "vitals": {
+        "hp": 100,
+        "hp_regen": 0.5,
+        "hp_regen_delay_s": 6,
+        "stamina": 100,
+        "stamina_regen": 24,
+        "stamina_regen_delay_s": 0.8,
+        "sprint_cost": 8,
+        "dodge_cost": 18,
+        "dodge_iframes_s": 0.4
+      },
+      "death": {
+        "respawn": "tether",
+        "keep_inventory": true,
+        "respawn_delay_s": 4,
+        "downed_s": 0,
+        "permadeath": false,
+        "reset_conditions": false
+      },
+      "fall": {
+        "safe_mps": 7.0,
+        "damage_per_mps": 6.5
+      },
+      "altitude": {
+        "thin_air_above": 110,
+        "dusty_on_mesa_above": 70
+      },
+      "creatures": {
+        "damage_mult": 1.0,
+        "hunters_by_day": false,
+        "max_hunters_per_player": 2
+      },
+      "starting_items": {
+        "redroot": 3,
+        "glasswort_leaf": 2,
+        "redroot_seed": 2,
+        "grinleaf_seed": 1
+      },
+      "starting_words": [
+        "word_push",
+        "word_pull"
+      ],
+      "conditions": {
+        "hunger": {
+          "name": "Hunger",
+          "start": 25,
+          "rates": [
+            {
+              "per_min": 1.6
+            },
+            {
+              "when": [
+                "sprinting"
+              ],
+              "per_min": 1.4
+            },
+            {
+              "when": [
+                "fighting"
+              ],
+              "per_min": 1.0
+            }
+          ],
+          "bands": [
+            {
+              "from": 0,
+              "to": 35,
+              "name": "Well fed",
+              "good": true,
+              "mods": {
+                "hp_regen": 0.7,
+                "stamina_regen_mult": 1.15
+              }
+            }
+          ]
+        },
+        "thirst": {
+          "name": "Thirst",
+          "start": 25,
+          "rates": [
+            {
+              "per_min": 2.2
+            },
+            {
+              "when": [
+                "sprinting"
+              ],
+              "per_min": 1.8
+            },
+            {
+              "when": [
+                "dusty"
+              ],
+              "unless": [
+                "masked"
+              ],
+              "per_min": 1.5
+            }
+          ],
+          "bands": [
+            {
+              "from": 0,
+              "to": 35,
+              "name": "Hydrated",
+              "good": true,
+              "mods": {
+                "stamina_regen_mult": 1.15,
+                "debt_repay_mult": 1.15
+              }
+            }
+          ]
+        },
+        "cold": {
+          "name": "Cold",
+          "start": 0,
+          "rates": [
+            {
+              "when": [
+                "night",
+                "exposed"
+              ],
+              "unless": [
+                "near_heat"
+              ],
+              "per_min": 14
+            },
+            {
+              "when": [
+                "night",
+                "sheltered"
+              ],
+              "unless": [
+                "near_heat"
+              ],
+              "per_min": -6
+            },
+            {
+              "when": [
+                "high_altitude",
+                "exposed"
+              ],
+              "unless": [
+                "near_heat"
+              ],
+              "per_min": 6
+            },
+            {
+              "when": [
+                "near_heat"
+              ],
+              "per_min": -45
+            },
+            {
+              "when": [
+                "day"
+              ],
+              "unless": [
+                "high_altitude"
+              ],
+              "per_min": -20
+            }
+          ],
+          "bands": [
+            {
+              "from": 50,
+              "to": 101,
+              "name": "Chilled",
+              "mods": {
+                "stamina_regen_mult": 0.7
+              }
+            }
+          ]
+        },
+        "thin_air": {
+          "name": "Thin air",
+          "start": 0,
+          "rates": [
+            {
+              "when": [
+                "high_altitude"
+              ],
+              "per_min": 30
+            },
+            {
+              "unless": [
+                "high_altitude"
+              ],
+              "per_min": -60
+            }
+          ],
+          "bands": [
+            {
+              "from": 40,
+              "to": 101,
+              "name": "Short of breath",
+              "mods": {
+                "stamina_max_mult": 0.8,
+                "move_speed_mult": 0.93
+              }
+            }
+          ]
+        },
+        "dust": {
+          "name": "Dust",
+          "start": 0,
+          "rates": [
+            {
+              "when": [
+                "dusty",
+                "exposed"
+              ],
+              "unless": [
+                "masked"
+              ],
+              "per_min": 40
+            },
+            {
+              "unless": [
+                "dusty"
+              ],
+              "per_min": -30
+            },
+            {
+              "when": [
+                "dusty",
+                "masked"
+              ],
+              "per_min": -30
+            }
+          ],
+          "bands": [
+            {
+              "from": 50,
+              "to": 101,
+              "name": "Dust-choked",
+              "mods": {
+                "stamina_regen_mult": 0.8
+              }
+            }
+          ]
+        },
+        "fatigue": {
+          "name": "Fatigue",
+          "start": 0,
+          "rates": [
+            {
+              "per_min": 1.0
+            },
+            {
+              "when": [
+                "sprinting"
+              ],
+              "per_min": 2.0
+            },
+            {
+              "when": [
+                "fighting"
+              ],
+              "per_min": 3.0
+            },
+            {
+              "when": [
+                "resting"
+              ],
+              "per_min": -25
+            },
+            {
+              "when": [
+                "calm"
+              ],
+              "per_min": -8
+            }
+          ],
+          "bands": [
+            {
+              "from": 70,
+              "to": 101,
+              "name": "Weary",
+              "mods": {
+                "stamina_max_mult": 0.85
+              }
+            }
+          ]
+        },
+        "gravity_debt": {
+          "name": "Gravity debt",
+          "start": 0,
+          "magick": true,
+          "rates": [
+            {
+              "per_min": -18
+            },
+            {
+              "when": [
+                "resting"
+              ],
+              "per_min": -20
+            },
+            {
+              "when": [
+                "calm"
+              ],
+              "per_min": -10
+            }
+          ],
+          "bands": [
+            {
+              "from": 40,
+              "to": 75,
+              "name": "Heavy",
+              "mods": {
+                "move_speed_mult": 0.9,
+                "jump_mult": 0.85
+              }
+            },
+            {
+              "from": 75,
+              "to": 101,
+              "name": "Crushing weight",
+              "mods": {
+                "move_speed_mult": 0.7,
+                "jump_mult": 0.6,
+                "stamina_regen_mult": 0.7
+              }
+            }
+          ]
+        },
+        "earth_weight": {
+          "name": "Earth's weight",
+          "start": 0,
+          "rates": [
+            {
+              "when": [
+                "earth_gravity"
+              ],
+              "per_min": 900
+            },
+            {
+              "unless": [
+                "earth_gravity"
+              ],
+              "per_min": -900
+            }
+          ],
+          "bands": [
+            {
+              "from": 50,
+              "to": 101,
+              "name": "Earth's weight",
+              "mods": {
+                "move_speed_mult": 0.85,
+                "stamina_regen_mult": 0.7,
+                  "debt_cost_mult": 1.5
+              }
+            }
+          ]
+        }
+      }
+    },
+    "hardcore": {
+      "extends": "light",
+      "name": "Hardcore",
+      "durability": true,
+      "vitals": {
+        "hp_regen": 0.0
+      },
+      "death": {
+        "keep_inventory": false,
+        "downed_s": 30,
+        "reset_conditions": true
+      },
+      "fall": {
+        "safe_mps": 6.0,
+        "damage_per_mps": 9.0
+      },
+      "creatures": {
+        "damage_mult": 1.5,
+        "hunters_by_day": true,
+        "max_hunters_per_player": 3
+      },
+      "starting_items": {
+        "redroot": 1
+      },
+      "conditions": {
+        "hunger": {
+          "bands_add": [
+            {
+              "from": 70,
+              "to": 90,
+              "name": "Hungry",
+              "mods": {
+                "stamina_max_mult": 0.85
+              }
+            },
+            {
+              "from": 90,
+              "to": 101,
+              "name": "Starving",
+              "mods": {
+                "stamina_max_mult": 0.7
+              },
+              "damage_per_min": 10
+            }
+          ]
+        },
+        "thirst": {
+          "bands_add": [
+            {
+              "from": 70,
+              "to": 90,
+              "name": "Thirsty",
+              "mods": {
+                "stamina_regen_mult": 0.8
+              }
+            },
+            {
+              "from": 90,
+              "to": 101,
+              "name": "Parched",
+              "mods": {
+                "stamina_regen_mult": 0.6
+              },
+              "damage_per_min": 14
+            }
+          ]
+        },
+        "cold": {
+          "bands_add": [
+            {
+              "from": 85,
+              "to": 101,
+              "name": "Frostbite",
+              "mods": {
+                "move_speed_mult": 0.85
+              },
+              "damage_per_min": 12
+            }
+          ]
+        },
+        "thin_air": {
+          "bands_add": [
+            {
+              "from": 85,
+              "to": 101,
+              "name": "Suffocating",
+              "damage_per_min": 16
+            }
+          ]
+        },
+        "dust": {
+          "bands_add": [
+            {
+              "from": 80,
+              "to": 101,
+              "name": "Dust lung",
+              "mods": {
+                "stamina_max_mult": 0.75
+              },
+              "damage_per_min": 8
+            }
+          ]
+        },
+        "fatigue": {
+          "bands_add": [
+            {
+              "from": 90,
+              "to": 101,
+              "name": "Exhausted",
+              "mods": {
+                "move_speed_mult": 0.85,
+                "damage_mult": 0.8
+              }
+            }
+          ]
+        },
+        "gravity_debt": {
+          "bands_add": [
+            {
+              "from": 95,
+              "to": 101,
+              "name": "Debt collapse",
+              "damage_per_min": 30
+            }
+          ]
+        },
+        "earth_weight": {
+          "bands_add": [
+            {
+              "from": 50,
+              "to": 101,
+              "name": "Dragging limbs",
+              "mods": {
+                "damage_taken_mult": 1.2,
+                "stamina_regen_mult": 0.85
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "buffs": {
+    "warm_meal": {
+      "name": "Warm meal",
+      "duration_s": 300,
+      "mods": {
+        "hp_regen": 0.6,
+        "stamina_regen_mult": 1.1
+      },
+      "rates": {
+        "cold": -8
+      }
+    },
+    "mending": {
+      "name": "Mending",
+      "duration_s": 12,
+      "mods": {
+        "hp_regen": 2.5
+      }
+    },
+    "calm": {
+      "name": "Calm",
+      "duration_s": 180,
+      "flags": [
+        "calm"
+      ],
+      "mods": {
+        "read_bonus": 1,
+        "stamina_regen_mult": 1.05
+      }
+    }
+  }
+}
