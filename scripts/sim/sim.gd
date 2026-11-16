@@ -390,6 +390,11 @@ func _environment_flags(id: int, pos: Vector3) -> Dictionary:
 		flags["near_heat"] = true
 	if entities.near_structure(pos, "station:tether"):
 		flags["at_tether"] = true
+	# Inside an Occlusion site Earth's gravity returns, and a castaway loses the
+	# strength Aruun's light pull gave them.
+	var body := _player(id) as CharacterBody3D
+	if body and body.get_gravity().length() > WorldConfig.GRAVITY * 1.5:
+		flags["earth_gravity"] = true
 	var alt: Dictionary = ruleset.altitude
 	if pos.y > float(alt.thin_air_above):
 		flags["high_altitude"] = true
@@ -694,7 +699,7 @@ func pay_for_word(id: int, word_id: String) -> String:
 	var rt: Dictionary = _rt[id]
 	if world_time < float(rt.word_ready.get(word_id, 0.0)):
 		return "the word has not settled yet"
-	var cost := float(w.get("debt", 0.0))
+	var cost := float(w.get("debt", 0.0)) * Conditions.mod(c.mods, "debt_cost_mult")
 	if not c.can_owe(cost):
 		return "your gravitational debt is too deep"
 	c.owe(cost)
@@ -716,7 +721,7 @@ func schedule_landing(op: Dictionary) -> void:
 	if drop <= 0:
 		return
 	op["drop"] = drop
-	var g: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+	var g := WorldConfig.GRAVITY
 	_landings.append({"at": world_time + Collapse.fall_time(drop, g), "cells": op.cells, "ids": op.ids, "drop": drop})
 
 
@@ -750,7 +755,7 @@ func _land(l: Dictionary) -> void:
 		hi = hi.max(Vector3(p) + Vector3.ONE)
 	if cells.is_empty():
 		return
-	var damage := Collapse.impact_damage(cells.size(), drop)
+	var damage := Collapse.impact_damage(cells.size(), drop, WorldConfig.GRAVITY)
 	if damage > 0.0:
 		var box := AABB(lo, hi - lo)
 		entities.crush(box, damage)

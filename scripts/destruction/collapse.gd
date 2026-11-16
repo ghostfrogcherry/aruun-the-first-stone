@@ -39,10 +39,12 @@ static func fall_time(drop: int, gravity: float) -> float:
 
 
 ## Damage to anything under a landing piece. Small pebbles sting, a pillar kills.
-static func impact_damage(cell_count: int, drop: int) -> float:
+## It scales with landing speed, so the same fall hurts less in Aruun's low
+## gravity than under Earth gravity (the default here, in units/s^2).
+static func impact_damage(cell_count: int, drop: int, gravity := 39.24) -> float:
 	if drop < 3:
 		return 0.0
-	return minf(sqrt(float(cell_count)) * sqrt(float(drop)) * 1.6, 400.0)
+	return minf(sqrt(float(cell_count)) * sqrt(float(drop) * gravity / 39.24) * 1.6, 400.0)
 
 
 ## Can a carve of strength `power` remove a block of this hardness?

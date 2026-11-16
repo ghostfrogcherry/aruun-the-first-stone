@@ -47,6 +47,7 @@ func _ground_under(pos: Vector3) -> Vector3i:
 func _run(main: Node) -> void:
 	world = main.world
 	cdb = root.get_node("ContentDB")
+	world.message.connect(func(t): print("    > ", t))
 	sim = world.sim
 	# Wait for the world, the character and solid ground under the player.
 	for i in 300:
@@ -79,10 +80,11 @@ func _run(main: Node) -> void:
 	var slot := _slot_of("roast_meat")
 	sim.request_use(slot, Vector3i.ZERO, false)
 	check(float(c.cond.hunger) < 40.0 and c.buffs.has("warm_meal"), "eating lowers hunger and gives the warm meal buff")
-	sim.request_debug("set thirst 95")
-	await wait(1.0)
-	check(c.bands.any(func(b): return b.cond == "thirst" and not b.good), "severe thirst shows as a bad condition")
-	sim.request_debug("set thirst 10")
+	sim.request_debug("set cold 80")
+	await wait(0.5)
+	check(c.bands.any(func(b): return b.cond == "cold" and not b.good), "being cold shows as a bad condition")
+	check(Conditions.mod(c.mods, "stamina_regen_mult") < 1.2, "and it changes the character's stats")
+	sim.request_debug("set cold 0")
 
 	print("structures and farming")
 	var feet: Vector3 = me.global_position
@@ -99,7 +101,7 @@ func _run(main: Node) -> void:
 	var plant_id := _nearest("plant", Vector3(g2) + Vector3(0.5, 1, 0.5))
 	sim.world_time += 3000.0
 	await wait(2.5)
-	check(Farming.is_ripe(GameData.plants.redroot, sim.entities.ents[plant_id], sim.world_time) if sim.entities.ents.has(plant_id) else false,
+	check(int(sim.entities.ents.get(plant_id, {}).get("stage", 0)) == int(GameData.plants.redroot.stages) - 1,
 		"the crop ripens with time")
 	var roots := c.inv.count("redroot")
 	me.global_position = Vector3(g2) + Vector3(1.5, 1.2, 0.5)
@@ -142,17 +144,25 @@ func _run(main: Node) -> void:
 	check(beast != 0, "a redstrider can be called in")
 	if beast != 0:
 		var e: Dictionary = sim.entities.ents[beast]
-		me.global_position = e.pos + Vector3(0, 0.3, 1.2 * M)
-		me.rotation.y = 0.0
-		await wait(0.2)
 		var before := float(e.get("hp", 1.0))
-		sim.request_attack(true, Vector3(0, -0.2, -1).normalized())
-		await wait(1.2)
-		var now: Dictionary = sim.entities.ents.get(beast, {})
-		check(now.is_empty() or float(now.get("hp", 0.0)) < before, "a heavy Fallhammer blow hurts it")
+		var hurt := false
+		for attempt in 4:   # it runs from the player, so chase it
+			if not sim.entities.ents.has(beast):
+				hurt = true
+				break
+			var at: Vector3 = sim.entities.ents[beast].pos
+			me.global_position = at + Vector3(0, 0.3, 1.0 * M)
+			sim.request_attack(true, Vector3(0, 0, -1))
+			await wait(0.9)
+			var now: Dictionary = sim.entities.ents.get(beast, {})
+			if now.is_empty() or float(now.get("hp", 0.0)) < before:
+				hurt = true
+				break
+		check(hurt, "a heavy Fallhammer blow hurts it")
 		check(c.stamina < c.stamina_max(sim.ruleset), "attacking costs stamina")
+	sim.request_debug("time 0.95")
 	sim.request_debug("spawn nightstalker")
-	await wait(1.0)
+	await wait(0.5)
 	var stalker := _nearest_def("nightstalker")
 	check(stalker != 0, "a nightstalker can be called in")
 	if stalker != 0:
@@ -161,7 +171,8 @@ func _run(main: Node) -> void:
 		var aim: Vector3 = (e2.pos + Vector3(0, 2, 0) - sim._eye(1)).normalized()
 		var far: float = e2.pos.distance_to(me.global_position)
 		sim.request_cast("word_push", aim)
-		await wait(0.6)
+		await wait(0.5)
+		print("    stalker was %.1f m away, now %.1f m" % [far / M, sim.entities.ents[stalker].pos.distance_to(me.global_position) / M])
 		check(float(c.cond.get("gravity_debt", 0.0)) > debt, "speaking a force word adds gravity debt")
 		check(sim.entities.ents.has(stalker) and sim.entities.ents[stalker].pos.distance_to(me.global_position) > far,
 			"the push throws the nightstalker back")

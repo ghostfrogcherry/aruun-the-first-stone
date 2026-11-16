@@ -199,7 +199,9 @@ func _physics_process(delta: float) -> void:
 	elif not is_on_floor():
 		velocity.y -= g * delta
 	elif Input.is_action_just_pressed("jump") and not actions.blocks_input():
-		velocity.y = sqrt(2.0 * g * JUMP_HEIGHT * actions.jump_mult())
+		# Legs push the same wherever you are, so the jump is sized for Aruun and
+		# falls short under Earth gravity inside an Occlusion site.
+		velocity.y = sqrt(2.0 * WorldConfig.GRAVITY * JUMP_HEIGHT * actions.jump_mult())
 
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	if actions.blocks_input():

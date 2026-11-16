@@ -208,8 +208,8 @@ func _slot(parent: Node, index: int, clickable: bool) -> Panel:
 
 func _icon(key: String) -> Texture2D:
 	if not _icons.has(key):
-		var path := "res://content/icons/%s.png" % key
-		_icons[key] = load(path) if ResourceLoader.exists(path) else null
+		var art := "seeds" if GameData.item(key).get("kind", "") == "seed" else key
+		_icons[key] = ModelLibrary.icon(art)
 	return _icons[key]
 
 
@@ -238,7 +238,7 @@ func _fill_slot(p: Panel, index: int, chosen: bool) -> void:
 	icon.visible = tex != null
 	swatch.visible = tex == null
 	swatch.color = Color(def.get("color", "#cccccc"))
-	tag.text = def.get("name", s.k)
+	tag.text = "" if tex else str(def.get("name", s.k))
 	count.text = str(int(s.n)) if int(s.n) > 1 else ""
 	wear.visible = s.has("d") and def.has("durability")
 	if wear.visible:

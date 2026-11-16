@@ -20,6 +20,7 @@ var _flash := 0.0
 var _dead := false
 var _bar: MeshInstance3D
 var _spin := false
+var _model: VoxelRig             # the art pipeline's rigged model, if there is one
 
 
 static func build(e: Dictionary) -> EntityVisual:
@@ -45,7 +46,15 @@ func _setup(e: Dictionary) -> void:
 		"drop":
 			_spin = true
 			var it := GameData.item(e.def)
-			_piece(_rig, Vector3.ONE * 0.9, Vector3(0, 0.9, 0), it.get("color", "#cccccc"))
+			var art := "seeds" if it.get("kind", "") == "seed" else str(e.def)
+			if ModelLibrary.has(art):
+				var held := MeshInstance3D.new()
+				held.mesh = ModelLibrary.mesh(art)
+				held.rotation_degrees = Vector3(0, 0, 70) # lying on its side
+				held.position = Vector3(0, 1.0, 0)
+				_rig.add_child(held)
+			else:
+				_piece(_rig, Vector3.ONE * 0.9, Vector3(0, 0.9, 0), it.get("color", "#cccccc"))
 			if int(e.get("n", 1)) > 1:
 				_piece(_rig, Vector3.ONE * 0.6, Vector3(0.5, 0.5, 0.4), "#d8c8a8")
 		"structure":
@@ -60,17 +69,17 @@ func _setup(e: Dictionary) -> void:
 			add_child(light)
 
 
-## Uses the art thread's model if there is one for this key.
+## Uses the art pipeline's model if there is one for this key.
 func _try_model(key: String) -> bool:
-	for c in ProjectSettings.get_global_class_list():
-		if c["class"] == "ModelLibrary":
-			var lib = load(c["path"])
-			if lib and lib.has_method("has") and lib.has(key):
-				var node = lib.instantiate(key)
-				if node is Node3D:
-					_rig.add_child(node)
-					return true
-	return false
+	if not ModelLibrary.has(key):
+		return false
+	var node := ModelLibrary.instantiate(key)
+	if node == null:
+		return false
+	_rig.add_child(node)
+	if node is VoxelRig:
+		_model = node
+	return true
 
 
 func _mat(color: String, glow := false) -> StandardMaterial3D:
@@ -141,6 +150,9 @@ func _build_creature() -> void:
 func _build_plant(stage: int) -> void:
 	for ch in _rig.get_children():
 		ch.queue_free()
+	var art := "%s_s%d" % [_def.key, stage + 1]
+	if _try_model(art) or (int(_def.stages) <= 1 and _try_model(_def.key)):
+		return
 	var look: Dictionary = _def.look
 	var stages := maxi(int(_def.stages), 1)
 	var grown := float(stage + 1) / stages
@@ -188,6 +200,14 @@ func _build_structure(key: String) -> void:
 
 
 func set_anim(a: int) -> void:
+	if a != _anim and _model:
+		var clip: String = ["idle", "walk", "run", "idle", "idle"][clampi(a, 0, 4)]
+		_model.speed_scale = 1.0
+		if not _model.clips().has(clip):
+			_model.speed_scale = 1.8 if clip == "run" else 1.0   # no run clip: a fast walk
+			clip = "walk" if clip == "run" else "idle"
+		if _model.clips().has(clip):
+			_model.play(clip)
 	_anim = a
 
 

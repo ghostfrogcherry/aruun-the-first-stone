@@ -58,10 +58,23 @@ func _show_held(key: String) -> void:
 		"weapon", "tool": size = Vector3(0.35, 0.35, float(def.get("reach_m", 1.5)) * M * 0.55)
 		"block": size = Vector3(0.9, 0.9, 0.9)
 		"": size = Vector3(0.45, 0.45, 0.7) # bare fist
+	var art: Mesh = ModelLibrary.mesh(key) if ModelLibrary.has(key) else null
 	for m in [_item, _view_item]:
-		if m:
+		if m and art:
+			# Art models have the grip at the origin and point up: tip them forward.
+			m.mesh = art
+			m.material_override = null
+			m.scale = Vector3.ONE
+			m.rotation_degrees = Vector3(-55, 0, 0)
+		elif m:
+			if not (m.mesh is BoxMesh):
+				m.mesh = BoxMesh.new()
+				m.material_override = StandardMaterial3D.new()
+			m.rotation = Vector3.ZERO
 			m.scale = size
-			(m.material_override as StandardMaterial3D).albedo_color = Color(def.get("color", "#c98b6b"))
+			var mat := m.material_override as StandardMaterial3D
+			if mat:
+				mat.albedo_color = Color(def.get("color", "#c98b6b"))
 
 
 func play(kind: String, data: Dictionary) -> void:
