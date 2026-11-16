@@ -9,7 +9,11 @@ extends Node3D
 ## Op shapes (all positions are voxel coordinates, Vector3i):
 ##   {"t": "set",   "p": Vector3i, "b": int}
 ##   {"t": "fill",  "cells": Array[Vector3i], "b": int}
-##   {"t": "clear", "cells": Array[Vector3i], "ids": PackedInt32Array, "fx": "chips"|"fall"}
+##   {"t": "clear", "cells": Array[Vector3i], "ids": PackedInt32Array, "fx": "chips"|"fall", "drop": int (optional)}
+##   {"t": "put",   "cells": Array[Vector3i], "ids": PackedInt32Array}   (a fallen piece coming to rest)
+##
+## Characters, creatures, items and survival live in the child node `sim`
+## (scripts/sim/sim.gd); the hooks below call into it.
 
 signal world_ready
 signal message(text: String)
@@ -17,12 +21,14 @@ signal message(text: String)
 const CHANNEL := VoxelBuffer.CHANNEL_TYPE
 const Generator := preload("res://scripts/worldgen/aruun_generator.gd")
 const PlayerScript := preload("res://scripts/player/player.gd")
+const SimScript := preload("res://scripts/sim/sim.gd")
 
 var world_seed := 0
 var terrain: VoxelTerrain
 var vt: VoxelTool
 var players: Node3D
 var debris: Node3D
+var sim: Node                     # characters, survival, combat, entities
 var spawn_point := Vector3.ZERO
 var landmark_origin := Vector3i.ZERO
 
@@ -42,6 +48,10 @@ func _ready() -> void:
 	debris = Node3D.new()
 	debris.name = "Debris"
 	add_child(debris)
+	sim = SimScript.new()
+	sim.name = "Sim" # RPC path must match on every peer: /root/Main/World/Sim
+	sim.world = self
+	add_child(sim)
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 
@@ -247,9 +257,13 @@ func request_place(pos: Vector3i, block_id: int) -> void:
 		var current := _voxel_at(pos)
 		if current > 0 and not ContentDB.collides(current):
 			current = 0 # grass, flowers and water can be built over
-		why = EditRules.check_place(current, block_id, ContentDB.placeable)
+		why = EditRules.check_place(current, block_id, sim.placeable_ids())
 	if why == EditRules.OK and _overlaps_player(pos):
 		why = "a player is standing there"
+	if why == EditRules.OK and not sim.can_edit(id):
+		why = "you cannot do that now"
+	if why == EditRules.OK and not sim.spend_block(id, block_id):
+		why = "you have none of that left"
 	if why != EditRules.OK:
 		_deny(id, why)
 		return
@@ -258,12 +272,12 @@ func request_place(pos: Vector3i, block_id: int) -> void:
 
 @rpc("any_peer", "call_local", "reliable")
 func request_dig(center: Vector3, radius: float) -> void:
-	_carve_request(center, radius, EditRules.check_dig(radius), "chips")
+	_carve_request(center, radius, EditRules.check_dig(radius), "chips", -1)
 
 
 @rpc("any_peer", "call_local", "reliable")
 func request_blast(center: Vector3, radius: float) -> void:
-	_carve_request(center, radius, EditRules.check_blast(radius), "chips")
+	_carve_request(center, radius, EditRules.check_blast(radius), "chips", sim.BLAST_POWER)
 
 
 @rpc("any_peer", "call_local", "reliable")
@@ -285,6 +299,7 @@ func request_learn(pos: Vector3i) -> void:
 	if not known.has(word):
 		known.append(word)
 		_known_words[id] = known
+	sim.on_word_learned(id, word)
 	var w: Dictionary = ContentDB.words[word]
 	var text := "You learned the word %s: \"%s\". Press Q to speak it." % [w.display, w.meaning]
 	if id == multiplayer.get_unique_id():
@@ -299,6 +314,21 @@ func word_learned(word_id: String, text: String) -> void:
 	if me:
 		me.learn(word_id)
 	message.emit(text)
+
+
+## Teaches a word without the message (debug kit, restoring a saved character).
+func word_learned_quiet(id: int, word_id: String) -> void:
+	if id == multiplayer.get_unique_id():
+		_learn_local(word_id)
+	else:
+		_learn_local.rpc_id(id, word_id)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _learn_local(word_id: String) -> void:
+	var me = players.get_node_or_null(str(multiplayer.get_unique_id()))
+	if me:
+		me.learn(word_id)
 
 
 @rpc("any_peer", "call_local", "reliable")
@@ -320,36 +350,69 @@ func request_speak(word_id: String, target: Vector3i) -> void:
 		cells.append(e[0])
 		block = ContentDB.block_id(e[1])
 	if not cells.is_empty():
+		var debt: String = sim.pay_for_word(id, word_id)
+		if debt != "":
+			_deny(id, debt)
+			return
 		_commit([{"t": "fill", "cells": cells, "b": block}])
 
 
-func _carve_request(center: Vector3, radius: float, why: String, fx: String) -> void:
+## `power` is the hardest block the carve can break; -1 asks the sim for the
+## power of the tool the player is holding. Dug voxels go to the player's bag.
+func _carve_request(center: Vector3, radius: float, why: String, fx: String, power: int) -> void:
 	if not multiplayer.is_server():
 		return
 	var id := _sender()
 	var from = _sender_pos(id)
 	if from == null:
 		return
-	var c := Vector3i(center.floor())
 	if why == EditRules.OK:
-		why = EditRules.check_reach(from, c)
-	if why == EditRules.OK and not _editable(c, int(ceil(radius)) + WorldConfig.FLOATING_SEARCH_MARGIN):
-		why = "that area is still loading"
+		why = EditRules.check_reach(from, Vector3i(center.floor()))
+	if why == EditRules.OK and not sim.can_edit(id):
+		why = "you cannot do that now"
 	if why != EditRules.OK:
 		_deny(id, why)
 		return
+	var dug := power < 0
+	if dug:
+		power = sim.dig_power(id)
+	var result := server_carve(id, center, radius, power, dug, fx)
+	if result == "too_hard":
+		_deny(id, "that is too hard for what you are holding")
+	elif result != "" and result != "nothing":
+		_deny(id, result)
+
+
+## Server: carve a sphere, drop any pieces it cuts loose, journal and send it.
+## Used by digging, blasts and combat (a Fallhammer slam). Returns "" if
+## something was removed, otherwise the reason.
+func server_carve(id: int, center: Vector3, radius: float, power: int, give_to_player: bool, fx := "chips") -> String:
+	var c := Vector3i(center.floor())
+	if not _editable(c, int(ceil(radius)) + WorldConfig.FLOATING_SEARCH_MARGIN):
+		return "that area is still loading"
 	var ops: Array = []
-	var carve := _sphere_cells(center, radius)
+	var carve := _sphere_cells(center, radius, power)
+	var too_hard: bool = carve.too_hard
+	carve.erase("too_hard")
 	if carve.cells.is_empty():
-		return
+		return "too_hard" if too_hard else "nothing"
 	carve["t"] = "clear"
 	carve["fx"] = fx
 	ops.append(carve)
 	_apply_op(carve, false) # apply now so the loose-piece scan sees the hole
 	for piece in _loose_pieces_around(c, int(ceil(radius))):
-		ops.append(piece)
 		_apply_op(piece, false)
+		sim.schedule_landing(piece) # adds "drop": the piece will land and become terrain again
+		ops.append(piece)
 	_commit(ops, true)
+	if give_to_player:
+		sim.on_dug(id, center, carve.ids)
+	return ""
+
+
+## Server: apply, journal and broadcast ops made by the sim (planting, landings).
+func server_ops(ops: Array) -> void:
+	_commit(ops)
 
 
 # --- Applying ops ------------------------------------------------------------
@@ -399,6 +462,12 @@ func _apply_op(op: Dictionary, with_fx: bool) -> bool:
 					return false
 			for p in op.cells:
 				vt.set_voxel(p, 0)
+		"put":
+			for p in op.cells:
+				if not _editable(p, 0):
+					return false
+			for i in op.cells.size():
+				vt.set_voxel(op.cells[i], op.ids[i])
 	if with_fx:
 		_play_fx(op)
 	return true
@@ -407,7 +476,9 @@ func _apply_op(op: Dictionary, with_fx: bool) -> bool:
 func _play_fx(op: Dictionary) -> void:
 	if op.t != "clear":
 		return
-	if op.fx == "fall":
+	if op.fx == "fall" and op.has("drop"):
+		Debris.spawn_falling(debris, op.cells, op.ids, op.drop)
+	elif op.fx == "fall":
 		Debris.spawn_piece(debris, op.cells, op.ids)
 	else:
 		Debris.spawn_chips(debris, op.cells, op.ids)
@@ -446,7 +517,8 @@ func _overlaps_player(p: Vector3i) -> bool:
 	return false
 
 
-func _sphere_cells(center: Vector3, radius: float) -> Dictionary:
+func _sphere_cells(center: Vector3, radius: float, power: int) -> Dictionary:
+	var too_hard := false
 	var cells: Array = []
 	var ids := PackedInt32Array()
 	var r := int(ceil(radius))
@@ -459,9 +531,12 @@ func _sphere_cells(center: Vector3, radius: float) -> Dictionary:
 					continue
 				var id := _voxel_at(p)
 				if id > 0 and id != _water and not _protected.has(id):
+					if not Collapse.breaks(int(ContentDB.block(id).get("hardness", 0)), power):
+						too_hard = true
+						continue
 					cells.append(p)
 					ids.append(id)
-	return {"cells": cells, "ids": ids}
+	return {"cells": cells, "ids": ids, "too_hard": too_hard}
 
 
 ## Scans a box around a carve and turns every unsupported piece into a falling op.
@@ -500,6 +575,7 @@ func save_world() -> void:
 	if not multiplayer.is_server() or terrain == null:
 		return
 	terrain.save_modified_blocks()
+	sim.save_all()
 	if _journal_file:
 		_journal_file.flush()
 	message.emit("World saved")

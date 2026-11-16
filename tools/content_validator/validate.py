@@ -11,9 +11,9 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 CONTENT = ROOT / "content"
-EFFECT_HANDLERS = {"raise_column"}  # keep in sync with scripts/language/interpreter.gd REGISTRY
+EFFECT_HANDLERS = {"raise_column", "force_push", "force_pull", "force_weigh"}  # keep in sync with scripts/language/interpreter.gd REGISTRY
 # Names already used by Aruun canon; provisional words must not reuse them.
-CANON_NAMES = {"keth", "keth-avar", "kethra", "vael", "vaari", "shaaru", "nhal", "oth", "avarra"}
+CANON_NAMES = {"keth", "keth-avar", "kethra", "vael", "vaari", "shaaru", "nhal", "oth", "avarra", "oru", "nereth", "sael", "ilyen"}
 
 errors = []
 

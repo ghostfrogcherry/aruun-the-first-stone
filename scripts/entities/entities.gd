@@ -9,7 +9,6 @@ extends Node3D
 ## only saves what players changed: crops, structures, drops, harvested nodes.
 
 const M := WorldConfig.UNITS_PER_METER
-const Visuals := preload("res://scripts/entities/entity_visuals.gd")
 const SIM_STEP := 0.05                 # creature simulation rate (20 Hz)
 const CELL_RADIUS := 3                 # wild cells kept alive around each player
 const MAX_CREATURES := 14
@@ -53,7 +52,7 @@ func spawn(list: Array) -> void:
 		if ents.has(id):
 			continue
 		ents[id] = e
-		var node: Node3D = Visuals.build(e)
+		var node: Node3D = EntityVisual.build(e)
 		node.position = e.pos
 		node.rotation.y = e.get("yaw", 0.0)
 		add_child(node)
@@ -366,7 +365,7 @@ func damage_creature(id: int, amount: float, poise: float, kick: Vector3, by_pee
 		rec.launched = 0.6
 	rec.poise -= poise
 	if by_peer != 0:
-		var p := sim.player_pos(by_peer)
+		var p = sim.player_pos(by_peer)
 		if p != null:
 			rec.threat = p
 	if rec.hp <= 0.0:
@@ -774,7 +773,7 @@ func _spawn_creatures() -> void:
 			var def: Dictionary = GameData.creatures[key]
 			var hunter: bool = def.behavior == "hunter"
 			var when: String = def.spawn.when
-			var ok := (when == "night") == sim.is_night() or (hunter and sim.ruleset.creatures.hunters_by_day)
+			var ok: bool = (when == "night") == sim.is_night() or (hunter and sim.ruleset.creatures.hunters_by_day)
 			if not ok:
 				continue
 			var have := count_creatures(def.behavior, pl.pos, 90.0 * M)
