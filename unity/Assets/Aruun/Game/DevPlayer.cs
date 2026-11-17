@@ -3,8 +3,10 @@ using System.IO;
 using Aruun.Core;
 using Aruun.Core.Edits;
 using Aruun.Core.Physics;
+using Aruun.Core.Play;
 using Aruun.Core.Voxels;
 using Aruun.Core.Worldgen;
+using Aruun.Game.Art;
 using UnityEngine;
 
 namespace Aruun.Game
@@ -15,7 +17,10 @@ namespace Aruun.Game
     /// change is still there next time you start with the same seed. Dev keys live in DevTools.
     ///
     /// WASD move, mouse look, Space jump (or up while flying), Ctrl down, Shift run,
-    /// LMB dig, RMB place, 1-9 block.
+    /// 1-9 or the scroll wheel choose the held item. Hold LMB to dig with it (or swing at a
+    /// creature in front of you), R heavy swing, hold Q to guard, Left Alt to dodge, RMB to
+    /// place, plant, set down or eat what you hold, E to gather or use, Tab for the bag.
+    /// Big dig (a dev key) digs anything with no tool, as before.
     /// </summary>
     public sealed class DevPlayer : MonoBehaviour
     {
@@ -42,6 +47,12 @@ namespace Aruun.Game
         Body _body;
         GameObject _avatar;
         MapScreen _mapScreen;
+        VoxelRig _avatarRig;
+        bool _wasGrounded = true;
+        float _fallSpeed;
+        float _swingTimer, _animTimer;
+
+        PlaySession Play { get { return PlaySession.Instance; } }
 
         public bool Flying { get { return _fly; } }
 
@@ -74,9 +85,17 @@ namespace Aruun.Game
             Cursor.lockState = CursorLockMode.Locked;
         }
 
-        static GameObject MakeAvatar()
+        GameObject MakeAvatar()
         {
-            // A plain stand-in body for third person, until the player model arrives.
+            if (ModelLibrary.Has("human_castaway"))
+            {
+                var model = ModelLibrary.Instantiate("human_castaway");
+                model.name = "Player body";
+                _avatarRig = model.GetComponent<VoxelRig>();
+                model.SetActive(false);
+                return model;
+            }
+            // A plain stand-in body for third person, when the model is missing.
             var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             go.name = "Player body";
             Object.Destroy(go.GetComponent<Collider>());
@@ -135,7 +154,14 @@ namespace Aruun.Game
             Say(_fly ? "Flying (no collisions)" : "Walking");
         }
 
-        public void SaveEdits() { _journal.Flush(); Say("Saved"); }
+        public void SaveEdits() { _journal.Flush(); if (Play != null) Play.Save(); Say("Saved"); }
+
+        /// <summary>Writes an edit someone else made (the rules host) to this world's journal.</summary>
+        public void RecordEdit(EditOp op)
+        {
+            Journal.Append(_journal, op);
+            _opsThisSession++;
+        }
 
         /// <summary>Teleports to the next (or previous) named place on the map.</summary>
         public void CyclePlace(int step)
@@ -160,42 +186,145 @@ namespace Aruun.Game
         {
             float dt = Mathf.Min(Time.unscaledDeltaTime, 0.05f);
             bool shift = DevInput.Holding(DevKey.Shift);
+            PlayerRec me = Play != null ? Play.Me : null;
+            bool dead = me != null && me.C.Dead;
             int number = DevInput.NumberDown;
-            if (number >= 0 && number < View.World.Blocks.Placeable.Count) _slot = number;
+            if (me != null)
+            {
+                if (number >= 0) me.C.Selected = number;
+                float scroll = PlayInput.Scroll;
+                if (scroll != 0 && !PlayHud.BagOpen) me.C.Selected = ((me.C.Selected - (int)scroll) % 9 + 9) % 9;
+                if (PlayInput.Down(PlayKey.Bag)) PlayHud.SetBag(!PlayHud.BagOpen);
+            }
+            else if (number >= 0 && number < View.World.Blocks.Placeable.Count) _slot = number;
 
-            bool locked = Cursor.lockState == CursorLockMode.Locked;
+            bool locked = Cursor.lockState == CursorLockMode.Locked && !PlayHud.BagOpen;
             if (locked)
             {
                 Vector2 look = DevInput.Look;
                 _yaw += look.x * 2f;
                 _pitch = Mathf.Clamp(_pitch - look.y * 2f, -89f, 89f);
             }
-            Vector2 move = DevInput.Move;
+            Vector2 move = dead || PlayHud.BagOpen ? Vector2.zero : DevInput.Move;
             Quaternion facing = Quaternion.Euler(0f, _yaw, 0f);
+            if (me != null)
+            {
+                if (me.RespawnAt.HasValue)
+                {
+                    Vector3 at = PlaySession.ToUnity(me.RespawnAt.Value) / V;
+                    _body = new Body { X = at.x, Y = at.y, Z = at.z };
+                    SettleOnGround();
+                    me.RespawnAt = null;
+                }
+                if (me.Shove.HasValue && !_fly)
+                {
+                    _body.VX += me.Shove.Value.X / V; _body.VY += me.Shove.Value.Y / V; _body.VZ += me.Shove.Value.Z / V;
+                    me.Shove = null;
+                }
+            }
             if (_fly)
             {
                 Quaternion look = Quaternion.Euler(_pitch, _yaw, 0f);
                 Vector3 dir = look * Vector3.forward * move.y + look * Vector3.right * move.x + Vector3.up * DevInput.Rise;
                 Vector3 d = dir * (FlySpeed * (shift ? 6f : 1f) * dt) / V;
                 _body.X += d.x; _body.Y += d.y; _body.Z += d.z;
+                _wasGrounded = true;
             }
             else
             {
                 Vector3 wish = facing * new Vector3(move.x, 0f, move.y);
                 if (wish.sqrMagnitude > 1f) wish.Normalize();
-                float speed = (shift ? RunSpeed : WalkSpeed) / V;
+                bool tired = me != null && me.C.Stamina <= 0.5;
+                float speed = (shift && !tired ? RunSpeed : WalkSpeed) / V;
+                if (me != null && me.Guard) speed *= 0.5f;
                 // Quick to start and stop on the ground, floaty but steerable in the air.
                 float grip = _body.Grounded ? 12f : 2.5f;
                 float k = 1f - Mathf.Exp(-grip * dt);
                 _body.VX += (wish.x * speed - _body.VX) * k;
                 _body.VZ += (wish.z * speed - _body.VZ) * k;
-                if (_body.Grounded && DevInput.Holding(DevKey.Jump)) _body.VY = _mover.JumpSpeed(JumpMetres);
+                if (_body.Grounded && !dead && !PlayHud.BagOpen && DevInput.Holding(DevKey.Jump)) _body.VY = _mover.JumpSpeed(JumpMetres);
+                if (me != null && !dead && PlayInput.Down(PlayKey.Dodge) && Play.Host.Dodge(PlaySession.LocalId))
+                {
+                    // A quick hop the way you are moving, or backwards when standing still.
+                    Vector3 away = wish.sqrMagnitude > 0.01f ? wish.normalized : facing * Vector3.back;
+                    _body.VX = away.x * 9f / V; _body.VZ = away.z * 9f / V;
+                    if (_body.Grounded) _body.VY = _mover.JumpSpeed(0.25f);
+                }
+                if (!_body.Grounded) _fallSpeed = Mathf.Max(_fallSpeed, (float)-_body.VY * V);
                 _mover.Step(ref _body, dt);
+                if (_body.Grounded && !_wasGrounded && me != null && _fallSpeed > 0) Play.Host.ReportFall(PlaySession.LocalId, _fallSpeed);
+                if (_body.Grounded) _fallSpeed = 0;
+                _wasGrounded = _body.Grounded;
                 if (_body.Y < -2000) TeleportToVoxel((int)_body.X, (int)_body.Z, "Fell out of the world");
             }
             PlaceCamera();
+            if (me != null)
+            {
+                Play.Host.SetPose(PlaySession.LocalId, PlaySession.ToVec(Feet), PlaySession.ToVec(transform.forward), dt);
+                Play.Host.SetGuard(PlaySession.LocalId, locked && PlayInput.Holding(PlayKey.Guard));
+            }
+            AnimateAvatar(dt, move);
 
-            if (locked && !_mapScreen.Open && (DevInput.DigDown || DevInput.PlaceDown)) Act(DevInput.DigDown);
+            if (!locked || _mapScreen.Open || dead) { StopDig(); return; }
+            if (me == null || _bigDig)
+            {
+                if (DevInput.DigDown || DevInput.PlaceDown) Act(DevInput.DigDown);
+                return;
+            }
+            Survive(me);
+        }
+
+        /// <summary>The survival controls: dig with what you hold, swing, place, eat, gather.</summary>
+        void Survive(PlayerRec me)
+        {
+            Host host = Play.Host;
+            const int id = PlaySession.LocalId;
+            Vector3 eye = Feet + Vector3.up * EyeHeight;
+            Vector3 d = transform.forward;
+            Vector3 o = eye / V;
+            VoxelHit hit = VoxelRaycast.Cast(View.World, o.x, o.y, o.z, d.x, d.y, d.z, (int)(Host.ReachM / V));
+            PlayHud.LookingAt = hit.Hit ? View.World.Blocks.Get(View.World.Get(hit.X, hit.Y, hit.Z)).Name : "";
+
+            if (PlayInput.Down(PlayKey.Heavy)) Swing(host.Attack(id, true));
+            if (PlayInput.LeftDown && host.CreatureInReach(id, 3.0)) { Swing(host.Attack(id, false)); StopDig(); return; }
+            if (PlayInput.LeftHeld && Time.unscaledTime > _swingTimer && hit.Hit)
+            {
+                DigTick t = host.Dig(id, hit.X, hit.Y, hit.Z, Time.deltaTime);
+                PlayHud.DigFraction = t.Broken ? 0 : (float)t.Fraction;
+                if (t.Refused && PlayInput.LeftDown && !string.IsNullOrEmpty(t.Message)) Play.Say(t.Message);
+                if (t.Broken || t.Fraction > 0) _animTimer = Time.unscaledTime + 0.3f;
+            }
+            else if (PlayInput.LeftDown && !hit.Hit) Swing(host.Attack(id, false));
+            else StopDig();
+
+            if (PlayInput.RightDown)
+                host.UseHeld(id, hit.Hit, hit.X, hit.Y, hit.Z, hit.PrevX, hit.PrevY, hit.PrevZ);
+            if (PlayInput.Down(PlayKey.Interact) && !host.Interact(id, PlaySession.ToVec(eye), PlaySession.ToVec(d)))
+                Play.Say("Nothing to gather there");
+        }
+
+        void StopDig()
+        {
+            PlayHud.DigFraction = 0;
+            if (Play != null && Play.Host != null) Play.Host.StopDigging(PlaySession.LocalId);
+        }
+
+        void Swing(bool happened, float hold = 0.35f)
+        {
+            if (!happened) return;
+            _animTimer = Time.unscaledTime + 0.35f;
+            _swingTimer = Mathf.Max(_swingTimer, Time.unscaledTime + hold);
+        }
+
+        void AnimateAvatar(float dt, Vector2 move)
+        {
+            if (_avatarRig == null || !_thirdPerson) return;
+            string clip = "idle";
+            float speed = new Vector2((float)_body.VX, (float)_body.VZ).magnitude * V;
+            if (Time.unscaledTime < _animTimer) clip = "swing";
+            else if (speed > WalkSpeed * 1.2f) clip = "run";
+            else if (speed > 0.4f) clip = "walk";
+            if (_avatarRig.HasClip(clip) && _avatarRig.CurrentClip != clip) _avatarRig.Play(clip);
         }
 
         void PlaceCamera()
@@ -205,7 +334,7 @@ namespace Aruun.Game
             _avatar.SetActive(_thirdPerson);
             if (_thirdPerson)
             {
-                _avatar.transform.SetPositionAndRotation(Feet + Vector3.up * 0.875f, Quaternion.Euler(0f, _yaw, 0f));
+                _avatar.transform.SetPositionAndRotation(Feet + Vector3.up * (_avatarRig != null ? 0f : 0.875f), Quaternion.Euler(0f, _yaw, 0f));
                 // Pull back from the eye, stopping short of walls.
                 Vector3 back = look * Vector3.back;
                 float dist = 4f;

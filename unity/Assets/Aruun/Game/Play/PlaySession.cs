@@ -8,6 +8,7 @@ using Aruun.Core.Farming;
 using Aruun.Core.Items;
 using Aruun.Core.Play;
 using Aruun.Core.Survival;
+using Aruun.Game.Art;
 using UnityEngine;
 
 namespace Aruun.Game
@@ -90,6 +91,84 @@ namespace Aruun.Game
             Say(fresh ? "You wake on Aruun with little more than the clothes you came in. (Tab: bag and crafting)" : "Welcome back.");
 
             _entityRoot = new GameObject("Entities").transform;
+            RegisterDevKeys();
+        }
+
+        DevPlayer Player { get { return GetComponent<DevPlayer>(); } }
+
+        void RegisterDevKeys()
+        {
+            DevTools.Register(KeyCode.K, "Give a full kit (tools, weapons, food, materials)", GiveKit);
+            DevTools.Register(KeyCode.J, "Spawn the next kind of creature where you look", () => SpawnNextCreature(false));
+            DevTools.Register(KeyCode.J, "Spawn a creature group around you", () => SpawnNextCreature(true), true);
+            DevTools.Register(KeyCode.N, "Heal, feed and rest", HealAll);
+            DevTools.Register(KeyCode.N, "Kill every creature within 30 m", KillNearby, true);
+            DevTools.Register(KeyCode.B, "Dev dig: break anything, no tools (off: survival digging)", () =>
+            {
+                DevPlayer p = Player;
+                if (p == null) return;
+                p.BigDig = !p.BigDig;
+                Say(p.BigDig ? "Dev dig on: breaks anything, 2 m" : "Dev dig off: survival digging with tools");
+            });
+            DevTools.Register(KeyCode.Escape, "Close the bag, or free / capture the mouse", () =>
+            {
+                if (PlayHud.BagOpen) { PlayHud.SetBag(false); return; }
+                Cursor.lockState = Cursor.lockState == CursorLockMode.Locked ? CursorLockMode.None : CursorLockMode.Locked;
+            });
+        }
+
+        void GiveKit()
+        {
+            PlayerRec me = Me;
+            if (me == null) return;
+            foreach (string k in new[] { "flint_pick", "flint_axe", "reed_spear", "fallhammer", "roast_meat", "campfire_kit", "tether_stone" })
+                if (Host.Items.Has(k)) me.C.Inv.Add(k, k == "roast_meat" ? 10 : 1);
+            foreach (string k in new[] { "flint", "reed_stalk", "plant_fibre", "cord", "hide", "bark", "rust_rock", "timber" })
+                if (Host.Items.Has(k)) me.C.Inv.Add(k, 20);
+            foreach (string w in new[] { "word_push", "word_pull" }) if (!me.C.Words.Contains(w)) me.C.Words.Add(w);
+            Say("Kit given: tools, weapons, food, a campfire, a Tether and materials");
+        }
+
+        int _spawnIndex = -1;
+
+        void SpawnNextCreature(bool group = false)
+        {
+            PlayerRec me = Me;
+            if (me == null || Host.CreatureDefs.Count == 0) return;
+            var keys = new List<string>(Host.CreatureDefs.Keys);
+            _spawnIndex = (_spawnIndex + 1) % keys.Count;
+            string key = keys[_spawnIndex];
+            Vec3 fwd = me.Facing.Flat.Normalized;
+            int n = group ? 4 : 1;
+            for (int i = 0; i < n; i++)
+            {
+                double a = i * Math.PI * 2 / n;
+                Vec3 at = group ? me.Pos + new Vec3(Math.Cos(a) * 8, 0, Math.Sin(a) * 8) : me.Pos + fwd * 6;
+                at = new Vec3(at.X, Host.GroundHeight(at.X, at.Z) + (Host.CreatureDefs[key].Flies ? 2 : 0.05), at.Z);
+                Host.SpawnCreature(key, at, 9000 + _spawnIndex);
+            }
+            Say("Spawned " + (group ? n + " x " : "") + Host.CreatureDefs[key].Name + " (J again for the next kind)");
+        }
+
+        void HealAll()
+        {
+            PlayerRec me = Me;
+            if (me == null) return;
+            me.C.Hp = me.C.HpMax;
+            me.C.Stamina = me.C.StaminaMax;
+            me.C.Cond = Conditions.StartValues(Host.Rules);
+            foreach (var k in new List<string>(me.C.Cond.Keys)) me.C.Cond[k] = 0;
+            Say("Healed, fed and rested");
+        }
+
+        void KillNearby()
+        {
+            PlayerRec me = Me;
+            if (me == null) return;
+            int n = 0;
+            foreach (Creature c in Host.Creatures.ToArray())
+                if (c.State != "dead" && Vec3.Distance(c.Pos, me.Pos) < 30) { Host.HitCreature(c, 99999, 999, Vec3.Zero, LocalId); n++; }
+            Say("Killed " + n + " creatures");
         }
 
         public static Vec3 ToVec(Vector3 v) { return new Vec3(v.x, v.y, v.z); }
@@ -113,6 +192,9 @@ namespace Aruun.Game
         {
             if (Host == null) return;
             float dt = Mathf.Min(Time.deltaTime, 0.1f);
+            PlayerRec me = Me;
+            if (me != null) me.God = DevTools.God;
+            SyncClock();
             Host.Tick(dt);
 
             // World edits: redraw the chunks and journal them.
@@ -139,6 +221,27 @@ namespace Aruun.Game
 
             _saveTimer -= Time.unscaledDeltaTime;
             if (_saveTimer <= 0) { _saveTimer = 30f; Save(); }
+        }
+
+        float _lastHour = -1;
+
+        /// <summary>
+        /// The host's clock is the real one (creatures and Conditions use it). The sky follows
+        /// it, and the dev time keys, which move the sky, move the host's clock with them.
+        /// </summary>
+        void SyncClock()
+        {
+            DayNight day = DayNight.Instance;
+            if (day == null) return;
+            if (_lastHour >= 0 && Mathf.Abs(Mathf.DeltaAngle(day.Hour * 15f, _lastHour * 15f)) > 0.05f)
+            {
+                double shift = Mathf.DeltaAngle(_lastHour * 15f, day.Hour * 15f) / 15f;
+                if (shift < 0) shift += 24;
+                Host.Time += shift / 24.0 * Host.Rules.DayLength;
+            }
+            if (day.Paused) Host.Time -= Mathf.Min(Time.deltaTime, 0.1f);   // F10 stops the world's clock too
+            day.Hour = (float)(Host.TimeOfDay * 24.0);
+            _lastHour = day.Hour;
         }
 
         void SyncCreatures(float dt)

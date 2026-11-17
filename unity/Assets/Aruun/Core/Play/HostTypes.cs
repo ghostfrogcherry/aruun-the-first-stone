@@ -20,6 +20,8 @@ namespace Aruun.Core.Play
         /// <summary>Ground speed in m/s, smoothed. Sprinting is judged from it.</summary>
         public double Speed;
         public bool Guard;
+        /// <summary>Dev god mode: no damage, hunger or fatigue.</summary>
+        public bool God;
         public double Iframes, Stagger;
         public double NextAttack;
         /// <summary>World time of the last hit given or taken, for the "fighting" flag.</summary>

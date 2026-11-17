@@ -96,6 +96,11 @@ namespace Aruun.Game
             day.Sun = sun;
             day.Apply();
             cam.gameObject.AddComponent<DevTools>().Init(player, view, day);
+            // The game's rules: survival, creatures, crafting (see Play/PlaySession).
+            var play = cam.gameObject.AddComponent<PlaySession>();
+            play.Init(view, options.Seed, player.Feet);
+            play.Journal = player.RecordEdit;
+            cam.gameObject.AddComponent<PlayHud>();
             if (!string.IsNullOrEmpty(options.ShotPath)) DevInput.Enabled = false;
             if (!string.IsNullOrEmpty(options.ShotPath))
                 cam.gameObject.AddComponent<AutoScreenshot>().Init(options.ShotPath, options.ShotAfter, view);

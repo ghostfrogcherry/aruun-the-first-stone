@@ -141,7 +141,7 @@ namespace Aruun.Core.Tests
             // Stand on real ground at the spawn place so the seed's wild nodes are around.
             int gy = h.World.Generator.Field.HeightAt(0, 0);
             h.SetPose(1, new Vec3(0, (gy + 1) / 4.0, 0), Vec3.Forward, 0);
-            Run(h, 1);
+            Run(h, 4);
             Assert.That(h.PlantsInWorld.Count, Is.GreaterThan(0), "wild plants and flint around the spawn");
             PlantRec node = h.PlantsInWorld[0];
             Vec3 eye = node.Pos + new Vec3(0, 1.6, -1.5);

@@ -30,6 +30,7 @@ namespace Aruun.Core.Play
         public const int MaxCreatures = 26;
         public const double SpawnMin = 34, SpawnMax = 54, DespawnDist = 110;
         public const int WildCellRadius = 3;
+        public const int WildCellsPerTick = 8;
         public const double WalkSpeed = 4.5;
         /// <summary>How far a player can reach to harvest, use or place, in metres.</summary>
         public const double ReachM = 4.0;
@@ -408,9 +409,12 @@ namespace Aruun.Core.Play
                 string prefix = "w:" + cx + ":" + cz + ":";
                 PlantsInWorld.RemoveAll(r => r.WildId.StartsWith(prefix, StringComparison.Ordinal));
             }
+            // A few new cells per call: reading the ground there may generate chunks, so spread it out.
+            int budget = WildCellsPerTick;
             foreach (long k in want)
             {
                 if (_cells.Contains(k)) continue;
+                if (budget-- <= 0) break;
                 _cells.Add(k);
                 int cx = (int)(k >> 32), cz = (int)(k & 0xffffffff);
                 foreach (WildNode n in WildSpawns.InCell(Field, Plants, cx, cz))
@@ -634,6 +638,12 @@ namespace Aruun.Core.Play
             else if (p.Speed < 2 && (flags.Contains("near_heat") || flags.Contains("at_tether"))) flags.Add("resting");
             if (p.Guard && p.C.Stamina <= 0.5) p.Guard = false;
             p.Flags = flags;
+            if (p.God)
+            {
+                p.C.Hp = p.C.HpMax;
+                p.C.Stamina = p.C.StaminaMax;
+                return;
+            }
             if (p.C.Tick(flags, dt)) Die(p);
         }
 
@@ -910,7 +920,7 @@ namespace Aruun.Core.Play
         public void DamagePlayer(int player, double amount, Vec3 source, string kind)
         {
             PlayerRec p;
-            if (!Players.TryGetValue(player, out p) || !p.Alive || amount <= 0) return;
+            if (!Players.TryGetValue(player, out p) || !p.Alive || amount <= 0 || p.God) return;
             if (p.Iframes > 0 && kind != "fall" && kind != "condition") { Fx("evade", player, 0, 0, p.Pos); return; }
             if (kind != "fall" && kind != "condition") p.CombatAt = Time;
             if (p.Guard && (kind == "creature" || kind == "player"))
