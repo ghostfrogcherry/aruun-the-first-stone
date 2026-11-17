@@ -54,6 +54,12 @@ namespace Aruun.Core.Content
             object v; return o.TryGetValue(key, out v) && v is List<object> ? (List<object>)v : new List<object>();
         }
 
+        /// <summary>A sub-object, or an empty one when it is missing.</summary>
+        public static Dictionary<string, object> Obj(Dictionary<string, object> o, string key)
+        {
+            object v; return o != null && o.TryGetValue(key, out v) && v is Dictionary<string, object> ? (Dictionary<string, object>)v : new Dictionary<string, object>();
+        }
+
         static object ReadValue(string s, ref int i)
         {
             SkipSpace(s, ref i);
