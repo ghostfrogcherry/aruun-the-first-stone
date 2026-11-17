@@ -41,6 +41,9 @@ namespace Aruun.Game
         readonly ConcurrentBag<Built> _pool = new ConcurrentBag<Built>();
         readonly List<ChunkCoord> _wanted = new List<ChunkCoord>();
         readonly Dictionary<Vector2Int, Vector2Int> _columns = new Dictionary<Vector2Int, Vector2Int>();
+        // Terrain spans never change for a seed, so each column is sampled once, not every time
+        // the viewer crosses a chunk border (that was a visible hitch).
+        readonly Dictionary<Vector2Int, Vector2Int> _spanCache = new Dictionary<Vector2Int, Vector2Int>();
         readonly List<Vector3> _positions = new List<Vector3>(), _normals = new List<Vector3>();
         readonly List<Color32> _colors = new List<Color32>();
         Material _opaque, _transparent;
@@ -62,10 +65,38 @@ namespace Aruun.Game
             _transparent.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
             _transparent.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
             _transparent.SetFloat("_ZWrite", 0f);
+            _transparent.SetShaderPassEnabled("ShadowCaster", false); // water casts no shadow
         }
 
         /// <summary>Viewer position in voxel coordinates.</summary>
         public Vector3 ViewerVoxel { get { return transform.InverseTransformPoint(Viewer.position); } }
+
+        /// <summary>Throws away every chunk and mesh and builds them again (dev tool).</summary>
+        public void ReloadAll()
+        {
+            foreach (var pair in _shown)
+            {
+                Destroy(pair.Value.GetComponent<MeshFilter>().sharedMesh);
+                Destroy(pair.Value);
+                World.Unload(pair.Key);
+            }
+            _shown.Clear(); _version.Clear(); _requested.Clear(); _empty.Clear(); _wanted.Clear();
+            _lastCentre = new ChunkCoord(int.MinValue, 0, 0);
+        }
+
+        /// <summary>Vertices and triangles of every chunk on screen (for the stats overlay).</summary>
+        public void CountGeometry(out long vertices, out long triangles)
+        {
+            vertices = 0; triangles = 0;
+            foreach (var go in _shown.Values)
+            {
+                Mesh m = go.GetComponent<MeshFilter>().sharedMesh;
+                vertices += m.vertexCount;
+                for (int i = 0; i < m.subMeshCount; i++) triangles += (long)m.GetIndexCount(i) / 3;
+            }
+        }
+
+        public int WorkerThreads { get { return _maxInFlight; } }
 
         /// <summary>Rebuild these chunks soon: the world changed under them.</summary>
         public void MarkDirty(IEnumerable<ChunkCoord> coords)
@@ -154,6 +185,16 @@ namespace Aruun.Game
         /// down to a little below (cliff faces, lake beds) and up past the tallest tree.
         /// </summary>
         void TerrainSpan(int cx, int cz, out int lo, out int hi)
+        {
+            var key = new Vector2Int(cx, cz);
+            Vector2Int cached;
+            if (_spanCache.TryGetValue(key, out cached)) { lo = cached.x; hi = cached.y; return; }
+            if (_spanCache.Count > 40000) _spanCache.Clear();
+            SampleSpan(cx, cz, out lo, out hi);
+            _spanCache[key] = new Vector2Int(lo, hi);
+        }
+
+        void SampleSpan(int cx, int cz, out int lo, out int hi)
         {
             var field = World.Generator.Field;
             int min = int.MaxValue, max = int.MinValue;

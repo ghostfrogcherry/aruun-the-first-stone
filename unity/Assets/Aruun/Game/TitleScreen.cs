@@ -1,0 +1,96 @@
+using UnityEngine;
+
+namespace Aruun.Game
+{
+    /// <summary>
+    /// The first screen: continue the last world, or start one from a seed (a number or any
+    /// word). Drawn with Unity's immediate GUI so it needs no scene or prefab.
+    /// </summary>
+    public sealed class TitleScreen : MonoBehaviour
+    {
+        const string LastSeedKey = "aruun.lastSeed";
+        LaunchOptions _options;
+        string _seedText = "";
+        Texture2D _art;
+        GUIStyle _title, _sub, _button, _field, _small;
+        bool _hasLast;
+        int _lastSeed;
+
+        public void Init(LaunchOptions options)
+        {
+            _options = options;
+            _art = MapScreen.LoadArt();
+            _hasLast = PlayerPrefs.HasKey(LastSeedKey);
+            _lastSeed = PlayerPrefs.GetInt(LastSeedKey, options.Seed);
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            Camera cam = Camera.main;
+            if (cam != null) { cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = new Color(0.06f, 0.08f, 0.12f); }
+        }
+
+        void Styles()
+        {
+            if (_title != null) return;
+            _title = new GUIStyle(GUI.skin.label) { fontSize = 72, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+            _title.normal.textColor = new Color(0.98f, 0.88f, 0.62f);
+            _sub = new GUIStyle(_title) { fontSize = 22, fontStyle = FontStyle.Italic };
+            _sub.normal.textColor = new Color(0.85f, 0.92f, 0.95f);
+            _button = new GUIStyle(GUI.skin.button) { fontSize = 20 };
+            _field = new GUIStyle(GUI.skin.textField) { fontSize = 20, alignment = TextAnchor.MiddleCenter };
+            _small = new GUIStyle(GUI.skin.label) { fontSize = 14, alignment = TextAnchor.MiddleCenter };
+            _small.normal.textColor = new Color(0.8f, 0.85f, 0.9f);
+        }
+
+        void OnGUI()
+        {
+            Styles();
+            if (_art != null)
+            {
+                GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), _art, ScaleMode.ScaleAndCrop);
+                GUI.color = new Color(0f, 0f, 0f, 0.55f);
+                GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
+                GUI.color = Color.white;
+            }
+            float cx = Screen.width / 2f, y = Screen.height * 0.2f;
+            GUI.Label(new Rect(0, y, Screen.width, 90), "ARUUN", _title);
+            GUI.Label(new Rect(0, y + 84, Screen.width, 34), "The First Stone", _sub);
+            y += 170;
+            const float w = 340;
+            if (_hasLast)
+            {
+                if (GUI.Button(new Rect(cx - w / 2, y, w, 48), "Continue  (seed " + _lastSeed + ")", _button)) Begin(_lastSeed);
+                y += 64;
+            }
+            GUI.Label(new Rect(cx - w / 2, y, w, 22), "Seed: a number or any word. Empty picks one.", _small);
+            y += 24;
+            GUI.SetNextControlName("seed");
+            _seedText = GUI.TextField(new Rect(cx - w / 2, y, w, 44), _seedText, 40, _field);
+            y += 56;
+            Event e = Event.current;
+            bool enter = e.type == EventType.KeyDown && (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter);
+            if (GUI.Button(new Rect(cx - w / 2, y, w, 48), "New world", _button) || enter) Begin(SeedFromText());
+            y += 64;
+            if (GUI.Button(new Rect(cx - w / 2, y, w, 40), "Quit", _button)) Application.Quit();
+            GUI.Label(new Rect(0, Screen.height - 34, Screen.width, 24),
+                "In the world: F1 shows every dev key. They always work, no menu needed.", _small);
+        }
+
+        int SeedFromText()
+        {
+            string t = _seedText.Trim();
+            if (t.Length == 0) return System.Environment.TickCount & 0x7fffffff;
+            int v;
+            if (int.TryParse(t, out v)) return v;
+            return LaunchOptions.StableHash(t);
+        }
+
+        void Begin(int seed)
+        {
+            PlayerPrefs.SetInt(LastSeedKey, seed);
+            PlayerPrefs.Save();
+            _options.Seed = seed;
+            Destroy(gameObject);
+            Bootstrap.StartWorld(_options);
+        }
+    }
+}

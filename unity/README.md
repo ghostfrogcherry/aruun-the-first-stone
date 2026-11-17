@@ -1,13 +1,12 @@
 # Aruun in Unity
 
-The Unity rebuild of Aruun. The Godot project in the repo root is the working reference
-until this reaches the same features. Plan and audit:
+Aruun's game project. (The Godot prototype it replaces is retired; its last version is
+commit `91ea5ff`, kept for reference while its rules are ported.) Plan and audit:
 https://claude.ai/artifact/PxBD5NR3jihiH37U3573fA
 
 **Status: first slice.** Seeded 0.25 m terrain (meadows, lakes, mesas, trees), a flying
-camera, digging and building through edit ops, and a save journal. The rules library is
-tested. The Unity view layer type-checks against Unity's API but has **not yet been run in
-the editor**; the first run on a real machine is the next step.
+camera, digging and building through edit ops, a save journal, destruction and language
+rules. Runs at about 100 fps on an RTX 3070 (Unity 6000.3.28f1, Linux).
 
 ## Layout
 
@@ -16,7 +15,7 @@ the editor**; the first run on a real machine is the next step.
 | `Assets/Aruun/Core` | The rules: voxels, worldgen, mesher, edit ops, journal, content loading. Plain C# with no Unity dependency, so it is tested without Unity and behaves the same on host, client and server. |
 | `Assets/Aruun/Game` | The Unity side: chunk meshes, camera, input, overlay. Thin on purpose. |
 | `Tests/Aruun.Core.Tests` | Tests for Core. Run with plain .NET. Outside `Assets`, so Unity ignores it. |
-| `../content` | Blocks, items, models and the rest, shared with the Godot project. Read straight from the repo in the editor. |
+| `../content` | Blocks, items, models and the rest. Read straight from the repo in the editor; copied into builds. |
 
 Rules of the house:
 
@@ -46,13 +45,39 @@ Rules of the house:
 If nothing moves when you press keys, the project is using the new Input System without
 the package: install `com.unity.inputsystem`, or set Player > Active Input Handling to Both.
 
-Launch flags (after `--` on the command line, or in a built game): `--seed=1234` or
-`--seed=anyword`, `--view=160` (metres).
+The game opens on a title screen: continue the last world, or type a seed (a number or any
+word) for a new one. Launch flags (after `--` on the command line, or in a built game):
+`--seed=1234` or `--seed=anyword`, `--view=160` (metres), `--fly`, `--play` (skip the title;
+`--seed`, `--shot`, `--pos` and `--gallery` skip it too).
+
+## The world
+
+The land follows the painted map of Aruun in `content/world/`: `map.json` lists the biomes,
+the three great volcanoes and every named place; `aruun_biomes.txt` is the biome of each
+32 m map cell. You start at the Teshari Confluence; north is +Z and east is +X, so every
+place keeps its direction from the others whatever the seed. A standing stone with a lamp
+marks each place until its town is built. To change the land, repaint
+`content/world/aruun_biomes.png` with the colours in `map.json` and run
+`python3 tools/world/make_biome_map.py` (or regenerate it from the painted map).
 
 ## Controls (dev build)
 
-WASD fly, Space and Ctrl up and down, Shift fast, mouse look, left click dig, right click
-place, 1 to 7 choose a block, F3 overlay, F5 save, Esc free the mouse.
+Every dev tool is on a key that always works, with no menu open. F1 lists them in game.
+
+| Key | What it does |
+| --- | --- |
+| WASD, mouse | Move and look. Shift runs (or flies fast) |
+| Space | Jump (1.2 m at 0.38 g); up while flying. Ctrl is down while flying |
+| Left / right click | Dig / place. 1-9 choose the block |
+| F | Fly (no collisions) or walk |
+| V | Third person |
+| M | World map. Click anywhere on it to teleport there |
+| T / Shift+T | Teleport to the next / previous named place |
+| H | Home: the Teshari Confluence |
+| B | Big dig (2 m) or small dig (0.6 m) |
+| = and - | Fly speed |
+| F2 | Screenshot (saved under `screenshots/` in the persistent data folder) |
+| F3, F5, Esc | Overlay, save edits, free the mouse |
 
 Edits are saved per seed under Unity's persistent data folder (`worlds/dev-<seed>/journal.txt`)
 and replayed on the next start.

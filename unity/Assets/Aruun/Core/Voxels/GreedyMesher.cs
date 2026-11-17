@@ -18,7 +18,11 @@ namespace Aruun.Core.Voxels
 
         readonly BlockRegistry _blocks;
         readonly bool[] _cube, _opaque, _cross;
-        readonly ushort[] _mask = new ushort[N * N];
+        // Block id in the low 16 bits, the face's four corner shades above it, so only faces that
+        // look the same are merged.
+        readonly int[] _mask = new int[N * N];
+        /// <summary>Brightness for 0..3 open neighbours at a corner (ambient occlusion), out of 255.</summary>
+        static readonly int[] Shade = { 140, 180, 215, 255 };
 
         public GreedyMesher(BlockRegistry blocks)
         {
@@ -61,12 +65,13 @@ namespace Aruun.Core.Voxels
                             {
                                 pos[u] = i;
                                 ushort a = padded[PaddedIndex(pos[0] + 1, pos[1] + 1, pos[2] + 1)];
-                                ushort face = 0;
+                                int face = 0;
                                 if (a < _cube.Length && _cube[a])
                                 {
-                                    ushort b = padded[PaddedIndex(pos[0] + 1 + step[0], pos[1] + 1 + step[1], pos[2] + 1 + step[2])];
+                                    int lx = pos[0] + 1 + step[0], ly = pos[1] + 1 + step[1], lz = pos[2] + 1 + step[2];
+                                    ushort b = padded[PaddedIndex(lx, ly, lz)];
                                     bool hidden = (b < _opaque.Length && _opaque[b]) || (!_opaque[a] && b == a);
-                                    if (!hidden) { face = a; any = true; }
+                                    if (!hidden) { face = a | (Occlusion(padded, lx, ly, lz, u, v) << 16); any = true; }
                                 }
                                 _mask[i + j * N] = face;
                             }
@@ -78,7 +83,7 @@ namespace Aruun.Core.Voxels
                         {
                             for (int i = 0; i < N;)
                             {
-                                ushort id = _mask[i + j * N];
+                                int id = _mask[i + j * N];
                                 if (id == 0) { i++; continue; }
                                 int w = 1;
                                 while (i + w < N && _mask[i + w + j * N] == id) w++;
@@ -95,7 +100,7 @@ namespace Aruun.Core.Voxels
                                         _mask[i + ii + (j + jj) * N] = 0;
 
                                 pos[u] = i; pos[v] = j; pos[d] = dir > 0 ? slice + 1 : slice;
-                                EmitQuad(mesh, pos, u, v, d, w, h, dir, id);
+                                EmitQuad(mesh, pos, u, v, d, w, h, dir, (ushort)(id & 0xFFFF), id >> 16);
                                 i += w;
                             }
                         }
@@ -105,7 +110,36 @@ namespace Aruun.Core.Voxels
             EmitCrosses(padded, mesh);
         }
 
-        void EmitQuad(MeshData mesh, int[] origin, int u, int v, int d, int w, int h, int dir, ushort id)
+        /// <summary>
+        /// How open each corner of a face is: for the voxel in front of the face (lx, ly, lz),
+        /// count solid neighbours along u, along v and on the diagonal. Two bits per corner, in
+        /// the order origin, +u, +u+v, +v.
+        /// </summary>
+        int Occlusion(ushort[] padded, int lx, int ly, int lz, int u, int v)
+        {
+            int sig = 0;
+            int[] p = { lx, ly, lz };
+            for (int corner = 0; corner < 4; corner++)
+            {
+                int su = (corner == 1 || corner == 2) ? 1 : -1;
+                int sv = (corner == 2 || corner == 3) ? 1 : -1;
+                int[] a = { p[0], p[1], p[2] }, b = { p[0], p[1], p[2] }, c = { p[0], p[1], p[2] };
+                a[u] += su; b[v] += sv; c[u] += su; c[v] += sv;
+                bool s1 = Solid(padded, a), s2 = Solid(padded, b), sc = Solid(padded, c);
+                int open = s1 && s2 ? 0 : 3 - ((s1 ? 1 : 0) + (s2 ? 1 : 0) + (sc ? 1 : 0));
+                sig |= open << (corner * 2);
+            }
+            return sig;
+        }
+
+        bool Solid(ushort[] padded, int[] p)
+        {
+            if (p[0] < 0 || p[1] < 0 || p[2] < 0 || p[0] >= Padded || p[1] >= Padded || p[2] >= Padded) return false;
+            ushort id = padded[PaddedIndex(p[0], p[1], p[2])];
+            return id < _opaque.Length && _opaque[id];
+        }
+
+        void EmitQuad(MeshData mesh, int[] origin, int u, int v, int d, int w, int h, int dir, ushort id, int ao)
         {
             BlockDef b = _blocks.Get(id);
             int first = mesh.VertexCount;
@@ -116,9 +150,28 @@ namespace Aruun.Core.Voxels
                 if (corner == 2 || corner == 3) p[v] += h;
                 mesh.Positions.Add(p[0]); mesh.Positions.Add(p[1]); mesh.Positions.Add(p[2]);
                 mesh.Normals.Add(d == 0 ? dir : 0); mesh.Normals.Add(d == 1 ? dir : 0); mesh.Normals.Add(d == 2 ? dir : 0);
-                mesh.Colors.Add(b.R); mesh.Colors.Add(b.G); mesh.Colors.Add(b.B); mesh.Colors.Add(b.A);
+                int shade = b.Transparent ? 255 : Shade[(ao >> (corner * 2)) & 3];
+                mesh.Colors.Add((byte)(b.R * shade / 255)); mesh.Colors.Add((byte)(b.G * shade / 255));
+                mesh.Colors.Add((byte)(b.B * shade / 255)); mesh.Colors.Add(b.A);
             }
             var indices = b.Transparent ? mesh.Transparent : mesh.Opaque;
+            // Split the quad along the diagonal whose corners are most alike, so shading does not
+            // show a crease.
+            int o0 = ao & 3, o1 = (ao >> 2) & 3, o2 = (ao >> 4) & 3, o3 = (ao >> 6) & 3;
+            if (o0 + o2 < o1 + o3)
+            {
+                if (dir > 0)
+                {
+                    indices.Add(first + 1); indices.Add(first + 2); indices.Add(first + 3);
+                    indices.Add(first + 1); indices.Add(first + 3); indices.Add(first);
+                }
+                else
+                {
+                    indices.Add(first + 1); indices.Add(first + 3); indices.Add(first + 2);
+                    indices.Add(first + 1); indices.Add(first); indices.Add(first + 3);
+                }
+                return;
+            }
             // Corners run origin, +u, +u+v, +v. That order faces +d; flip it for the -d side.
             if (dir > 0)
             {

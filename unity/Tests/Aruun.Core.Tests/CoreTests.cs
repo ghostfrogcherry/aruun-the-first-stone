@@ -176,6 +176,22 @@ namespace Aruun.Core.Tests
         static ushort[] Empty() { return new ushort[GreedyMesher.PaddedVolume]; }
 
         [Test]
+        public void CornersBesideAWallAreDarker()
+        {
+            BlockRegistry blocks = TestContent.Blocks();
+            ushort stone = blocks.Id("rust_rock");
+            ushort[] p = Empty();
+            for (int x = 1; x <= 10; x++) for (int z = 1; z <= 10; z++) p[GreedyMesher.PaddedIndex(x, 5, z)] = stone;
+            p[GreedyMesher.PaddedIndex(5, 6, 5)] = stone;   // one block standing on the floor
+            var mesh = new MeshData();
+            new GreedyMesher(blocks).Build(p, mesh);
+            BlockDef b = blocks.Get(stone);
+            int darkest = 255;
+            for (int i = 0; i < mesh.Colors.Count; i += 4) darkest = Math.Min(darkest, mesh.Colors[i]);
+            Assert.That(darkest, Is.LessThan((int)b.R), "the floor darkens where it meets the block");
+        }
+
+        [Test]
         public void OneVoxelIsSixQuads()
         {
             BlockRegistry blocks = TestContent.Blocks();

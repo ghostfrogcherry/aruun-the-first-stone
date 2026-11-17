@@ -1,13 +1,4 @@
-# Godot
-.godot/
-*.import
-export_presets.cfg
 /build/
-# Voxel Tools binaries are large and platform-specific; each dev installs them (see README).
-/addons/zylann.voxel/
-# Never commit world saves
-/saves/*
-!/saves/.gitkeep
 # Tools
 __pycache__/
 .DS_Store

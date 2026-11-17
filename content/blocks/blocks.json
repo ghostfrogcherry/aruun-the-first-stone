@@ -311,6 +311,38 @@
       "emissive": true,
       "tool": "hand",
       "health": 4
+    },
+    {
+      "id": 30,
+      "key": "snow",
+      "name": "Snow",
+      "solid": true,
+      "color": "#eef3f7",
+      "hardness": 0,
+      "tool": "hand",
+      "health": 3
+    },
+    {
+      "id": 31,
+      "key": "violet_bloom",
+      "name": "Violet bloom",
+      "solid": true,
+      "collision": false,
+      "color": "#a77fd6",
+      "hardness": 0,
+      "shape": "cross",
+      "tool": "hand",
+      "health": 1
+    },
+    {
+      "id": 32,
+      "key": "ice",
+      "name": "Ice",
+      "solid": true,
+      "color": "#a9d4ea",
+      "hardness": 2,
+      "tool": "pick",
+      "health": 10
     }
   ],
   "placeable": [

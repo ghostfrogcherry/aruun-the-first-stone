@@ -23,5 +23,11 @@ namespace Aruun.Core.Tests
         {
             return BlockRegistry.FromJson(File.ReadAllText(Path.Combine(Root, "blocks", "blocks.json")));
         }
+
+        public static Worldgen.WorldMap Map()
+        {
+            return Worldgen.WorldMap.FromText(File.ReadAllText(Path.Combine(Root, "world", "map.json")),
+                                              File.ReadAllText(Path.Combine(Root, "world", "aruun_biomes.txt")));
+        }
     }
 }

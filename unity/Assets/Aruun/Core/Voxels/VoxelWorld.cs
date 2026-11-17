@@ -32,10 +32,10 @@ namespace Aruun.Core.Voxels
         readonly Dictionary<ChunkCoord, Dictionary<int, ushort>> _edits = new Dictionary<ChunkCoord, Dictionary<int, ushort>>();
         readonly object _editLock = new object();
 
-        public VoxelWorld(int seed, BlockRegistry blocks)
+        public VoxelWorld(int seed, BlockRegistry blocks, Worldgen.WorldMap map = null)
         {
             Blocks = blocks;
-            Generator = new TerrainGenerator(seed, blocks);
+            Generator = new TerrainGenerator(seed, blocks, map);
         }
 
         public int LoadedChunks { get { return _chunks.Count; } }
