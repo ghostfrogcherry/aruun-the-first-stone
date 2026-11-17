@@ -11,14 +11,11 @@ namespace Aruun.Game
 {
     /// <summary>
     /// The player while the real one is being built: walks at Aruun's 0.38 g or flies, digs and
-    /// builds, and has every dev tool on a key that always works, with no menu to open.
-    /// Edits go through the same ops and journal the full game will use, so what you change is
-    /// still there next time you start with the same seed.
+    /// builds. Edits go through the same ops and journal the full game will use, so what you
+    /// change is still there next time you start with the same seed. Dev keys live in DevTools.
     ///
     /// WASD move, mouse look, Space jump (or up while flying), Ctrl down, Shift run,
-    /// LMB dig, RMB place, 1-9 block, F fly, V third person, M map (click it to teleport),
-    /// T next place (Shift+T back), H home, B big dig, = and - fly speed, F1 keys, F2 screenshot,
-    /// F3 overlay, F5 save, Esc free the mouse.
+    /// LMB dig, RMB place, 1-9 block.
     /// </summary>
     public sealed class DevPlayer : MonoBehaviour
     {
@@ -34,12 +31,11 @@ namespace Aruun.Game
 
         const float V = WorldConfig.VoxelSize;
         float _yaw, _pitch;
-        bool _overlay = true, _help, _fly, _thirdPerson, _bigDig;
+        bool _fly, _thirdPerson, _bigDig;
         int _slot, _place = -1;
         string _journalPath;
         StreamWriter _journal;
         int _opsThisSession, _opsLoaded, _opsSkipped;
-        float _fps = 60f;
         string _lastAction = "";
         float _lastActionTime;
         Mover _mover;
@@ -120,32 +116,50 @@ namespace Aruun.Game
             }
         }
 
-        void Say(string text) { _lastAction = text; _lastActionTime = Time.unscaledTime; }
+        public void Say(string text) { _lastAction = text; _lastActionTime = Time.unscaledTime; }
+
+        public bool ThirdPerson { get { return _thirdPerson; } set { _thirdPerson = value; } }
+        public bool BigDig { get { return _bigDig; } set { _bigDig = value; } }
+        public string LastAction { get { return Time.unscaledTime - _lastActionTime < 6f ? _lastAction : ""; } }
+        public int Slot { get { return _slot; } }
+        public int EditsLoaded { get { return _opsLoaded; } }
+        public int EditsSkipped { get { return _opsSkipped; } }
+        public int EditsNew { get { return _opsThisSession; } }
+        public MapScreen MapScreen { get { return _mapScreen; } }
+
+        public void SetFly(bool fly)
+        {
+            _fly = fly;
+            _body.VX = _body.VY = _body.VZ = 0;
+            if (!fly) SettleOnGround();
+            Say(_fly ? "Flying (no collisions)" : "Walking");
+        }
+
+        public void SaveEdits() { _journal.Flush(); Say("Saved"); }
+
+        /// <summary>Teleports to the next (or previous) named place on the map.</summary>
+        public void CyclePlace(int step)
+        {
+            if (Map == null || Map.Places.Count == 0) return;
+            int n = Map.Places.Count;
+            _place = ((_place + step) % n + n) % n;
+            MapPlace p = Map.Places[_place];
+            TeleportToVoxel(p.X + 24, p.Z - 24, p.Name);
+        }
+
+        /// <summary>Teleports to the ground where the camera is looking, up to 500 m away.</summary>
+        public void TeleportToLookTarget()
+        {
+            Vector3 o = transform.position / V, d = transform.forward;
+            VoxelHit hit = VoxelRaycast.Cast(View.World, o.x, o.y, o.z, d.x, d.y, d.z, 2000);
+            if (!hit.Hit) { Say("Nothing there to stand on"); return; }
+            TeleportToVoxel(hit.X, hit.Z, "where you looked");
+        }
 
         void Update()
         {
             float dt = Mathf.Min(Time.unscaledDeltaTime, 0.05f);
-            _fps = Mathf.Lerp(_fps, 1f / Mathf.Max(Time.unscaledDeltaTime, 1e-4f), 0.05f);
             bool shift = DevInput.Holding(DevKey.Shift);
-            if (DevInput.EscapeDown && !_mapScreen.Open) Cursor.lockState = Cursor.lockState == CursorLockMode.Locked ? CursorLockMode.None : CursorLockMode.Locked;
-            if (DevInput.OverlayDown) _overlay = !_overlay;
-            if (DevInput.SaveDown) { _journal.Flush(); Say("Saved"); }
-            if (DevInput.Down(DevKey.Help)) _help = !_help;
-            if (DevInput.Down(DevKey.Fly)) { _fly = !_fly; _body.VX = _body.VY = _body.VZ = 0; Say(_fly ? "Flying (no collisions)" : "Walking"); }
-            if (DevInput.Down(DevKey.ThirdPerson)) _thirdPerson = !_thirdPerson;
-            if (DevInput.Down(DevKey.BigDig)) { _bigDig = !_bigDig; Say(_bigDig ? "Big dig: 2 m" : "Small dig: 0.6 m"); }
-            if (DevInput.Down(DevKey.Faster)) { FlySpeed = Mathf.Min(FlySpeed * 2f, 256f); Say("Fly speed " + FlySpeed + " m/s"); }
-            if (DevInput.Down(DevKey.Slower)) { FlySpeed = Mathf.Max(FlySpeed / 2f, 1f); Say("Fly speed " + FlySpeed + " m/s"); }
-            if (DevInput.Down(DevKey.Home)) TeleportToVoxel(0, 0, "Home");
-            if (DevInput.Down(DevKey.Place) && Map != null && Map.Places.Count > 0)
-            {
-                int n = Map.Places.Count;
-                _place = ((_place + (shift ? -1 : 1)) % n + n) % n;
-                MapPlace p = Map.Places[_place];
-                TeleportToVoxel(p.X + 24, p.Z - 24, p.Name);
-            }
-            if (DevInput.Down(DevKey.Screenshot)) TakeScreenshot();
-            if (DevInput.Down(DevKey.Map)) _mapScreen.Toggle();
             int number = DevInput.NumberDown;
             if (number >= 0 && number < View.World.Blocks.Placeable.Count) _slot = number;
 
@@ -222,7 +236,7 @@ namespace Aruun.Game
             _body.VX = _body.VY = _body.VZ = 0;
         }
 
-        void TakeScreenshot()
+        public void TakeScreenshot()
         {
             string dir = Path.Combine(Application.persistentDataPath, "screenshots");
             Directory.CreateDirectory(dir);
@@ -263,61 +277,10 @@ namespace Aruun.Game
             if (_journal != null) _journal.Flush();
         }
 
-        /// <summary>Name of the map place nearest the player, and how far it is.</summary>
-        string NearestPlace()
-        {
-            if (Map == null) return "";
-            MapPlace best = null;
-            double bestD = double.MaxValue;
-            foreach (MapPlace p in Map.Places)
-            {
-                double dx = p.X - _body.X, dz = p.Z - _body.Z, d = dx * dx + dz * dz;
-                if (d < bestD) { bestD = d; best = p; }
-            }
-            if (best == null) return "";
-            double m = System.Math.Sqrt(bestD) * V;
-            string biome = Map.BiomeAt((int)_body.X, (int)_body.Z).Name;
-            return biome + ", " + (m < 30 ? "at " + best.Name : Mathf.RoundToInt((float)m) + " m from " + best.Name);
-        }
-
         void OnGUI()
         {
-            if (!_thirdPerson) GUI.Label(new Rect(Screen.width / 2 - 5, Screen.height / 2 - 11, 20, 22), "+");
-            if (View == null || View.World == null) return;
-            if (!_overlay) return;
-            Vector3 m = Feet;
-            var blocks = View.World.Blocks;
-            string action = Time.unscaledTime - _lastActionTime < 6f ? _lastAction : "";
-            string text =
-                "Aruun dev build   seed " + Seed + "   " + Mathf.RoundToInt(_fps) + " fps   " + (_fly ? "flying " + FlySpeed + " m/s" : "walking") + (_bigDig ? "   big dig" : "") + "\n" +
-                "Position " + m.x.ToString("0.0") + ", " + m.y.ToString("0.0") + ", " + m.z.ToString("0.0") + " m   " + NearestPlace() + "\n" +
-                "Chunks shown " + View.ShownChunks + ", building " + View.PendingChunks + ", in memory " + View.World.LoadedChunks +
-                "   edits " + _opsLoaded + " loaded" + (_opsSkipped > 0 ? " (" + _opsSkipped + " unreadable)" : "") + ", " + _opsThisSession + " new\n" +
-                "Block [" + (_slot + 1) + "] " + blocks.Get(blocks.Placeable[_slot]).Name + "   " + action + "\n" +
-                "F1 all keys   F fly   M map   T places   H home   F3 hide";
-            GUI.color = new Color(0f, 0f, 0f, 0.55f);
-            GUI.Box(new Rect(8, 8, 620, 96), GUIContent.none);
-            GUI.color = Color.white;
-            GUI.Label(new Rect(16, 12, 608, 92), text);
-            if (_help)
-            {
-                const string keys =
-                    "WASD move, mouse look, Shift run (fast while flying)\n" +
-                    "Space jump (up while flying), Ctrl down while flying\n" +
-                    "Left click dig, right click place, 1-9 choose block\n" +
-                    "F  fly / walk (flying ignores walls)\n" +
-                    "V  third person\n" +
-                    "M  world map; click on it to teleport there\n" +
-                    "T  teleport to the next place (Shift+T: previous)\n" +
-                    "H  home: Teshari Confluence\n" +
-                    "B  big dig (2 m) / small dig (0.6 m)\n" +
-                    "=  and  -  fly speed\n" +
-                    "F2 screenshot, F3 overlay, F5 save edits, Esc free the mouse";
-                GUI.color = new Color(0f, 0f, 0f, 0.7f);
-                GUI.Box(new Rect(8, 110, 460, 186), GUIContent.none);
-                GUI.color = Color.white;
-                GUI.Label(new Rect(16, 114, 448, 180), keys);
-            }
+            if (!_thirdPerson && Cursor.lockState == CursorLockMode.Locked)
+                GUI.Label(new Rect(Screen.width / 2 - 5, Screen.height / 2 - 11, 20, 22), "+");
         }
     }
 }

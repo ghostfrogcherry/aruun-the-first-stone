@@ -22,6 +22,15 @@ namespace Aruun.Game
 #if ENABLE_INPUT_SYSTEM
         static readonly Key[] DevKeys = { Key.F, Key.M, Key.T, Key.H, Key.B, Key.Equals, Key.Minus, Key.F2, Key.F1, Key.V, Key.Space, Key.LeftShift };
         public static bool Down(DevKey k) { return On && Pressed(DevKeys[(int)k]); }
+        /// <summary>Any key by its legacy KeyCode name (letters, F1-F12, Equals, Minus...).</summary>
+        public static bool KeyDown(KeyCode code)
+        {
+            Key k;
+            string name = code.ToString();
+            if (name.StartsWith("Alpha")) name = "Digit" + name.Substring(5);
+            return On && System.Enum.TryParse(name, out k) && Pressed(k);
+        }
+        public static bool ShiftHeld { get { return Held(Key.LeftShift) || Held(Key.RightShift); } }
         public static bool Holding(DevKey k) { return On && Held(DevKeys[(int)k]); }
         public static bool ClickDown { get { return On && (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame); } }
         static bool Held(Key k) { return Keyboard.current != null && Keyboard.current[k].isPressed; }
@@ -48,6 +57,8 @@ namespace Aruun.Game
 #else
         static readonly KeyCode[] DevKeys = { KeyCode.F, KeyCode.M, KeyCode.T, KeyCode.H, KeyCode.B, KeyCode.Equals, KeyCode.Minus, KeyCode.F2, KeyCode.F1, KeyCode.V, KeyCode.Space, KeyCode.LeftShift };
         public static bool Down(DevKey k) { return On && Input.GetKeyDown(DevKeys[(int)k]); }
+        public static bool KeyDown(KeyCode code) { return On && Input.GetKeyDown(code); }
+        public static bool ShiftHeld { get { return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift); } }
         public static bool Holding(DevKey k) { return On && Input.GetKey(DevKeys[(int)k]); }
         public static Vector2 Move { get { return On ? new Vector2((Input.GetKey(KeyCode.D) ? 1 : 0) - (Input.GetKey(KeyCode.A) ? 1 : 0), (Input.GetKey(KeyCode.W) ? 1 : 0) - (Input.GetKey(KeyCode.S) ? 1 : 0)) : Vector2.zero; } }
         public static float Rise { get { return On ? (Input.GetKey(KeyCode.Space) ? 1 : 0) - (Input.GetKey(KeyCode.LeftControl) ? 1 : 0) : 0f; } }

@@ -67,6 +67,33 @@ namespace Aruun.Game
         /// <summary>Viewer position in voxel coordinates.</summary>
         public Vector3 ViewerVoxel { get { return transform.InverseTransformPoint(Viewer.position); } }
 
+        /// <summary>Throws away every chunk and mesh and builds them again (dev tool).</summary>
+        public void ReloadAll()
+        {
+            foreach (var pair in _shown)
+            {
+                Destroy(pair.Value.GetComponent<MeshFilter>().sharedMesh);
+                Destroy(pair.Value);
+                World.Unload(pair.Key);
+            }
+            _shown.Clear(); _version.Clear(); _requested.Clear(); _empty.Clear(); _wanted.Clear();
+            _lastCentre = new ChunkCoord(int.MinValue, 0, 0);
+        }
+
+        /// <summary>Vertices and triangles of every chunk on screen (for the stats overlay).</summary>
+        public void CountGeometry(out long vertices, out long triangles)
+        {
+            vertices = 0; triangles = 0;
+            foreach (var go in _shown.Values)
+            {
+                Mesh m = go.GetComponent<MeshFilter>().sharedMesh;
+                vertices += m.vertexCount;
+                for (int i = 0; i < m.subMeshCount; i++) triangles += (long)m.GetIndexCount(i) / 3;
+            }
+        }
+
+        public int WorkerThreads { get { return _maxInFlight; } }
+
         /// <summary>Rebuild these chunks soon: the world changed under them.</summary>
         public void MarkDirty(IEnumerable<ChunkCoord> coords)
         {
