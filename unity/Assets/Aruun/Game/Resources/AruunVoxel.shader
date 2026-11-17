@@ -27,14 +27,11 @@ Shader "Aruun/Voxel"
             #pragma multi_compile_fwdbase nolightmap nodirlightmap nodynlightmap novertexlight
             #include "UnityCG.cginc"
             #include "AutoLight.cginc"
+            #include "AruunAtmosphere.cginc"
 
-            // Globals from DayNight (sRGB colours) and Bootstrap (fog distances in metres).
-            float4 _AruunSunDir;
-            float4 _AruunSunColor;
+            // Globals from DayNight (sRGB colours); sun, fog and haze are in AruunAtmosphere.
             float4 _AruunAmbient;
             float4 _AruunSkyTop;
-            float4 _AruunFogColor;
-            float4 _AruunFog; // x start, y end, z strength 0..1
             float _HoleRadius;
 
             struct appdata
@@ -53,15 +50,7 @@ Shader "Aruun/Voxel"
                 SHADOW_COORDS(2)
             };
 
-            float3 Lin(float3 c)
-            {
-                #ifndef UNITY_COLORSPACE_GAMMA
-                return GammaToLinearSpace(c);
-                #else
-                return c;
-                #endif
-            }
-
+            
             v2f vert(appdata v)
             {
                 v2f o;
@@ -84,17 +73,15 @@ Shader "Aruun/Voxel"
                 // Sky light: brightest from straight above, blue-tinted from the sky colour,
                 // and a little warm light bounced up from the red ground.
                 float up = n.y * 0.5 + 0.5;
-                float3 sky = Lin(_AruunAmbient.rgb) * lerp(0.55, 1.0, up) + Lin(_AruunSkyTop.rgb) * 0.12 * up;
-                float3 bounce = float3(0.10, 0.06, 0.04) * (1 - up) * Lin(_AruunSunColor.rgb);
-                float3 light = Lin(_AruunSunColor.rgb) * sun * 1.15 + sky + bounce;
-                float3 col = Lin(i.color.rgb) * light;
-                // Gentle filmic shoulder so bright sunlit faces do not clip.
-                col = col / (1 + col * 0.18) * 1.12;
+                float3 sky = AruunLin(_AruunAmbient.rgb) * lerp(0.55, 1.0, up) + AruunLin(_AruunSkyTop.rgb) * 0.12 * up;
+                float3 bounce = float3(0.10, 0.06, 0.04) * (1 - up) * AruunLin(_AruunSunColor.rgb);
+                float3 light = AruunLin(_AruunSunColor.rgb) * sun * 1.15 + sky + bounce;
+                float3 col = AruunLin(i.color.rgb) * light;
+                // Without the post stack, a gentle filmic shoulder so sunlit faces do not clip.
+                col = lerp(col / (1 + col * 0.18) * 1.12, col, _AruunPostOn);
 
-                float dist = distance(i.world, _WorldSpaceCameraPos);
-                float fog = saturate((dist - _AruunFog.x) / max(_AruunFog.y - _AruunFog.x, 0.001));
-                fog = fog * fog * (3 - 2 * fog) * _AruunFog.z;
-                col = lerp(col, Lin(_AruunFogColor.rgb), fog);
+                float3 view = normalize(i.world - _WorldSpaceCameraPos);
+                col = lerp(col, AruunInscatter(view), AruunHaze(i.world));
                 return fixed4(col, i.color.a);
             }
             ENDCG
