@@ -75,7 +75,7 @@ namespace Aruun.Game
 
             // Start on dry land at the spawn place (the map puts it at the origin), looking north-east.
             HeightField field = world.Generator.Field;
-            int sx = 0, sz = 0;
+            int sx = 24, sz = -24;   // a few metres from the Confluence marker stone, not on top of it
             for (int i = 0; i < 400 && field.HeightAt(sx, sz) <= HeightField.SeaLevel + 2; i++) { sx += 16; sz += 9; }
             float ground = field.HeightAt(sx, sz) * WorldConfig.VoxelSize;
             cam.transform.position = new Vector3(sx * WorldConfig.VoxelSize, ground + 1.7f, sz * WorldConfig.VoxelSize);
