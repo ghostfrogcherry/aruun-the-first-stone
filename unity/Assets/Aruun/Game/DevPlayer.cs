@@ -193,10 +193,27 @@ namespace Aruun.Game
             int number = DevInput.NumberDown;
             if (me != null)
             {
-                if (number >= 0) me.C.Selected = number;
-                float scroll = PlayInput.Scroll;
-                if (scroll != 0 && !PlayHud.BagOpen) me.C.Selected = ((me.C.Selected - (int)scroll) % 9 + 9) % 9;
-                if (PlayInput.Down(PlayKey.Bag)) PlayHud.SetBag(!PlayHud.BagOpen);
+                // Speaking Avarra: X opens the panel, numbers pick words, Enter or X speaks.
+                if (PlayInput.Down(PlayKey.Speak) && !PlayHud.BagOpen && !dead)
+                {
+                    if (PlayHud.Speaking) SpeakNow(me);
+                    else PlayHud.OpenSpeak();
+                }
+                else if (PlayHud.Speaking)
+                {
+                    if (number >= 0) PlayHud.PickWord(number, Play.Host, me);
+                    if (PlayInput.Down(PlayKey.Confirm)) SpeakNow(me);
+                    if (PlayInput.Down(PlayKey.Back)) PlayHud.DropWord();
+                }
+                else
+                {
+                    if (number >= 0) me.C.Selected = number;
+                    float scroll = PlayInput.Scroll;
+                    if (scroll != 0 && !PlayHud.BagOpen) me.C.Selected = ((me.C.Selected - (int)scroll) % 9 + 9) % 9;
+                    // The middle mouse button says the last phrase again.
+                    if (PlayInput.MiddleDown && !dead && PlayHud.LastPhrase.Count > 0) SpeakNow(me, PlayHud.LastPhrase);
+                }
+                if (PlayInput.Down(PlayKey.Bag)) { PlayHud.CloseSpeak(); PlayHud.SetBag(!PlayHud.BagOpen); }
             }
             else if (number >= 0 && number < View.World.Blocks.Placeable.Count) _slot = number;
 
@@ -304,6 +321,20 @@ namespace Aruun.Game
                 host.UseHeld(id, hit.Hit, hit.X, hit.Y, hit.Z, hit.PrevX, hit.PrevY, hit.PrevZ);
             if (PlayInput.Down(PlayKey.Interact) && !host.Interact(id, PlaySession.ToVec(eye), PlaySession.ToVec(d)))
                 Play.Say("Nothing to gather there");
+        }
+
+        /// <summary>Says the phrase on the speak panel (or `phrase`) toward the crosshair.</summary>
+        void SpeakNow(PlayerRec me, List<string> phrase = null)
+        {
+            if (Play == null || Play.Host == null) return;
+            var words = new List<string>(phrase ?? PlayHud.Phrase);
+            if (words.Count == 0) words.AddRange(PlayHud.LastPhrase);
+            if (words.Count == 0) { Play.Say("Pick a word with the number keys first"); return; }
+            Vector3 eye = Feet + Vector3.up * EyeHeight;
+            bool ok = Play.Host.Speak(PlaySession.LocalId, words, PlaySession.ToVec(eye), PlaySession.ToVec(transform.forward));
+            PlayHud.LastPhrase.Clear();
+            PlayHud.LastPhrase.AddRange(words);
+            if (ok) { PlayHud.CloseSpeak(); Swing(true, 0.2f); }
         }
 
         void StopDig()

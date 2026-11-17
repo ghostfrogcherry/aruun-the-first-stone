@@ -23,7 +23,7 @@ namespace Aruun.Core.Play
     /// draws. In single player the Game layer is the only client. Positions are metres, feet
     /// at Pos; the voxel world is in voxels (4 per metre).
     /// </summary>
-    public sealed class Host : ICreatureWorld
+    public sealed partial class Host : ICreatureWorld
     {
         public const double M = WorldConfig.VoxelsPerMeter;
         public const double CreatureStep = 0.05;
@@ -320,6 +320,7 @@ namespace Aruun.Core.Play
             PlayerRec p;
             if (!Players.TryGetValue(id, out p) || !p.Alive) return false;
             dir = dir.Normalized;
+            if (ReadInscription(p, eye, dir)) return true;
             PlantRec bestPlant = null;
             StructureRec bestStruct = null;
             double best = double.MaxValue;
@@ -558,6 +559,7 @@ namespace Aruun.Core.Play
             c.State = "dead";
             c.T = 2.5;
             Fx("creature_die", byPlayer, c.Id, 0, c.Pos);
+            OnCreatureKilled(c, byPlayer);
             PlayerRec p;
             if (byPlayer == 0 || !Players.TryGetValue(byPlayer, out p)) return;
             var parts = new List<string>();
@@ -698,6 +700,7 @@ namespace Aruun.Core.Play
         void SlowTick()
         {
             UpdateWildCells();
+            TickRuin();
             // Plants whose ground was dug away fall out of the world.
             PlantsInWorld.RemoveAll(r =>
             {

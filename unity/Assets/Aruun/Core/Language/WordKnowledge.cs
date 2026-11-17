@@ -64,5 +64,15 @@ namespace Aruun.Core.Language
         public void Teach(string word) { _state[word] = Familiarity.Known; }
 
         public IEnumerable<KeyValuePair<string, Familiarity>> All { get { return _state; } }
+
+        /// <summary>Where each word has been read, for saving.</summary>
+        public IEnumerable<KeyValuePair<string, HashSet<string>>> Places { get { return _sightings; } }
+
+        /// <summary>Has the word been read at this place before?</summary>
+        public bool SeenAt(string word, string place)
+        {
+            HashSet<string> places;
+            return _sightings.TryGetValue(word, out places) && places.Contains(place);
+        }
     }
 }

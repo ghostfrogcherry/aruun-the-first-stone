@@ -6,7 +6,9 @@ using Aruun.Core.Creatures;
 using Aruun.Core.Edits;
 using Aruun.Core.Farming;
 using Aruun.Core.Items;
+using Aruun.Core.Language;
 using Aruun.Core.Play;
+using Aruun.Core.Ruins;
 using Aruun.Core.Survival;
 using Aruun.Game.Art;
 using UnityEngine;
@@ -37,7 +39,7 @@ namespace Aruun.Game
         /// <summary>Things that just happened to the local player, for the camera and HUD (hurt, blocked, swing).</summary>
         public readonly List<HostEvent> MyEvents = new List<HostEvent>();
 
-        string _charPath;
+        string _charPath, _worldPath;
         /// <summary>A --smoke run: a fresh character, and nothing it does is saved.</summary>
         bool _smoke;
         float _saveTimer = 30f;
@@ -78,11 +80,17 @@ namespace Aruun.Game
             var creatures = CreatureDef.FromJson(GameContent.ReadText("creatures", "creatures.json"));
             Host = new Host(view.World, items, rules, plants, creatures, seed);
             Host.SpawnPoint = ToVec(spawnFeet);
+            try { Host.Lexicon = Lexicon.FromJson(GameContent.ReadText("language", "lexicon.json")); }
+            catch (Exception e) { Debug.LogError("Could not load the Avarra words: " + e.Message); }
             Host.SpawnCreatures = Array.IndexOf(args, "--no-creatures") < 0 && DevInput.Enabled;
 
             string dir = Path.Combine(Application.persistentDataPath, "worlds", (SurvivalOnly ? "survival-" : "dev-") + seed);
             Directory.CreateDirectory(dir);
             _charPath = Path.Combine(dir, "character.txt");
+            _worldPath = Path.Combine(dir, "world.txt");
+            if (!_smoke && File.Exists(_worldPath))
+                foreach (string line in File.ReadAllLines(_worldPath))
+                    if (line.StartsWith("flag ", StringComparison.Ordinal)) Host.WorldFlags.Add(line.Substring(5).Trim());
             var c = new CharacterState(items, rules);
             bool fresh = _smoke || Array.IndexOf(args, "--new-character") >= 0 || !File.Exists(_charPath);
             if (!fresh)
@@ -91,7 +99,7 @@ namespace Aruun.Game
                 catch (Exception e) { Debug.LogWarning("Could not read the character (" + e.Message + "), starting fresh"); fresh = true; }
             }
             Host.Join(LocalId, c, ToVec(spawnFeet), fresh);
-            Say(fresh ? "You wake on Aruun with little more than the clothes you came in. (Tab: bag and crafting)" : "Welcome back.");
+            Say(fresh ? "You wake on Aruun with little more than the clothes you came in. Something old hums to the south. (Tab: bag and crafting)" : "Welcome back.");
 
             _entityRoot = new GameObject("Entities").transform;
             RegisterDevKeys();
@@ -149,8 +157,101 @@ namespace Aruun.Game
                 yield return new WaitForSecondsRealtime(0.6f);
             }
             note("fight redstrider: state " + c.State + " after " + swings + " swings, raw_meat " + me.C.Inv.Count("raw_meat") + ", hide " + me.C.Inv.Count("hide"));
+            yield return SmokeRuin(note);
             note("end: hp " + me.C.Hp.ToString("0") + ", day " + Host.Day + " " + (Host.TimeOfDay * 24).ToString("0.0") + "h, creatures " + Host.Creatures.Count + ", plants " + Host.PlantsInWorld.Count + ", structures " + Host.Structures.Count);
             File.WriteAllLines(Path.Combine(Application.persistentDataPath, "smoke.txt"), lines.ToArray());
+        }
+
+        /// <summary>The echo ruin, start to finish, through the host as a player would do it.</summary>
+        System.Collections.IEnumerator SmokeRuin(Action<string> note)
+        {
+            PlayerRec me = Me;
+            EchoRuin r = Host.Ruin;
+            if (r == null) { note("ruin: none in this world"); yield break; }
+            note("ruin: arch at " + r.Ox + "," + r.Ground + "," + r.Oz + " (" + Vec3.Distance(me.Pos, r.EntranceM).ToString("0") + " m away)");
+            Func<Vec3, Vec3, string, bool> speak = (feet, at, word) =>
+            {
+                me.Pos = feet;
+                me.RespawnAt = feet;
+                Host.Time += 5;
+                Vec3 eye = feet + new Vec3(0, 1.6, 0);
+                return Host.Speak(LocalId, new List<string> { word }, eye, at - eye);
+            };
+            Func<string, RuinInscription> ins = place => r.Inscriptions.Find(i => i.Place == place);
+            GoToRuin(false);
+            yield return new WaitForSecondsRealtime(2f);
+            note("ruin objective: " + Host.ObjectiveFor(LocalId).Text);
+            Host.Read(me, ins("ruin_arch"));
+            Host.Read(me, ins("ruin_antechamber_left"));
+            note("ruin: Vuh is " + me.C.Lang.Of("word_push"));
+            note("ruin gate: " + speak(r.GateM, r.Mechanism("gate").Point, "word_push") + ", open " + EchoRuin.Done(Host.World, r.Mechanism("gate")));
+            yield return new WaitForSecondsRealtime(1.5f);
+            Host.Read(me, ins("ruin_antechamber_right"));
+            Host.Read(me, ins("ruin_step_hall"));
+            note("ruin stair: " + speak(r.StepM, r.Mechanism("stair").Point, "word_rise") + ", raised " + EchoRuin.Done(Host.World, r.Mechanism("stair")));
+            yield return new WaitForSecondsRealtime(1.5f);
+            GoToRuin(true);
+            yield return new WaitForSecondsRealtime(2f);
+            Creature s = Host.Sentinel;
+            note("ruin sentinel: " + (s != null ? s.State : "missing"));
+            Host.Read(me, ins("ruin_court_west"));
+            Host.Read(me, ins("ruin_court_east"));
+            Vec3 below = r.CourtM + new Vec3(0, 0, -6);
+            note("ruin heart before: " + speak(below, r.Mechanism("heart").Point, "word_pull"));
+            if (s != null)
+            {
+                s.State = "exposed";
+                s.T = 3;
+                Host.HitCreature(s, 100000, 0, Vec3.Zero, LocalId);
+            }
+            yield return new WaitForSecondsRealtime(1f);
+            note("ruin heart after: " + speak(below, r.Mechanism("heart").Point, "word_pull") + ", remembered " + Host.WorldFlags.Contains(EchoRuin.FlagRemembered));
+            note("ruin words known: push " + me.C.Lang.Knows("word_push") + ", rise " + me.C.Lang.Knows("word_rise") + ", pull " + me.C.Lang.Knows("word_pull") + ", weigh " + me.C.Lang.Knows("word_weigh"));
+            yield return new WaitForSecondsRealtime(1f);
+            me.Pos = r.ExitM;
+            me.RespawnAt = r.ExitM;
+            yield return new WaitForSecondsRealtime(2f);
+            note("ruin exit objective: " + Host.ObjectiveFor(LocalId).Text + " (done " + Host.ObjectiveFor(LocalId).Done + ")");
+        }
+
+        Light _heartLight;
+        bool _ruinLit;
+        float _ruinCheck;
+
+        /// <summary>Lights the ruin's lamps (once) and the heart's glow until it falls.</summary>
+        void SyncRuin()
+        {
+            EchoRuin r = Host.Ruin;
+            if (r == null) return;
+            if (!_ruinLit)
+            {
+                _ruinLit = true;
+                var root = new GameObject("Echo ruin lights").transform;
+                foreach (Vec3 at in r.Lamps)
+                {
+                    var l = new GameObject("lamp").AddComponent<Light>();
+                    l.transform.SetParent(root, false);
+                    l.transform.position = ToUnity(at);
+                    l.type = LightType.Point;
+                    l.range = 11f;
+                    l.intensity = 1.6f;
+                    l.color = new Color(1f, 0.78f, 0.5f);
+                    l.shadows = LightShadows.None;
+                }
+                _heartLight = new GameObject("heart").AddComponent<Light>();
+                _heartLight.transform.SetParent(root, false);
+                _heartLight.transform.position = ToUnity(r.HeartM) + new Vector3(0, 0, 1.5f);
+                _heartLight.type = LightType.Point;
+                _heartLight.range = 16f;
+                _heartLight.intensity = 2.2f;
+                _heartLight.color = new Color(0.45f, 1f, 0.9f);
+            }
+            _ruinCheck -= Time.unscaledDeltaTime;
+            if (_ruinCheck > 0 || _heartLight == null) return;
+            _ruinCheck = 0.5f;
+            bool awake = !EchoRuin.Done(Host.World, r.Mechanism("heart"));
+            _heartLight.enabled = awake;
+            if (awake) _heartLight.intensity = Host.WorldFlags.Contains(EchoRuin.FlagSentinel) ? 3.5f : 2.2f;
         }
 
         DevPlayer Player { get { return GetComponent<DevPlayer>(); } }
@@ -169,11 +270,31 @@ namespace Aruun.Game
                 p.BigDig = !p.BigDig;
                 Say(p.BigDig ? "Dev dig on: breaks anything, 2 m" : "Dev dig off: survival digging with tools");
             });
-            DevTools.Register(KeyCode.Escape, "Close the bag, or free / capture the mouse", () =>
+            DevTools.Register(KeyCode.Y, "Go to the echo ruin's arch", () => GoToRuin(false));
+            DevTools.Register(KeyCode.Y, "Go into the sentinel's court", () => GoToRuin(true), true);
+            DevTools.Register(KeyCode.U, "Know every Avarra word", () =>
+            {
+                PlayerRec me = Me;
+                if (me == null || Host.Lexicon == null) return;
+                foreach (var w in Host.Lexicon.Words) me.C.Learn(w.Id);
+                Say("You know every word now");
+            });
+            DevTools.Register(KeyCode.Escape, "Close the bag or the speak panel, or free / capture the mouse", () =>
             {
                 if (PlayHud.BagOpen) { PlayHud.SetBag(false); return; }
+                if (PlayHud.Speaking) { PlayHud.CloseSpeak(); return; }
                 Cursor.lockState = Cursor.lockState == CursorLockMode.Locked ? CursorLockMode.None : CursorLockMode.Locked;
             });
+        }
+
+        void GoToRuin(bool court)
+        {
+            PlayerRec me = Me;
+            if (me == null || Host.Ruin == null) { Say("This world has no echo ruin"); return; }
+            Vec3 at = court ? Host.Ruin.CourtM + new Vec3(0, 0, 10) : Host.Ruin.EntranceM + new Vec3(0, 0, 6);
+            me.Pos = at;
+            me.RespawnAt = at;
+            Say(court ? "The sentinel's court" : "The echo ruin. Read the carved words with E.");
         }
 
         void GiveKit()
@@ -184,7 +305,6 @@ namespace Aruun.Game
                 if (Host.Items.Has(k)) me.C.Inv.Add(k, k == "roast_meat" ? 10 : 1);
             foreach (string k in new[] { "flint", "reed_stalk", "plant_fibre", "cord", "hide", "bark", "rust_rock", "timber" })
                 if (Host.Items.Has(k)) me.C.Inv.Add(k, 20);
-            foreach (string w in new[] { "word_push", "word_pull" }) if (!me.C.Words.Contains(w)) me.C.Words.Add(w);
             Say("Kit given: tools, weapons, food, a campfire, a Tether and materials");
         }
 
@@ -244,7 +364,13 @@ namespace Aruun.Game
             if (_smoke) return;
             PlayerRec me = Me;
             if (me == null) return;
-            try { File.WriteAllText(_charPath, me.C.ToText()); }
+            try
+            {
+                File.WriteAllText(_charPath, me.C.ToText());
+                var flags = new List<string>();
+                foreach (string f in Host.WorldFlags) flags.Add("flag " + f);
+                File.WriteAllLines(_worldPath, flags.ToArray());
+            }
             catch (Exception e) { Debug.LogWarning("Could not save the character: " + e.Message); }
         }
 
@@ -278,6 +404,7 @@ namespace Aruun.Game
             SyncCreatures(dt);
             SyncPlants();
             SyncStructures();
+            SyncRuin();
 
             _saveTimer -= Time.unscaledDeltaTime;
             if (_saveTimer <= 0) { _saveTimer = 30f; Save(); }

@@ -83,14 +83,14 @@ namespace Aruun.Core.Tests
         }
 
         [Test]
-        public void AFreshCastawayGetsTheKitAndWords()
+        public void AFreshCastawayGetsTheKitButNoWords()
         {
             Ruleset rules = Ruleset.Load(RulesJson, "light");
             var c = new CharacterState(Items(), rules);
             c.SetupNew();
             Assert.That(c.Hp, Is.EqualTo(100));
             Assert.That(c.Inv.Count("redroot"), Is.EqualTo(3));
-            Assert.That(c.Words, Does.Contain("word_push"));
+            Assert.That(c.Words, Is.Empty, "a castaway learns Avarra in the ruins, not before");
             Assert.That(c.Cond["hunger"], Is.EqualTo(25));
             Assert.That(c.HeldTool.Key, Is.EqualTo("unarmed"), "redroot in hand digs like bare hands");
         }

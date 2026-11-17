@@ -46,10 +46,7 @@
         "redroot_seed": 2,
         "grinleaf_seed": 1
       },
-      "starting_words": [
-        "word_push",
-        "word_pull"
-      ],
+      "starting_words": [],
       "conditions": {
         "hunger": {
           "name": "Hunger",

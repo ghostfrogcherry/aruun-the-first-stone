@@ -24,6 +24,8 @@ namespace Aruun.Core.Play
         public bool God;
         public double Iframes, Stagger;
         public double NextAttack;
+        /// <summary>World time before which the player cannot speak again.</summary>
+        public double NextWord;
         /// <summary>World time of the last hit given or taken, for the "fighting" flag.</summary>
         public double CombatAt = -999;
         public double RespawnIn;
@@ -83,6 +85,16 @@ namespace Aruun.Core.Play
     {
         public EditOp Op;
         public EditResult Result;
+    }
+
+    /// <summary>What the player should do next in the echo ruin, and where.</summary>
+    public struct Objective
+    {
+        public string Title;
+        public string Text;
+        /// <summary>Where it points, in metres; null when there is nowhere in particular.</summary>
+        public Vec3? Target;
+        public bool Done;
     }
 
     /// <summary>The answer to one tick of holding dig.</summary>

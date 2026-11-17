@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Aruun.Core.Language;
 using Aruun.Core.Content;
 using Aruun.Core.Items;
 using Aruun.Core.Mining;
@@ -26,6 +27,8 @@ namespace Aruun.Core.Survival
         /// <summary>The hotbar slot in hand.</summary>
         public int Selected;
         public List<string> Words = new List<string>();
+        /// <summary>What this character has seen, guessed and knows of Avarra. Words above mirrors its known words.</summary>
+        public WordKnowledge Lang = new WordKnowledge();
         /// <summary>Home Tether position in voxels, if one is set.</summary>
         public int[] Tether;
         public bool Dead;
@@ -57,7 +60,8 @@ namespace Aruun.Core.Survival
             Buffs.Clear();
             Inv = new Inventory(_items);
             foreach (var kv in _rules.StartingItems) Inv.Add(kv.Key, kv.Value);
-            foreach (var w in _rules.StartingWords) if (!Words.Contains(w)) Words.Add(w);
+            Lang = new WordKnowledge();
+            foreach (var w in _rules.StartingWords) Learn(w);
             Dead = false;
             Downed = 0;
         }
@@ -175,6 +179,13 @@ namespace Aruun.Core.Survival
             Cond["gravity_debt"] = Math.Max(0, Math.Min(100, Cond["gravity_debt"] + cost));
         }
 
+        /// <summary>Knows a word from now on.</summary>
+        public void Learn(string word)
+        {
+            Lang.Teach(word);
+            if (!Words.Contains(word)) Words.Add(word);
+        }
+
         // ---- Saving. One "key value" pair per line, so a save is easy to read and diff.
 
         public string ToText()
@@ -189,6 +200,7 @@ namespace Aruun.Core.Survival
             foreach (var kv in Buffs) sb.Append("buff ").Append(kv.Key).Append(' ').Append(kv.Value.ToString("R", c)).Append('\n');
             sb.Append("selected ").Append(Selected).Append('\n');
             foreach (var w in Words) sb.Append("word ").Append(w).Append('\n');
+            foreach (var kv in Lang.Places) foreach (var place in kv.Value) sb.Append("seen ").Append(kv.Key).Append(' ').Append(place).Append('\n');
             if (Tether != null) sb.AppendFormat(c, "tether {0} {1} {2}\n", Tether[0], Tether[1], Tether[2]);
             foreach (var line in Inv.ToText().Split('\n'))
                 if (line.Length > 0) sb.Append("slot ").Append(line).Append('\n');
@@ -202,6 +214,8 @@ namespace Aruun.Core.Survival
             Cond = Conditions.StartValues(_rules);
             Buffs.Clear();
             Words.Clear();
+            Lang = new WordKnowledge();
+            var seen = new List<string[]>();
             Tether = null;
             Hp = _rules.Num("vitals", "hp", 100);
             Stamina = _rules.Num("vitals", "stamina", 100);
@@ -233,6 +247,7 @@ namespace Aruun.Core.Survival
                         if (int.TryParse(rest, out sel)) Selected = Math.Max(0, Math.Min(Inventory.Hotbar - 1, sel));
                         break;
                     case "word": if (!Words.Contains(rest)) Words.Add(rest); break;
+                    case "seen": if (p.Length == 2) seen.Add(p); break;
                     case "tether":
                         int x, y, z;
                         if (p.Length == 3 && int.TryParse(p[0], out x) && int.TryParse(p[1], out y) && int.TryParse(p[2], out z))
@@ -241,6 +256,8 @@ namespace Aruun.Core.Survival
                     case "slot": slots.Append(rest).Append('\n'); break;
                 }
             }
+            foreach (var sight in seen) Lang.See(sight[0], sight[1]);
+            foreach (var w in Words) Lang.Teach(w);
             Inv = new Inventory(_items);
             Inv.FromText(slots.ToString());
             if (Hp <= 0) Hp = _rules.Num("vitals", "hp", 100) * 0.5;

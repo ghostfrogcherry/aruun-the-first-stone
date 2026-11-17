@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using Aruun.Core.Combat;
 using Aruun.Core.Items;
+using Aruun.Core.Language;
 using Aruun.Core.Play;
 using Aruun.Core.Survival;
 using UnityEngine;
@@ -19,6 +21,34 @@ namespace Aruun.Game
         public static float DigFraction;
         /// <summary>Set by the player: what the crosshair is on ("Flint nodule", "Redstrider"), or "".</summary>
         public static string LookingAt = "";
+
+        /// <summary>The speak panel (X) is open and number keys pick words.</summary>
+        public static bool Speaking { get; private set; }
+        /// <summary>The words picked so far, in order.</summary>
+        public static readonly List<string> Phrase = new List<string>();
+        /// <summary>The last phrase spoken; the middle mouse button says it again.</summary>
+        public static readonly List<string> LastPhrase = new List<string>();
+
+        public static void OpenSpeak() { Speaking = true; Phrase.Clear(); }
+        public static void CloseSpeak() { Speaking = false; Phrase.Clear(); }
+        public static void DropWord() { if (Phrase.Count > 0) Phrase.RemoveAt(Phrase.Count - 1); }
+
+        /// <summary>The words this character has at least seen, in lexicon order: what the number keys pick from.</summary>
+        public static List<string> WordsFor(Host h, PlayerRec me)
+        {
+            var list = new List<string>();
+            if (h.Lexicon == null) return list;
+            foreach (WordDef w in h.Lexicon.Words)
+                if (me.C.Lang.Of(w.Id) >= Familiarity.Seen) list.Add(w.Id);
+            return list;
+        }
+
+        public static void PickWord(int index, Host h, PlayerRec me)
+        {
+            List<string> words = WordsFor(h, me);
+            if (index < 0 || index >= words.Count || Phrase.Count >= 4) return;
+            Phrase.Add(words[index]);
+        }
 
         int _picked = -1;
         Vector2 _recipeScroll;
@@ -127,6 +157,12 @@ namespace Aruun.Game
                 if (DigFraction > 0) Bar(new Rect(w / 2 - 40, ht / 2 + 34, 80, 10), DigFraction, new Color(0.9f, 0.9f, 0.9f), "");
             }
 
+            DrawObjective(h, me, w);
+            double debt;
+            if (c.Cond.TryGetValue("gravity_debt", out debt) && debt > 0.5)
+                Bar(new Rect(x, y - 2 - 14, 240, 12), (float)(debt / 100), new Color(0.35f, 0.75f, 0.75f), "");
+            if (Speaking) DrawSpeak(h, me, w, by);
+
             if (c.Dead)
             {
                 Box(new Rect(0, 0, w, ht), new Color(0, 0, 0, 0.55f));
@@ -134,6 +170,67 @@ namespace Aruun.Game
             }
 
             if (BagOpen) DrawBag(s, me);
+        }
+
+        /// <summary>The quest line, top right under the clock: what to do and which way it is.</summary>
+        void DrawObjective(Host h, PlayerRec me, float w)
+        {
+            // Survival-only has no story to follow: the ruin is still there to find.
+            if (PlaySession.Instance != null && PlaySession.Instance.SurvivalOnly) return;
+            Objective o = h.ObjectiveFor(me.Id);
+            if (o.Done) return;
+            string where = "";
+            if (o.Target.HasValue)
+            {
+                Vec3 to = o.Target.Value - me.Pos;
+                double flat = to.FlatLength;
+                where = flat < 3 ? "here" : Mathf.RoundToInt((float)flat) + " m " + Bearing(me.Facing, to);
+                if (to.Y < -3) where += ", below";
+                else if (to.Y > 3) where += ", above";
+            }
+            float bw = 300;
+            Box(new Rect(w - bw - 10, 60, bw, where.Length > 0 ? 82 : 64), new Color(0, 0, 0, 0.45f));
+            GUI.Label(new Rect(w - bw - 2, 62, bw - 12, 22), o.Title, _title);
+            GUI.Label(new Rect(w - bw - 2, 84, bw - 12, 40), o.Text, _small);
+            if (where.Length > 0) GUI.Label(new Rect(w - bw - 2, 120, bw - 12, 20), where, _small);
+        }
+
+        /// <summary>Where a direction lies relative to where you look: ahead, left, behind-right...</summary>
+        static string Bearing(Vec3 facing, Vec3 to)
+        {
+            Vec3 f = facing.Flat, t = to.Flat;
+            if (f.Length < 1e-6 || t.Length < 1e-6) return "";
+            double a = Mathf.Atan2((float)(f.X * t.Z - f.Z * t.X), (float)(f.X * t.X + f.Z * t.Z)) * Mathf.Rad2Deg;   // + is to the left
+            string[] names = { "ahead", "ahead-left", "left", "behind-left", "behind", "behind-right", "right", "ahead-right" };
+            int i = Mathf.RoundToInt((float)(a / 45.0));
+            return names[((i % 8) + 8) % 8];
+        }
+
+        /// <summary>The speak panel: the words you have seen, how well you know them, and the phrase so far.</summary>
+        void DrawSpeak(Host h, PlayerRec me, float w, float hotbarY)
+        {
+            List<string> words = WordsFor(h, me);
+            float pw = 380, lineH = 20, ph = 70 + Mathf.Max(1, words.Count) * lineH;
+            float px = w / 2 - pw / 2, py = hotbarY - 34 - ph;
+            Box(new Rect(px, py, pw, ph), new Color(0.02f, 0.08f, 0.09f, 0.82f));
+            GUI.Label(new Rect(px + 10, py + 4, pw - 20, 22), "Speak Avarra", _title);
+            float ly = py + 28;
+            if (words.Count == 0) { GUI.Label(new Rect(px + 10, ly, pw - 20, lineH), "You know no words yet. Read the carvings in old ruins (E).", _small); ly += lineH; }
+            for (int i = 0; i < words.Count && i < 9; i++)
+            {
+                Familiarity f = me.C.Lang.Of(words[i]);
+                string meaning = f == Familiarity.Known ? h.WordMeaning(words[i])
+                    : f == Familiarity.Guessed ? h.WordMeaning(words[i]) + "?  (try it)"
+                    : "?  (seen once: find it again)";
+                GUI.color = f == Familiarity.Seen ? new Color(1, 1, 1, 0.55f) : Color.white;
+                GUI.Label(new Rect(px + 10, ly, pw - 20, lineH), (i + 1) + "   " + h.WordName(words[i]) + "   " + meaning, _small);
+                GUI.color = Color.white;
+                ly += lineH;
+            }
+            var said = new List<string>();
+            foreach (string id in Phrase) said.Add(h.WordName(id));
+            GUI.Label(new Rect(px + 10, ly + 2, pw - 20, lineH), "Say: " + (said.Count > 0 ? string.Join(" ", said.ToArray()) : "..."), _small);
+            GUI.Label(new Rect(px + 10, ly + 20, pw - 20, lineH), "Numbers pick, Enter or X speaks at the crosshair, Backspace undoes, Esc closes", _small);
         }
 
         void DrawSlot(Rect r, ItemRegistry items, Inventory inv, int i, bool selected, string label)
