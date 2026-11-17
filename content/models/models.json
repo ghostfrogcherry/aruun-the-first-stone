@@ -589,6 +589,156 @@
    "height_m": 0.56,
    "generated_sha256": "2e326b0a255d34cf067798f37572477f38f8cf679d989c1cb17918ab0777f996"
   },
+  "plant_fibre": {
+   "file": "items/plant_fibre.vox",
+   "category": "items",
+   "voxel_m": 0.0625,
+   "size": [
+    10,
+    19,
+    4
+   ],
+   "height_m": 1.19,
+   "generated_sha256": "04855585c4413c588b89416cd2c796f740eaae3cbbf16dc637451c207032e8f0"
+  },
+  "grinleaf_bud": {
+   "file": "items/grinleaf_bud.vox",
+   "category": "items",
+   "voxel_m": 0.0625,
+   "size": [
+    10,
+    13,
+    7
+   ],
+   "height_m": 0.81,
+   "generated_sha256": "293a7fb866b1df798cc2918af850abbdde6ac3db1b4983543d2a9fcfa1079485"
+  },
+  "redroot_seed": {
+   "file": "items/redroot_seed.vox",
+   "category": "items",
+   "voxel_m": 0.0625,
+   "size": [
+    9,
+    2,
+    6
+   ],
+   "height_m": 0.12,
+   "generated_sha256": "09510dca62886ea7f872dc0a5648b1bd83965833223b825d55beba4fab8f9205"
+  },
+  "grinleaf_seed": {
+   "file": "items/grinleaf_seed.vox",
+   "category": "items",
+   "voxel_m": 0.0625,
+   "size": [
+    9,
+    2,
+    8
+   ],
+   "height_m": 0.12,
+   "generated_sha256": "cf122aa22761b1c5ac353fabf6dd69a58f39d57488fffb84e5aff1f1772072ce"
+  },
+  "glasswort_cutting": {
+   "file": "items/glasswort_cutting.vox",
+   "category": "items",
+   "voxel_m": 0.0625,
+   "size": [
+    7,
+    12,
+    4
+   ],
+   "height_m": 0.75,
+   "generated_sha256": "8bd271eda8f2692c36a76f2babe3db0b7f5e8cbbfb6b32aa86240ef560e57222"
+  },
+  "reed_shoot": {
+   "file": "items/reed_shoot.vox",
+   "category": "items",
+   "voxel_m": 0.0625,
+   "size": [
+    4,
+    16,
+    4
+   ],
+   "height_m": 1.0,
+   "generated_sha256": "aa93d1e4f97235e54549104db1e336a83472d05d41785c0a8533b5410af49e8f"
+  },
+  "campfire_kit": {
+   "file": "items/campfire_kit.vox",
+   "category": "items",
+   "voxel_m": 0.0625,
+   "size": [
+    11,
+    10,
+    14
+   ],
+   "height_m": 0.62,
+   "generated_sha256": "b93b19ba75875e6f6283870affe83c3fb82debcbc2679120ce4d93959dafef72",
+   "note": "Bundled firewood with a flint on top: the campfire before it is placed."
+  },
+  "crystal_shard": {
+   "file": "items/crystal_shard.vox",
+   "category": "items",
+   "voxel_m": 0.0625,
+   "size": [
+    8,
+    15,
+    8
+   ],
+   "height_m": 0.94,
+   "generated_sha256": "f5e69629f9ad749bef779f51091471af39540f3e7e38477285fc9306510f4eb3",
+   "note": "Glassback shell crystal."
+  },
+  "wing_dust": {
+   "file": "items/wing_dust.vox",
+   "category": "items",
+   "voxel_m": 0.0625,
+   "size": [
+    10,
+    4,
+    10
+   ],
+   "height_m": 0.25,
+   "generated_sha256": "ee71f892e4eabeaa307cb3cc62966c3ac52df9d52c911eac865685149e8a068d",
+   "note": "Duskmoth scales in a clay dish."
+  },
+  "ancient_stone": {
+   "file": "items/ancient_stone.vox",
+   "category": "items",
+   "voxel_m": 0.0625,
+   "size": [
+    10,
+    8,
+    8
+   ],
+   "height_m": 0.5,
+   "generated_sha256": "3e4e0030d02afa1f23293ff5da88b1e626621ac0bcd65617cbfe39afcd90fef2",
+   "note": "Dressed block from an old-builder ruin, with one inscribed line."
+  },
+  "bronze_fitting": {
+   "file": "items/bronze_fitting.vox",
+   "category": "items",
+   "voxel_m": 0.0625,
+   "size": [
+    10,
+    7,
+    4
+   ],
+   "height_m": 0.44,
+   "generated_sha256": "45f8fe765fb831a403750e1153fabf22dd290d0b46d150c3379bf8ff8e235453",
+   "note": "Old-builder clamp: a bronze band with two rivets."
+  },
+  "word_fragment": {
+   "file": "items/word_fragment.vox",
+   "category": "items",
+   "voxel_m": 0.0625,
+   "size": [
+    11,
+    13,
+    2
+   ],
+   "height_m": 0.81,
+   "generated_sha256": "5edaff298440aad5b1cd75524e5eba9d2a3259fec6919353193cde00a57cda91",
+   "note": "A shard of inscribed slate holding part of an Avarra word."
+  },
   "redstrider": {
    "file": "creatures/redstrider.vox",
    "category": "creatures",

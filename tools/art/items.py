@@ -210,6 +210,130 @@ def seeds():
     return [("seeds", v)]
 
 
+def plant_fibre():
+    v = Vox()
+    for i, (x, z, top) in enumerate(((-2, 0, 15), (-1, 1, 17), (0, 0, 18), (1, 1, 16), (2, 0, 14), (0, -1, 16))):
+        v.line((x, 0, z), (x * 2.2, top, z * 1.5), 0.5, gradient("green", 3, 5, 0, 18, 0.35, i))
+    v.box(-2, 5, -1, 2, 6, 1, CORD, shell=True)
+    return [("plant_fibre", v)]
+
+
+def grinleaf_bud():
+    v = Vox()
+    v.box(0, 0, 0, 0, 3, 0, flat("green_2"))
+    v.ellipsoid(0.5, 8, 0.5, 3.4, 5.2, 3.2, mix(ramp("green", 4, 0.5, 1), flat("herb_1"), 0.3, 2), ymin=3)
+    v.repaint(flat("glow_ember"), lambda x, y, z: _hash(x, y, z, 7) < 0.1)        # orange hairs
+    v.line((0, 4, 0), (-4, 6, 1), 0.5, flat("green_3"))
+    v.line((0, 4, 0), (5, 6, -1), 0.5, flat("green_3"))
+    return [("grinleaf_bud", v)]
+
+
+def _seed_pile(colour, alt, n=7, seed=0):
+    v = Vox()
+    for i in range(n):
+        a = i * 2.4 + seed
+        r = 0 if i == 0 else 2.6 + (i % 2)
+        x, z = int(round(math.cos(a) * r)), int(round(math.sin(a) * r))
+        v.ellipsoid(x + 0.5, 1, z + 0.5, 1.4, 1.1, 1.0, flat(colour if i % 3 else alt), ymin=0)
+    return v
+
+
+def redroot_seed():
+    return [("redroot_seed", _seed_pile("crimson_2", "crimson_4", seed=1))]
+
+
+def grinleaf_seed():
+    return [("grinleaf_seed", _seed_pile("wood_3", "green_2", seed=2))]
+
+
+def glasswort_cutting():
+    v = Vox()
+    v.line((0, 0, 0), (0, 9, 0), 1.2, gradient("water", 2, 4, 0, 12, 0.2, 1), 0.7)
+    v.line((0, 5, 0), (4, 11, 1), 0.9, gradient("water", 2, 4, 0, 12, 0.2, 2), 0.75)
+    v.line((0, 4, 0), (-3, 8, -1), 0.8, gradient("water", 2, 4, 0, 12, 0.2, 3), 0.75)
+    v.box(-1, 0, -1, 0, 0, 0, flat("sandstone_5"))                                 # cut end
+    return [("glasswort_cutting", v)]
+
+
+def reed_shoot():
+    v = Vox()
+    v.ellipsoid(0, 1, 0, 2.6, 2.2, 2.2, ramp("wood", 3, 0.4, 1), ymin=0)           # root ball
+    for i, (x, z, top) in enumerate(((0, 0, 14), (1, 0, 10), (-1, 1, 8))):
+        v.box(x, 2, z, x, top, z, gradient("crimson", 2, 5, 2, 14, 0.3, i))
+    v.set(0, 15, 0, flat("crimson_5"))
+    return [("reed_shoot", v)]
+
+
+def campfire_kit():
+    """Bundled firewood with a flint on top: the campfire before it is placed."""
+    v = Vox()
+    for i, (x, y) in enumerate(((-3, 0), (0, 0), (3, 0), (-1, 3), (2, 3))):
+        v.box(x - 1, y, -7, x + 1, y + 2, 6, ramp("wood", 2 + i % 2, 0.4, i))
+        v.box(x, y + 1, -7, x, y + 1, -7, flat("wood_4"))
+        v.box(x, y + 1, 6, x, y + 1, 6, flat("wood_4"))
+    for z in (-4, 3):
+        v.box(-5, -1, z, 5, 6, z, CORD, shell=True)
+    v.ellipsoid(0.5, 7.5, 0, 2.2, 1.6, 1.8, FLINT, ymin=6)
+    return [("campfire_kit", v)]
+
+
+def crystal_shard():
+    """Glassback shell crystal."""
+    v = Vox()
+    for i, (x, z, h, r) in enumerate(((0, 0, 14, 2.0), (3, 1, 9, 1.5), (-2, 2, 7, 1.3), (1, -3, 6, 1.2))):
+        v.cylinder(x + 0.5, z + 0.5, 0, h, r, 0.75, gradient("water", 1, 4, 0, 14, 0.2, i))
+        v.set(x, h, z, flat("sandstone_5"))
+    return [("crystal_shard", v)]
+
+
+def wing_dust():
+    """Duskmoth scales in a clay dish."""
+    v = Vox()
+    v.cylinder(0, 0, 0, 3, 3.6, 5.2, ramp("rust", 3, 0.3, 1))
+    v.cylinder(0, 0, 1, 3, 2.8, 4.4, None, carve=True)
+    v.cylinder(0, 0, 1, 2, 2.8, 3.6, mix(flat("dusk_2"), flat("violet_3"), 0.35, 3))
+    v.repaint(flat("glow_lamp"), lambda x, y, z: y == 2 and _hash(x, y, z, 4) < 0.22)
+    return [("wing_dust", v)]
+
+
+def ancient_stone():
+    """Dressed block from an old-builder ruin, with one inscribed line."""
+    v = Vox()
+    v.box(-5, 0, -4, 4, 7, 3, ramp("stone", 4, 0.45, 6))
+    v.carve_box(3, 6, -4, 4, 7, -2)                                                # chipped corner
+    v.repaint(ramp("green", 3, 0.5, 2), lambda x, y, z: y == 7 and _hash(x, y, z, 3) < 0.35)
+    for z in (3, -4):                                                              # same line on both long faces
+        for x in (-3, -2, 0, 1, 2):
+            v.set(x, 4, z, flat("glow_teal"))
+        v.set(-2, 3, z, flat("glow_teal")), v.set(1, 5, z, flat("glow_teal"))
+    return [("ancient_stone", v)]
+
+
+def bronze_fitting():
+    """Old-builder clamp: a bronze band with two rivets."""
+    v = Vox()
+    v.box(-5, 0, -2, 4, 5, 1, ramp("bronze", 2, 0.4, 1), shell=True)
+    v.carve_box(-4, 1, -2, 3, 4, 1)
+    v.carve_box(-1, 5, -2, 0, 5, 1)                                                # the open gap
+    for x in (-4, 3):
+        v.box(x, 6, -1, x, 6, 0, flat("bronze_3"))
+    v.repaint(flat("green_4"), lambda x, y, z: _hash(x, y, z, 9) < 0.12)           # verdigris
+    return [("bronze_fitting", v)]
+
+
+def word_fragment():
+    """A shard of inscribed slate holding part of an Avarra word."""
+    v = Vox()
+    for y in range(0, 13):
+        w = 5 - abs(y - 5) // 2 - (1 if y > 9 else 0)
+        v.box(-w, y, 0, w - (y % 3 == 0), y, 1, ramp("stone", 2, 0.3, 8))
+    for (x, y) in ((-2, 8), (-1, 8), (0, 8), (1, 8), (-1, 7), (-1, 6), (-1, 5), (1, 6), (1, 5), (2, 5), (0, 3), (1, 3), (-2, 3)):
+        v.set(x, y, 1, flat("glow_teal")), v.set(x, y, 0, flat("glow_teal"))
+    return [("word_fragment", v)]
+
+
 ITEMS = {f.__name__: f for f in (flint_pick, flint_axe, reed_spear, fallhammer, dust_mask, moss_bandage, grinleaf_roll,
                                  redroot, roast_redroot, raw_meat, roast_meat, glasswort_leaf, flint, reed_stalk,
-                                 cord, hide, seeds)}
+                                 cord, hide, seeds, plant_fibre, grinleaf_bud, redroot_seed, grinleaf_seed,
+                                 glasswort_cutting, reed_shoot, campfire_kit, crystal_shard, wing_dust,
+                                 ancient_stone, bronze_fitting, word_fragment)}
