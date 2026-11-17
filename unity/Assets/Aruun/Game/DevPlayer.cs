@@ -51,6 +51,7 @@ namespace Aruun.Game
         bool _wasGrounded = true;
         float _fallSpeed;
         float _swingTimer, _animTimer;
+        bool _digging;
 
         PlaySession Play { get { return PlaySession.Instance; } }
 
@@ -290,6 +291,7 @@ namespace Aruun.Game
             if (PlayInput.LeftDown && host.CreatureInReach(id, 3.0)) { Swing(host.Attack(id, false)); StopDig(); return; }
             if (PlayInput.LeftHeld && Time.unscaledTime > _swingTimer && hit.Hit)
             {
+                _digging = true;
                 DigTick t = host.Dig(id, hit.X, hit.Y, hit.Z, Time.deltaTime);
                 PlayHud.DigFraction = t.Broken ? 0 : (float)t.Fraction;
                 if (t.Refused && PlayInput.LeftDown && !string.IsNullOrEmpty(t.Message)) Play.Say(t.Message);
@@ -307,6 +309,9 @@ namespace Aruun.Game
         void StopDig()
         {
             PlayHud.DigFraction = 0;
+            // Only when a dig was going: the host may be digging for this player by other means (--smoke).
+            if (!_digging) return;
+            _digging = false;
             if (Play != null && Play.Host != null) Play.Host.StopDigging(PlaySession.LocalId);
         }
 
