@@ -1,6 +1,6 @@
 # 0001: Engine stack
 
-Status: accepted, versions pinned 2026-11-16 after the first run. Date: 2026-11-16.
+Status: superseded by 0006 (Unity) on 2026-11-17. Was: accepted, versions pinned 2026-11-16 after the first run. Date: 2026-11-16.
 
 ## Decision
 - Godot 4.x stable (project targets 4.4 features), Forward+ renderer.

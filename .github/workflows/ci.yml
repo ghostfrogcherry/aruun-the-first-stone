@@ -14,9 +14,3 @@ jobs:
           python-version: "3.12"
       - name: Validate content (blocks, words, structures)
         run: python3 tools/content_validator/validate.py
-      - name: Parse every GDScript file
-        run: |
-          pip install "gdtoolkit==4.*"
-          find scripts tests -name '*.gd' -print0 | xargs -0 -n1 gdparse > /dev/null
-# Engine-level tests (tests/run_tests.gd) need Godot + Voxel Tools installed.
-# Add a job for them once the pinned versions are decided (docs/decisions/0001).

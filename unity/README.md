@@ -1,13 +1,12 @@
 # Aruun in Unity
 
-The Unity rebuild of Aruun. The Godot project in the repo root is the working reference
-until this reaches the same features. Plan and audit:
+Aruun's game project. (The Godot prototype it replaces is retired; its last version is
+commit `91ea5ff`, kept for reference while its rules are ported.) Plan and audit:
 https://claude.ai/artifact/PxBD5NR3jihiH37U3573fA
 
 **Status: first slice.** Seeded 0.25 m terrain (meadows, lakes, mesas, trees), a flying
-camera, digging and building through edit ops, and a save journal. The rules library is
-tested. The Unity view layer type-checks against Unity's API but has **not yet been run in
-the editor**; the first run on a real machine is the next step.
+camera, digging and building through edit ops, a save journal, destruction and language
+rules. Runs at about 100 fps on an RTX 3070 (Unity 6000.3.28f1, Linux).
 
 ## Layout
 
@@ -16,7 +15,7 @@ the editor**; the first run on a real machine is the next step.
 | `Assets/Aruun/Core` | The rules: voxels, worldgen, mesher, edit ops, journal, content loading. Plain C# with no Unity dependency, so it is tested without Unity and behaves the same on host, client and server. |
 | `Assets/Aruun/Game` | The Unity side: chunk meshes, camera, input, overlay. Thin on purpose. |
 | `Tests/Aruun.Core.Tests` | Tests for Core. Run with plain .NET. Outside `Assets`, so Unity ignores it. |
-| `../content` | Blocks, items, models and the rest, shared with the Godot project. Read straight from the repo in the editor. |
+| `../content` | Blocks, items, models and the rest. Read straight from the repo in the editor; copied into builds. |
 
 Rules of the house:
 
