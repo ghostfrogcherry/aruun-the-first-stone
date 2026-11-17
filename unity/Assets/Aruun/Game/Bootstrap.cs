@@ -90,7 +90,12 @@ namespace Aruun.Game
             view.ViewChunks = Mathf.CeilToInt(viewMeters / (WorldConfig.ChunkSize * WorldConfig.VoxelSize));
             view.Init(world, cam.transform);
 
-            cam.gameObject.AddComponent<DevPlayer>().Init(view, map, options.Seed, options.Fly || options.Pose != null);
+            var player = cam.gameObject.AddComponent<DevPlayer>();
+            player.Init(view, map, options.Seed, options.Fly || options.Pose != null);
+            var day = cam.gameObject.AddComponent<DayNight>();
+            day.Sun = sun;
+            day.Apply();
+            cam.gameObject.AddComponent<DevTools>().Init(player, view, day);
             if (!string.IsNullOrEmpty(options.ShotPath)) DevInput.Enabled = false;
             if (!string.IsNullOrEmpty(options.ShotPath))
                 cam.gameObject.AddComponent<AutoScreenshot>().Init(options.ShotPath, options.ShotAfter, view);

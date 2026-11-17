@@ -77,6 +77,13 @@ namespace Aruun.Core.Worldgen
             return GridBiome(FloorDiv(x + Cell / 2, Cell), FloorDiv(z + Cell / 2, Cell));
         }
 
+        /// <summary>True if voxel column (x, z) lies inside the painted map.</summary>
+        public bool Contains(int x, int z)
+        {
+            int px = _spawnPx + FloorDiv(x + Cell / 2, Cell), py = _spawnPy - FloorDiv(z + Cell / 2, Cell);
+            return px >= 0 && py >= 0 && px < Width && py < Height;
+        }
+
         public MapPlace Place(string key)
         {
             foreach (var p in Places) if (p.Key == key) return p;
