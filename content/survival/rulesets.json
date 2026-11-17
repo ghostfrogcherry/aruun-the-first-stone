@@ -360,7 +360,7 @@
               "mods": {
                 "move_speed_mult": 0.85,
                 "stamina_regen_mult": 0.7,
-                  "debt_cost_mult": 1.5
+                "debt_cost_mult": 1.5
               }
             }
           ]
@@ -538,6 +538,13 @@
         "read_bonus": 1,
         "stamina_regen_mult": 1.05
       }
+    },
+    "dusted": {
+      "name": "Dusted",
+      "duration_s": 6,
+      "flags": [
+        "dusted"
+      ]
     }
   }
 }

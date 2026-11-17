@@ -1,7 +1,7 @@
 # Mob behaviours
 
 How the four mobs in [mobs.md](mobs.md) act, why (lore), and the numbers that keep them fair.
-The numbers live in `content/creatures/mob_behaviours.json`. They are a proposal until the survival code implements each one.
+The numbers live in `content/creatures/creatures.json` and the code is `scripts/entities/mob_brains.gd`. Not built yet: crouching (so the reedhopper's shorter crouched notice range and gathering resting moths by day), the sentinel's Earth-gravity variant, and lamps or torches as moth lights (only campfires draw them so far). The glassback's shell is hit from the front or rear and its flanks are soft.
 
 **Balance baseline** (from the current game data): the castaway has 100 health and 100 stamina. A flint axe hits for 17, a reed spear for 13, the fallhammer for 30. A nightstalker bite is 12. Health comes back slowly (0.5 per second after 6 s without a hit). Hardcore scales creature damage with its own multiplier, so these are the Light numbers.
 

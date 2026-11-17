@@ -248,6 +248,9 @@ func _physics_process(delta: float) -> void:
 	if dodge != Vector3.ZERO:
 		velocity.x = dodge.x
 		velocity.z = dodge.z
+	var push: Vector3 = actions.push_velocity()
+	velocity.x += push.x
+	velocity.z += push.z
 	floor_snap_length = STEP_MAX + 0.2
 	if dir != Vector3.ZERO and (is_on_floor() or swimming):
 		_step_up(dir * maxf(speed * delta, RADIUS * 0.5))

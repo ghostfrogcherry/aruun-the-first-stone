@@ -28,6 +28,8 @@ var _dodge_left := 0.0
 var _dodge_dir := Vector3.ZERO
 var _attack_ready := 0.0
 var _time := 0.0
+var _push := Vector3.ZERO     # something is shoving the player (a charge, a shockwave, a pull)
+var _push_left := 0.0
 
 
 func _ready() -> void:
@@ -36,7 +38,7 @@ func _ready() -> void:
 	_add_key("dodge", KEY_CTRL)
 	_add_key("inventory", KEY_TAB)
 	_add_key("next_word", KEY_R)
-	_add_key("help", KEY_F1)
+	_add_key("help", KEY_F2)
 	_add_key("debug_kit", KEY_F9)
 	_add_key("debug_time", KEY_F10)
 	_add_key("debug_spawn", KEY_F11)
@@ -106,6 +108,11 @@ func jump_mult() -> float:
 ## Velocity of a dodge in progress, or zero.
 func dodge_velocity() -> Vector3:
 	return _dodge_dir * DODGE_SPEED if _dodge_left > 0.0 else Vector3.ZERO
+
+
+## Velocity from being shoved, or zero. Added to the player's own movement.
+func push_velocity() -> Vector3:
+	return _push if _push_left > 0.0 else Vector3.ZERO
 
 
 func landed(speed: float) -> void:
@@ -195,7 +202,7 @@ func secondary(target) -> void:
 ## E was pressed. Returns true if it was used up here (otherwise player.gd
 ## tries to read an inscription).
 func interact(target) -> bool:
-	if hover_entity != 0 and not _is_creature(hover_entity):
+	if hover_entity != 0 and (not _is_creature(hover_entity) or prompt.contains("E:")):
 		sim.request_interact.rpc_id(1, hover_entity)
 		return true
 	var friend := _downed_friend()
@@ -261,6 +268,9 @@ func _on_fx(kind: String, _data: Dictionary) -> void:
 			var dir := player.transform.basis * Vector3(input.x, 0, input.y)
 			_dodge_dir = dir.normalized() if dir.length() > 0.1 else player.global_basis.z # back-step
 			_dodge_left = DODGE_TIME
+		"shove":
+			_push = _data.v
+			_push_left = float(_data.t)
 		"hurt", "guard_break", "blocked", "evade", "hit_confirm", "die", "respawn", "downed":
 			hud.flash(kind)
 
@@ -270,6 +280,7 @@ func _on_fx(kind: String, _data: Dictionary) -> void:
 func _process(delta: float) -> void:
 	_time += delta
 	_dodge_left = maxf(_dodge_left - delta, 0.0)
+	_push_left = maxf(_push_left - delta, 0.0)
 	if not sim.active or world.vt == null:
 		return
 	# What is under the crosshair?

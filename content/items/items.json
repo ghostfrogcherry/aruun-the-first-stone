@@ -43,6 +43,10 @@
 
     {"key": "dust_mask",       "name": "Dust mask",    "kind": "gear", "stack": 1, "color": "#a08060", "grants_flag": "masked"},
 
+    {"key": "crystal_shard",   "name": "Crystal shard", "kind": "material", "stack": 50, "color": "#bfe8dc"},
+    {"key": "wing_dust",       "name": "Wing dust",     "kind": "material", "stack": 50, "color": "#e8d890"},
+    {"key": "bronze_fitting",  "name": "Bronze fitting", "kind": "material", "stack": 20, "color": "#a8743a"},
+    {"key": "word_fragment",   "name": "Word fragment (placeholder)", "kind": "material", "stack": 10, "color": "#3fb8a8"},
     {"key": "campfire_kit",    "name": "Campfire",     "kind": "structure", "stack": 10, "color": "#e07a30", "structure": "campfire"},
     {"key": "tether_stone",    "name": "Tether stone", "kind": "structure", "stack": 5,  "color": "#3fb8a8", "structure": "tether"}
   ],
@@ -58,7 +62,7 @@
     "water":        []
   },
   "structures": {
-    "campfire": {"name": "Campfire", "heat_m": 5.0, "station": "fire", "light": "#ff9a50", "color": "#e07a30"},
+    "campfire": {"name": "Campfire", "heat_m": 5.0, "station": "fire", "light": "#ff9a50", "color": "#e07a30", "draws_moths": true},
     "tether":   {"name": "Tether",   "heat_m": 0.0, "station": "tether", "light": "#3fb8a8", "color": "#3fb8a8",
                  "calm_m": 30.0, "growth_mult": 1.5, "respawn": true}
   },

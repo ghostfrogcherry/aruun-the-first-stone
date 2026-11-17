@@ -11,7 +11,7 @@ extends Node3D
 const M := WorldConfig.UNITS_PER_METER
 const SIM_STEP := 0.05                 # creature simulation rate (20 Hz)
 const CELL_RADIUS := 3                 # wild cells kept alive around each player
-const MAX_CREATURES := 14
+const MAX_CREATURES := 26
 const SPAWN_MIN := 34.0 * M
 const SPAWN_MAX := 54.0 * M
 const DESPAWN_DIST := 110.0 * M
@@ -115,6 +115,8 @@ func pick(origin: Vector3, dir: Vector3, max_dist: float) -> int:
 	var best_t := max_dist
 	for id in ents:
 		var e: Dictionary = ents[id]
+		if e.kind == "shot":
+			continue
 		var r := _pick_radius(e)
 		var centre: Vector3 = e.pos + Vector3(0, r, 0)
 		var to := centre - origin
@@ -153,7 +155,10 @@ func describe(id: int) -> String:
 		"structure":
 			return GameData.structures[e.def].name
 		"creature":
-			return GameData.creatures[e.def].name
+			var cdef: Dictionary = GameData.creatures[e.def]
+			if cdef.get("brain", {}).has("milk") and e.get("calm", true):
+				return "%s   E: take glasswort from its shell (from behind)" % cdef.name
+			return cdef.name
 	return ""
 
 
@@ -285,7 +290,30 @@ func interact(peer: int, id: int, c: CharacterState, from: Vector3) -> String:
 				c.tether = e.pos
 				return "This Tether is now your home. You will wake here."
 			return "The fire is warm. Stand by it to rest and cook."
+		"creature":
+			return _milk(id, c, from)
 	return ""
+
+
+## Herders take water-leaf from a calm glassback's shell. Only from behind.
+func _milk(id: int, c: CharacterState, from: Vector3) -> String:
+	var rec: Dictionary = _srv.get(id, {})
+	var def: Dictionary = GameData.creatures[ents[id].def]
+	var milk: Dictionary = def.get("brain", {}).get("milk", {})
+	if rec.is_empty() or milk.is_empty():
+		return ""
+	if rec.state not in ["idle", "wander"]:
+		return "%s is in no mood" % def.name
+	if sim.world_time < float(rec.get("milk_at", 0.0)):
+		return "Its shell has nothing to spare yet"
+	var side: float = MobBrains._flat(from - rec.pos).normalized().dot(MobBrains._dir_of(rec.yaw))
+	if side > -0.3:
+		MobBrains.provoke(self, rec, def)
+		return "It saw you reaching. Come from behind next time."
+	rec.milk_at = sim.world_time + float(milk.regrow_s)
+	rec.crowd = 0.0
+	c.inv.add(milk.item, int(milk.count))
+	return "You take %d %s from its shell" % [int(milk.count), GameData.item(milk.item).name.to_lower()]
 
 
 func _harvest(id: int, c: CharacterState) -> String:
@@ -359,8 +387,13 @@ func damage_creature(id: int, amount: float, poise: float, kick: Vector3, by_pee
 	if rec.is_empty() or rec.get("state", "dead") == "dead":
 		return
 	var def: Dictionary = GameData.creatures[ents[id].def]
+	var special := MobBrains.handles(def)
+	if special:
+		amount = MobBrains.armour(self, rec, def, amount, by_peer)
+		if amount < 0.0:
+			return
 	rec.hp -= amount
-	rec.vel += kick
+	rec.vel += kick / (maxf(float(def.mass), 1.0) if special else 1.0)
 	if kick.length() > 4.0 * M:
 		rec.launched = 0.6
 	rec.poise -= poise
@@ -370,6 +403,16 @@ func damage_creature(id: int, amount: float, poise: float, kick: Vector3, by_pee
 			rec.threat = p
 	if rec.hp <= 0.0:
 		_kill(id)
+		return
+	var hp_max := float(rec.get("hp_max", def.hp))
+	if special:
+		var broke: bool = rec.poise <= 0.0
+		if broke:
+			rec.poise = float(def.poise)
+			rec.state = "stagger"
+			rec.t = 0.7
+		MobBrains.on_hit(self, id, rec, def, broke)
+		event.rpc(id, "hit", {"hp": maxf(rec.hp, 0.0) / hp_max})
 		return
 	if rec.poise <= 0.0:
 		rec.poise = float(def.poise)
@@ -403,6 +446,8 @@ func _kill(id: int) -> void:
 			items.append({"k": d.item, "n": n})
 	spawn_drop(rec.pos + Vector3(0, 1, 0), items)
 	event.rpc(id, "die", {"hp": 0.0})
+	if def.behavior == "guardian":
+		sim.on_guardian_slain(ents[id].def)
 
 
 ## Graviturge words acting on entities. Returns how many things were moved.
@@ -428,6 +473,16 @@ func apply_force(force: Dictionary, caster_peer: int) -> int:
 					damage_creature(id, 0.0, 12.0, kick, caster_peer)
 					rec.launched = 1.2
 					moved += 1
+				elif e.kind == "shot" and not rec.returned:
+					var to3: Vector3 = e.pos - origin
+					if to3.length() <= reach and to3.normalized().dot(dir) >= cos_half * 0.8:
+						# Sent back the way it came, at whoever threw it.
+						var thrower: Dictionary = _srv.get(int(rec.owner), {})
+						var back: Vector3 = (thrower.pos + Vector3(0, 5, 0) - e.pos) if not thrower.is_empty() else dir
+						rec.vel = back.normalized() * rec.vel.length() * 1.3
+						rec.returned = true
+						rec.t = 4.0
+						moved += 1
 				elif e.kind == "drop":
 					var to2: Vector3 = e.pos - origin
 					if to2.length() <= reach and to2.normalized().dot(dir) >= cos_half:
@@ -438,7 +493,9 @@ func apply_force(force: Dictionary, caster_peer: int) -> int:
 			if id != 0:
 				var rec: Dictionary = _srv[id]
 				var e: Dictionary = ents[id]
-				if e.kind == "creature":
+				if e.kind == "creature" and MobBrains.on_pull(self, id, rec, GameData.creatures[e.def]):
+					damage_creature(id, 0.0, 0.0, Vector3.ZERO, caster_peer)
+				elif e.kind == "creature":
 					var to: Vector3 = origin - rec.pos
 					var flat := Vector3(to.x, 0, to.z)
 					var dist := maxf(flat.length() - 1.5 * M, 0.0)
@@ -467,7 +524,7 @@ func _ray_target(origin: Vector3, dir: Vector3, reach: float) -> int:
 	var best_t := reach
 	for id in _srv:
 		var e: Dictionary = ents[id]
-		if e.kind == "plant" or e.kind == "structure" or _srv[id].get("state", "") == "dead":
+		if e.kind == "plant" or e.kind == "structure" or e.kind == "shot" or _srv[id].get("state", "") == "dead":
 			continue
 		var r := _pick_radius(e) + 2.0 # generous: magick should feel reliable
 		var centre: Vector3 = e.pos + Vector3(0, r * 0.5, 0)
@@ -500,6 +557,7 @@ func server_tick(delta: float) -> void:
 	while _acc >= SIM_STEP:
 		_acc -= SIM_STEP
 		_step_creatures(SIM_STEP)
+		_step_shots(SIM_STEP)
 	_slow += delta
 	if _slow >= 0.5:
 		_slow = 0.0
@@ -543,15 +601,21 @@ func _step_creatures(dt: float) -> void:
 		if rec.slow > 0.0:
 			want *= 0.45
 		rec.launched = maxf(rec.launched - dt, 0.0)
-		if rec.launched <= 0.0 or (rec.grounded and rec.launched < 0.3):
+		if def.get("fly", false):
+			pass # fliers steer in _fly_step
+		elif rec.launched <= 0.0 or (rec.grounded and rec.launched < 0.3):
 			var k := clampf(dt * (10.0 if rec.grounded else 2.0), 0.0, 1.0)
 			rec.vel.x = lerpf(rec.vel.x, want.x, k)
 			rec.vel.z = lerpf(rec.vel.z, want.z, k)
 		if rec.grounded and rec.blocked > 0.0 and want.length() > 0.1 and rec.launched <= 0.0:
 			rec.vel.y = sqrt(2.0 * g * float(def.jump_m) * M) # hop over what is in the way
 		var before: Vector3 = rec.vel
-		var r := CreatureMotion.step(rec.pos, rec.vel, dt, float(def.radius_m) * M, float(def.height_m) * M,
-			2, g * (2.2 if rec.slow > 0.0 else 1.0), _solid)
+		var r: Dictionary
+		if def.get("fly", false) and rec.state != "dead":
+			r = _fly_step(rec, def, want, dt)
+		else:
+			r = CreatureMotion.step(rec.pos, rec.vel, dt, float(def.radius_m) * M, float(def.height_m) * M,
+				2, g * (2.2 if rec.slow > 0.0 else 1.0), _solid)
 		rec.pos = r.pos
 		rec.vel = r.vel
 		rec.grounded = r.grounded
@@ -569,7 +633,7 @@ func _step_creatures(dt: float) -> void:
 			if rec.state == "dead":
 				continue
 		var flat := Vector2(rec.vel.x, rec.vel.z)
-		if flat.length() > 0.5 and rec.state not in ["windup", "stagger"]:
+		if flat.length() > 0.5 and rec.state not in ["windup", "stagger"] and not MobBrains.handles(def):
 			rec.yaw = lerp_angle(rec.yaw, atan2(-rec.vel.x, -rec.vel.z), clampf(dt * 10.0, 0.0, 1.0))
 		var anim := 0
 		if rec.state == "windup":
@@ -580,6 +644,8 @@ func _step_creatures(dt: float) -> void:
 			anim = 2
 		elif flat.length() > 0.5:
 			anim = 1
+		if int(rec.get("anim_force", -1)) >= 0:
+			anim = rec.anim_force
 		rec.anim = anim
 		e.pos = rec.pos
 		e.yaw = rec.yaw
@@ -588,8 +654,122 @@ func _step_creatures(dt: float) -> void:
 		moves.rpc(out)
 
 
+## Fliers ignore gravity and steer straight for where they want to be.
+func _fly_step(rec: Dictionary, def: Dictionary, want: Vector3, dt: float) -> Dictionary:
+	if rec.launched <= 0.0:
+		rec.vel = rec.vel.lerp(want, clampf(dt * 5.0, 0.0, 1.0))
+	var next: Vector3 = rec.pos + rec.vel * dt
+	var wall := 0.0
+	if CreatureMotion._free(next, float(def.radius_m) * M, float(def.height_m) * M, _solid):
+		rec.pos = next
+	else:
+		wall = rec.vel.length()
+		rec.vel = Vector3(0, 2.0 * M, 0) # bumped into something: rise over it
+	return {"pos": rec.pos, "vel": rec.vel, "grounded": false, "impact": 0.0, "wall": wall}
+
+
+# --- Helpers the creature brains use ----------------------------------------
+
+func remove_quietly(id: int) -> void:
+	_remove(id)
+
+
+func count_state(behavior: String, states: Array) -> int:
+	var n := 0
+	for id in _srv:
+		if ents[id].kind == "creature" and GameData.creatures[ents[id].def].behavior == behavior and _srv[id].state in states:
+			n += 1
+	return n
+
+
+## Is there a structure of this kind within `dist` of pos?
+func near_kind(pos: Vector3, def_key: String, dist: float) -> bool:
+	for id in ents:
+		var e: Dictionary = ents[id]
+		if e.kind == "structure" and e.def == def_key and e.pos.distance_to(pos) <= dist:
+			return true
+	return false
+
+
+## The nearest open flame that draws moths, or null. Fires beside a Tether do not count.
+func moth_light(pos: Vector3, reach: float, ward: float):
+	var best = null
+	var best_d := reach
+	for id in ents:
+		var e: Dictionary = ents[id]
+		if e.kind != "structure" or not GameData.structures[e.def].get("draws_moths", false):
+			continue
+		var d: float = e.pos.distance_to(pos)
+		if d < best_d and not near_kind(e.pos, "tether", ward):
+			best = e.pos
+			best_d = d
+	return best
+
+
+## True if no solid voxel lies between two points.
+func clear_line(a: Vector3, b: Vector3) -> bool:
+	var steps := int(ceil(a.distance_to(b)))
+	for i in range(1, steps):
+		if _solid(Vector3i(a.lerp(b, float(i) / steps).floor())):
+			return false
+	return true
+
+
+## A thrown stone. It flies straight, hurts the first player it meets, and can
+## be sent back at its thrower with a push word.
+func spawn_shot(owner: int, pos: Vector3, vel: Vector3, damage: float) -> int:
+	return _add({"kind": "shot", "def": "stone", "pos": pos, "yaw": 0.0},
+		{"vel": vel, "t": 4.0, "owner": owner, "damage": damage, "returned": false})
+
+
+func _step_shots(dt: float) -> void:
+	var out: Array = []
+	for id in _srv.keys():
+		var e: Dictionary = ents[id]
+		if e.kind != "shot":
+			continue
+		var rec: Dictionary = _srv[id]
+		rec.t -= dt
+		var next: Vector3 = e.pos + rec.vel * dt
+		var done: bool = rec.t <= 0.0 or _solid(Vector3i(next.floor()))
+		if not done and rec.returned:
+			var thrower: Dictionary = _srv.get(int(rec.owner), {})
+			if thrower.is_empty() or thrower.get("state", "dead") == "dead":
+				done = true
+			elif (thrower.pos + Vector3(0, 5, 0)).distance_to(next) < 5.0:
+				var tdef: Dictionary = GameData.creatures[ents[int(rec.owner)].def]
+				var throw: Dictionary = tdef.get("attacks", {}).get("throw", {})
+				if thrower.state not in ["dormant", "assemble"]:
+					thrower.hp -= float(throw.get("returned_core_damage", rec.damage))
+					if thrower.hp <= 0.0:
+						_kill(int(rec.owner))
+					else:
+						thrower.poise -= float(throw.get("returned_poise_damage", 0.0))
+						if thrower.poise <= 0.0:
+							thrower.poise = float(tdef.poise)
+							thrower.state = "stagger"
+							thrower.t = float(tdef.get("brain", {}).get("stagger_s", 0.7))
+						event.rpc(int(rec.owner), "hit", {"hp": maxf(thrower.hp, 0.0) / float(thrower.get("hp_max", tdef.hp))})
+				done = true
+		elif not done:
+			for pl in sim.living_positions():
+				if (pl.pos + Vector3(0, 3.6, 0)).distance_to(next) < 3.4:
+					sim.damage_player(pl.id, rec.damage, e.pos, "creature")
+					done = true
+					break
+		if done:
+			_remove(id)
+			continue
+		e.pos = next
+		out.append_array([id, next, 0.0, 0])
+	if not out.is_empty():
+		moves.rpc(out)
+
+
 ## Decides what the creature wants: returns its desired horizontal velocity.
 func _think(id: int, rec: Dictionary, def: Dictionary, dt: float) -> Vector3:
+	if MobBrains.handles(def):
+		return MobBrains.think(self, id, rec, def, dt)
 	rec.t -= dt
 	rec.cd -= dt
 	rec.poise = minf(rec.poise + dt * 4.0, float(def.poise))
@@ -704,7 +884,7 @@ func _slow_tick() -> void:
 					break
 			if ents.has(id) and not rec.keep and sim.world_time - float(rec.born) > DROP_LIFETIME_S:
 				_remove(id)
-		elif e.kind == "creature" and rec.state != "dead":
+		elif e.kind == "creature" and rec.state != "dead" and GameData.creatures[e.def].spawn.when != "never":
 			var far := true
 			for pl in players:
 				if pl.pos.distance_to(rec.pos) < DESPAWN_DIST:
@@ -773,11 +953,13 @@ func _spawn_creatures() -> void:
 			var def: Dictionary = GameData.creatures[key]
 			var hunter: bool = def.behavior == "hunter"
 			var when: String = def.spawn.when
+			if when == "never":
+				continue # placed by the world (a ruin's guardian), never wandering
 			var ok: bool = (when == "night") == sim.is_night() or (hunter and sim.ruleset.creatures.hunters_by_day)
 			if not ok:
 				continue
 			var have := count_creatures(def.behavior, pl.pos, 90.0 * M)
-			var cap: int = int(sim.ruleset.creatures.max_hunters_per_player) if hunter else 3
+			var cap: int = int(sim.ruleset.creatures.max_hunters_per_player) if hunter else int(def.get("max_per_player", 3))
 			if have >= cap or _rng.randf() > 0.5:
 				continue
 			var spot = _spawn_spot(pl.pos, def, players)
@@ -788,7 +970,7 @@ func _spawn_creatures() -> void:
 			for i in n:
 				var off := Vector3(_rng.randf_range(-3, 3), 0, _rng.randf_range(-3, 3)) * M * float(i > 0)
 				var p: Vector3 = spot + off
-				p.y = sim.field.height_at(int(p.x), int(p.z)) + 1.0
+				p.y = sim.field.height_at(int(p.x), int(p.z)) + 1.0 + (3.0 * M if def.get("fly", false) else 0.0)
 				spawn_creature(key, p, group)
 				total += 1
 

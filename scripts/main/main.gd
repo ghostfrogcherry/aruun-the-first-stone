@@ -52,11 +52,8 @@ func _process(delta: float) -> void:
 	if me == null:
 		_hud.text = ""
 		return
-	var block: Dictionary = ContentDB.block(ContentDB.placeable[me.selected_block])
-	var words := ", ".join(Array(me.known_words).map(func(w): return ContentDB.words[w].display))
-	_hud.text = "Block [1-%d]: %s    View [V]: %s    Words: %s\nDig: hold left click    Place: right click    Blast: B    Read: E    Speak: Q    Save: F5    Dev: F1    %d players" % [
-		ContentDB.placeable.size(), block.name, "third person" if me.third_person else "first person",
-		words if words != "" else "none", world.players.get_child_count()]
+	_hud.text = "View [V]: %s    Controls: F2    Dev tools: F1    %d players" % [
+		"third person" if me.third_person else "first person", world.players.get_child_count()]
 
 
 func _show_message(text: String) -> void:

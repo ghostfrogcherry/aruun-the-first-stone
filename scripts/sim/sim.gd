@@ -29,6 +29,7 @@ var day_length := 1200.0
 var active := false
 
 # Server only
+var slain := {}                        # guardian def key -> true, once it has been beaten
 var chars := {}                        # peer id -> CharacterState
 var _rt := {}                          # peer id -> runtime record
 var _swings: Array = []                # attacks waiting for their windup
@@ -142,6 +143,55 @@ func nearest_player(pos: Vector3, max_dist: float) -> Dictionary:
 	return best
 
 
+func is_sprinting(id: int) -> bool:
+	return _rt.has(id) and float(_rt[id].speed) > WALK_SPEED * 1.25
+
+
+func has_buff(id: int, buff: String) -> bool:
+	return chars.has(id) and chars[id].buffs.has(buff)
+
+
+## Pushes a player's body: charges, shockwaves and a sentinel's pull. The
+## player's own machine moves them, so this is sent to it.
+func shove_player(id: int, velocity: Vector3, seconds: float) -> void:
+	if _alive(id) and float(_rt[id].iframes) <= 0.0:
+		_send(id, &"shove", [velocity, seconds])
+
+
+@rpc("authority", "call_remote", "reliable")
+func shove(velocity: Vector3, seconds: float) -> void:
+	local_fx.emit("shove", {"v": velocity, "t": seconds})
+
+
+## Counts hits of one sort on a player; enough of them close together give a buff.
+func note_hit(id: int, tag: String, within_s: float, count: int, buff: String) -> void:
+	if not _rt.has(id):
+		return
+	var times: Array = _rt[id].get("hits_" + tag, [])
+	times = times.filter(func(t): return world_time - float(t) < within_s)
+	times.append(world_time)
+	if times.size() >= count:
+		times.clear()
+		chars[id].add_buff(buff)
+		_tell(id, "%s: %s" % [GameData.buffs.get(buff, {}).get("name", buff), "your eyes are full of wing scales"])
+	_rt[id]["hits_" + tag] = times
+
+
+## A ruin's guardian is gone for good in this world.
+func on_guardian_slain(def_key: String) -> void:
+	slain[def_key] = true
+	for id in chars:
+		_tell(id, "The %s falls apart. The hall is quiet." % GameData.creatures[def_key].name.to_lower())
+
+
+## Puts the echo sentinel in the ruin beside the stone circle, once per world.
+func _place_guardians() -> void:
+	var site = world.town_sites.get("ruin_arch")
+	if site == null or slain.has("echo_sentinel") or not GameData.creatures.has("echo_sentinel"):
+		return
+	entities.spawn_creature("echo_sentinel", Vector3(site) + Vector3(0.5, 2.0, 0.5))
+
+
 func _voxel(p: Vector3i) -> int:
 	return world._voxel_at(p)
 
@@ -219,7 +269,7 @@ func hello(guid: String, display_name: String) -> void:
 	_send(id, &"receive_setup", [ruleset_id, world_time, known])
 	entities.send_all_to(id)
 	push_inventory(id)
-	_tell(id, "%s rules. Tab opens your bag, F1 lists the controls." % ruleset.name)
+	_tell(id, "%s rules. Tab opens your bag, F2 lists the controls." % ruleset.name)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -264,6 +314,7 @@ func save_all() -> void:
 	var data: Dictionary = entities.to_data()
 	data["ruleset"] = ruleset_id
 	data["world_time"] = world_time
+	data["slain"] = slain
 	_write_json(world._save_dir + "/survival.json", data)
 
 
@@ -277,7 +328,9 @@ func _load_world_state() -> void:
 	ruleset_id = ruleset.id
 	day_length = float(ruleset.day_length_s)
 	world_time = float(data.get("world_time", 0.0))
+	slain = data.get("slain", {})
 	entities.from_data(data)
+	_place_guardians()
 
 
 func _read_json(path: String) -> Dictionary:
@@ -1035,6 +1088,11 @@ func debug(id: int, cmd: String) -> String:
 				var at := p.global_position - p.global_basis.z * 6.0 * M + Vector3(0, 4, 0)
 				entities.spawn_creature(a[1], at)
 				return "Spawned"
+			return "Unknown creature"
+		"spawn_at":
+			if a.size() > 4 and GameData.creatures.has(a[1]):
+				entities.spawn_creature(a[1], Vector3(float(a[2]) + 0.5, float(a[3]) + 1.0, float(a[4]) + 0.5))
+				return ""
 			return "Unknown creature"
 		"ruleset":
 			if a.size() > 1 and GameData.ruleset_ids().has(a[1]):
