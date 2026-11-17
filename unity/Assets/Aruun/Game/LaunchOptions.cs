@@ -21,6 +21,8 @@ namespace Aruun.Game
         public float ShotAfter = 10f;
         public float[] Pose;
         public bool Fly;
+        /// <summary>--time=18.5 starts at that hour with the day paused (for screenshots); -1 means normal.</summary>
+        public float Hour = -1f;
         /// <summary>Go straight into the world instead of showing the title screen.</summary>
         public bool SkipTitle;
 
@@ -33,6 +35,9 @@ namespace Aruun.Game
                 if (arg.StartsWith("--seed=") || arg.StartsWith("--shot=") || arg.StartsWith("--pos=") || arg == "--play" ||
                     arg.StartsWith("--gallery")) o.SkipTitle = true;
                 if (arg == "--fly") o.Fly = true;
+                float hour;
+                if (arg.StartsWith("--time=") && float.TryParse(arg.Substring(7), NumberStyles.Float, CultureInfo.InvariantCulture, out hour))
+                    o.Hour = Math.Max(0f, Math.Min(hour, 23.99f));
                 if (arg.StartsWith("--seed=") && TryInt(arg.Substring(7), out v)) o.Seed = v;
                 else if (arg.StartsWith("--seed=")) o.Seed = StableHash(arg.Substring(7)); // words work as seeds too
                 else if (arg.StartsWith("--view=") && TryInt(arg.Substring(7), out v)) o.ViewMeters = Math.Max(32, Math.Min(v, 512));

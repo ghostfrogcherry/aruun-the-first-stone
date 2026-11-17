@@ -65,7 +65,8 @@ namespace Aruun.Game
             cam.clearFlags = CameraClearFlags.Skybox;
             // The voxel shaders draw their own fog, so it works the same in every build: light
             // haze from the edge of the chunks out to the horizon.
-            Shader.SetGlobalVector("_AruunFog", new Vector4(viewMeters * 0.35f, farMeters, 0.92f, 0f));
+            Shader.SetGlobalVector("_AruunFog", new Vector4(viewMeters * 0.3f, farMeters, 1f, HeightField.SeaLevel * WorldConfig.VoxelSize));
+            cam.gameObject.AddComponent<PostFX>();
             QualitySettings.shadowDistance = Mathf.Min(viewMeters, 160f);
             QualitySettings.shadowCascades = 4;
             QualitySettings.shadowResolution = ShadowResolution.VeryHigh;
@@ -107,6 +108,7 @@ namespace Aruun.Game
             player.Init(view, map, options.Seed, options.Fly || options.Pose != null);
             var day = cam.gameObject.AddComponent<DayNight>();
             day.Sun = sun;
+            if (options.Hour >= 0f) { day.Hour = options.Hour; day.Paused = true; day.SetHourSoon(options.Hour); }
             day.Apply();
             cam.gameObject.AddComponent<DevTools>().Init(player, view, day);
             // The game's rules: survival, creatures, crafting (see Play/PlaySession).

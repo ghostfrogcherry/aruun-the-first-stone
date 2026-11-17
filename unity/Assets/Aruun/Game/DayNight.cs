@@ -30,7 +30,16 @@ namespace Aruun.Game
         static readonly Color DawnTop = new Color(0.25f, 0.33f, 0.55f), DawnHorizon = new Color(0.98f, 0.62f, 0.42f);
         static readonly Color DayTop = new Color(0.26f, 0.52f, 0.88f), DayHorizon = new Color(0.70f, 0.83f, 0.95f);
 
+        float _pendingHour = -1f;
+        int _pendingFrame;
+
         void Awake() { Instance = this; }
+
+        /// <summary>
+        /// Sets the hour a frame from now, so systems that keep their own clock (the play
+        /// session's world time) see it as a change and follow it, instead of overwriting it.
+        /// </summary>
+        public void SetHourSoon(float hour) { _pendingHour = hour; _pendingFrame = Time.frameCount + 2; }
 
         public void Shift(float hours) { Hour = Mathf.Repeat(Hour + hours, 24f); Apply(); }
 
@@ -45,7 +54,8 @@ namespace Aruun.Game
 
         void Update()
         {
-            if (!Paused) Hour = Mathf.Repeat(Hour + Time.deltaTime * 24f / (DayMinutes * 60f), 24f);
+            if (_pendingHour >= 0f && Time.frameCount >= _pendingFrame) { Hour = _pendingHour; _pendingHour = -1f; }
+            else if (!Paused) Hour = Mathf.Repeat(Hour + Time.deltaTime * 24f / (DayMinutes * 60f), 24f);
             Apply();
         }
 

@@ -65,6 +65,11 @@ namespace Aruun.Game
             Register(KeyCode.F9, "Time: jump to noon", () => { _day.Hour = 12f; _day.Apply(); _player.Say("Time " + _day.Clock); }, true);
             Register(KeyCode.F10, "Pause or resume the day", () => { _day.Paused = !_day.Paused; _player.Say("Time " + _day.Clock); });
             Register(KeyCode.F11, "Wireframe", () => _wireframe = !_wireframe);
+            Register(KeyCode.F12, "Post-processing on or off (bloom, shafts, grading)", () =>
+            {
+                var post = GetComponent<PostFX>();
+                if (post != null) { post.On = !post.On; _player.Say(post.On ? "Post-processing on" : "Post-processing off"); }
+            });
             Register(KeyCode.F, "Fly (no collisions) or walk", () => _player.SetFly(!_player.Flying));
             Register(KeyCode.V, "Third person", () => _player.ThirdPerson = !_player.ThirdPerson);
             Register(KeyCode.M, "World map; click it to teleport", () => _player.MapScreen.Toggle());
@@ -90,7 +95,7 @@ namespace Aruun.Game
             _view.ViewChunks = chunks;
             float m = chunks * WorldConfig.ChunkSize * WorldConfig.VoxelSize;
             Vector4 fog = Shader.GetGlobalVector("_AruunFog");
-            Shader.SetGlobalVector("_AruunFog", new Vector4(m * 0.35f, fog.y, fog.z, 0f));
+            Shader.SetGlobalVector("_AruunFog", new Vector4(m * 0.3f, fog.y, fog.z, fog.w));
             var far = FindFirstObjectByType<FarTerrain>();
             if (far != null) far.SetHole(m - 2 * WorldConfig.ChunkSize * WorldConfig.VoxelSize); // inside the ring of chunks that is always there
             QualitySettings.shadowDistance = Mathf.Min(m, 160f);
