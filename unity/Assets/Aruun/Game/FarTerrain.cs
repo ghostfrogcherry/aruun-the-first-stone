@@ -101,14 +101,14 @@ namespace Aruun.Game
                     Color c = new Color32(b.R, b.G, b.B, 255);
                     if (h >= HeightField.SeaLevel && b.Key == "grass")
                     {
-                        // Trees from afar: lift the land to the canopy where a tree stands, so
-                        // forests keep their bumpy outline and colour on the horizon.
+                        // Trees from afar: forest colour where a tree stands (raising the land
+                        // there made spikes), so woods still read on the horizon.
                         TreeSpot tree = field.TreeInCell(FloorDiv(x, HeightField.TreeCell), FloorDiv(z, HeightField.TreeCell));
                         if (tree.Exists)
                         {
-                            heights[i + j * n] = (tree.Base + tree.Trunk + tree.Radius * 0.4f) * v;
                             BlockDef leaf = blocks.Get(tree.Crimson ? "crimson_leaves" : "leaves");
-                            c = new Color32(leaf.R, leaf.G, leaf.B, 255);
+                            c = Color.Lerp(c, new Color32(leaf.R, leaf.G, leaf.B, 255), 0.75f) * 0.85f;
+                            c.a = 1f;
                         }
                         else
                         {

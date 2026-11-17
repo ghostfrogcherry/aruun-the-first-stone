@@ -101,7 +101,7 @@ namespace Aruun.Game
             view.Init(world, cam.transform);
             var far = new GameObject("Far terrain").AddComponent<FarTerrain>();
             far.Radius = farMeters;
-            far.Init(world, cam.transform, view.ViewChunks * WorldConfig.ChunkSize * WorldConfig.VoxelSize - 3f);
+            far.Init(world, cam.transform, (view.ViewChunks - 2) * WorldConfig.ChunkSize * WorldConfig.VoxelSize);
 
             var player = cam.gameObject.AddComponent<DevPlayer>();
             player.Init(view, map, options.Seed, options.Fly || options.Pose != null);
