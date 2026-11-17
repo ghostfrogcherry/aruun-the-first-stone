@@ -80,6 +80,7 @@ namespace Aruun.Game
             _body = new Body { X = p.x / V, Y = (p.y - EyeHeight) / V, Z = p.z / V };
             if (!_fly) SettleOnGround();
             _avatar = MakeAvatar();
+            if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "--third") >= 0) _thirdPerson = true;
             _mapScreen = gameObject.AddComponent<MapScreen>();
             _mapScreen.Init(this, map);
             Cursor.lockState = CursorLockMode.Locked;

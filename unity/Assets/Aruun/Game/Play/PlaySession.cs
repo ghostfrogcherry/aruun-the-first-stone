@@ -111,7 +111,11 @@ namespace Aruun.Game
             note("kit: flint_pick " + me.C.Inv.Count("flint_pick") + ", cord " + me.C.Inv.Count("cord"));
             // Dig the ground under our feet with the pick.
             for (int i = 0; i < 32; i++) if (me.C.Inv.KeyAt(i) == "flint_pick") me.C.Selected = i;
-            int fx = (int)Math.Floor(me.Pos.X * 4), fy = (int)Math.Floor(me.Pos.Y * 4) - 1, fz = (int)Math.Floor(me.Pos.Z * 4) + 6;
+            // The ground surface 1.5 m in front: the top solid voxel of that column.
+            Vec3 ahead = me.Pos + me.Facing.Flat.Normalized * 1.5;
+            int fx = (int)Math.Floor(ahead.X * 4), fz = (int)Math.Floor(ahead.Z * 4);
+            int fy = (int)Math.Round(Host.GroundHeight(ahead.X, ahead.Z) * 4) - 1;
+            note("dig target " + fx + "," + fy + "," + fz + ": " + Host.World.Blocks.Get(Host.World.Get(fx, fy, fz)).Name);
             int bagBefore = 0;
             for (int i = 0; i < 32; i++) { var st = me.C.Inv[i]; if (st.HasValue) bagBefore += st.Value.Count; }
             DigTick t = default;

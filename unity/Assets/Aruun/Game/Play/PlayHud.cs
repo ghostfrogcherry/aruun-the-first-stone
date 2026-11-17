@@ -23,7 +23,7 @@ namespace Aruun.Game
         int _picked = -1;
         Vector2 _recipeScroll;
         float _hurtFlash;
-        GUIStyle _small, _centre, _title;
+        GUIStyle _small, _centre, _title, _tiny;
 
         public static void SetBag(bool open)
         {
@@ -46,6 +46,7 @@ namespace Aruun.Game
             _small = new GUIStyle(GUI.skin.label) { fontSize = 12, wordWrap = true };
             _centre = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 12 };
             _title = new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold };
+            _tiny = new GUIStyle(GUI.skin.label) { fontSize = 10, alignment = TextAnchor.LowerCenter, clipping = TextClipping.Overflow, padding = new RectOffset(0, 0, 0, 1) };
         }
 
         static void Box(Rect r, Color c)
@@ -146,14 +147,19 @@ namespace Aruun.Game
                 ItemDef def = items.Get(st.Value.Key);
                 Color col;
                 if (!ColorUtility.TryParseHtmlString(def.Color, out col)) col = Color.gray;
-                Box(new Rect(inner.x + 6, inner.y + 6, inner.width - 12, inner.height - 22), col);
-                GUI.Label(new Rect(inner.x, inner.y + inner.height - 18, inner.width, 18), Short(def.Name), _centre);
+                Box(new Rect(inner.x + 8, inner.y + 5, inner.width - 16, inner.height - 20), col);
+                GUI.Label(new Rect(inner.x - 4, inner.y + inner.height - 15, inner.width + 8, 14), Short(def.Name), _tiny);
                 if (st.Value.Count > 1) GUI.Label(new Rect(inner.x + 2, inner.y, inner.width, 18), st.Value.Count.ToString(), _small);
             }
             if (label.Length > 0) GUI.Label(new Rect(r.x + r.width - 12, r.y, 12, 16), label, _small);
         }
 
-        static string Short(string name) { return name.Length <= 9 ? name : name.Substring(0, 8) + "."; }
+        static string Short(string name)
+        {
+            int cut = name.IndexOf(" (", System.StringComparison.Ordinal);
+            if (cut > 0) name = name.Substring(0, cut);
+            return name.Length <= 10 ? name : name.Substring(0, 9) + ".";
+        }
 
         void DrawBag(PlaySession s, PlayerRec me)
         {
