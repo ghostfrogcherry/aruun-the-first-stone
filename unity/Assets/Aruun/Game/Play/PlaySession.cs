@@ -92,6 +92,53 @@ namespace Aruun.Game
 
             _entityRoot = new GameObject("Entities").transform;
             RegisterDevKeys();
+            if (Array.IndexOf(args, "--smoke") >= 0) StartCoroutine(Smoke());
+        }
+
+        /// <summary>
+        /// --smoke: a scripted play-through for checking a build without hands on the keys. It
+        /// gives the kit, digs, crafts, eats, spawns a creature and fights it, and writes what
+        /// happened to smoke.txt in the game's data folder (and the log).
+        /// </summary>
+        System.Collections.IEnumerator Smoke()
+        {
+            var lines = new List<string>();
+            Action<string> note = t => { lines.Add(t); Debug.Log("[smoke] " + t); };
+            yield return new WaitForSeconds(6f);
+            PlayerRec me = Me;
+            note("start: hp " + me.C.Hp + ", bag empty " + me.C.Inv.IsEmpty + ", plants nearby " + Host.PlantsInWorld.Count + ", creatures " + Host.Creatures.Count);
+            GiveKit();
+            note("kit: flint_pick " + me.C.Inv.Count("flint_pick") + ", cord " + me.C.Inv.Count("cord"));
+            // Dig the ground under our feet with the pick.
+            for (int i = 0; i < 32; i++) if (me.C.Inv.KeyAt(i) == "flint_pick") me.C.Selected = i;
+            int fx = (int)Math.Floor(me.Pos.X * 4), fy = (int)Math.Floor(me.Pos.Y * 4) - 1, fz = (int)Math.Floor(me.Pos.Z * 4) + 6;
+            int bagBefore = 0;
+            for (int i = 0; i < 32; i++) { var st = me.C.Inv[i]; if (st.HasValue) bagBefore += st.Value.Count; }
+            DigTick t = default;
+            for (int i = 0; i < 200 && !t.Broken && !t.Refused; i++) { t = Host.Dig(LocalId, fx, fy, fz, 0.05); Host.Time += 0.05; yield return null; }
+            int bagAfter = 0;
+            for (int i = 0; i < 32; i++) { var st = me.C.Inv[i]; if (st.HasValue) bagAfter += st.Value.Count; }
+            note("dig with pick: broken " + t.Broken + " refused " + t.Refused + " '" + t.Message + "', bag " + bagBefore + " -> " + bagAfter);
+            note("craft cord: '" + Host.Craft(LocalId, "cord") + "' (empty means it worked)");
+            for (int i = 0; i < 32; i++) if (me.C.Inv.KeyAt(i) == "roast_meat") me.C.Selected = i;
+            me.C.Cond["hunger"] = 60;
+            Host.UseHeld(LocalId, false, 0, 0, 0, 0, 0, 0);
+            note("eat roast meat: hunger 60 -> " + me.C.Cond["hunger"].ToString("0"));
+            for (int i = 0; i < 32; i++) if (me.C.Inv.KeyAt(i) == "reed_spear") me.C.Selected = i;
+            Vec3 fwd = me.Facing.Flat.Normalized;
+            Creature c = Host.SpawnCreature("redstrider", new Vec3(me.Pos.X + fwd.X * 1.5, Host.GroundHeight(me.Pos.X + fwd.X * 1.5, me.Pos.Z + fwd.Z * 1.5), me.Pos.Z + fwd.Z * 1.5), 777);
+            yield return new WaitForSeconds(1f);
+            int swings = 0;
+            for (; swings < 40 && c.State != "dead"; swings++)
+            {
+                c.Pos = me.Pos + fwd * 1.5;
+                me.C.Stamina = me.C.StaminaMax;
+                Host.Attack(LocalId, false);
+                yield return new WaitForSeconds(0.6f);
+            }
+            note("fight redstrider: state " + c.State + " after " + swings + " swings, raw_meat " + me.C.Inv.Count("raw_meat") + ", hide " + me.C.Inv.Count("hide"));
+            note("end: hp " + me.C.Hp.ToString("0") + ", day " + Host.Day + " " + (Host.TimeOfDay * 24).ToString("0.0") + "h, creatures " + Host.Creatures.Count + ", plants " + Host.PlantsInWorld.Count + ", structures " + Host.Structures.Count);
+            File.WriteAllLines(Path.Combine(Application.persistentDataPath, "smoke.txt"), lines.ToArray());
         }
 
         DevPlayer Player { get { return GetComponent<DevPlayer>(); } }
