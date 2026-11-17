@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Aruun.Core.Combat;
 using Aruun.Core.Edits;
+using Aruun.Core.People;
 using Aruun.Core.Survival;
 using Aruun.Core.Voxels;
 
@@ -26,6 +27,8 @@ namespace Aruun.Core.Play
         public double NextAttack;
         /// <summary>World time before which the player cannot speak again.</summary>
         public double NextWord;
+        /// <summary>The conversation the player is in, or null.</summary>
+        public Conversation Talk;
         /// <summary>World time of the last hit given or taken, for the "fighting" flag.</summary>
         public double CombatAt = -999;
         public double RespawnIn;
@@ -85,6 +88,30 @@ namespace Aruun.Core.Play
     {
         public EditOp Op;
         public EditResult Result;
+    }
+
+    /// <summary>A person of the village standing in the world.</summary>
+    public sealed class PersonRec
+    {
+        public int Id;
+        public PersonDef Def;
+        public Vec3 Pos, Home, Goal;
+        public double Yaw;
+        public double Wait;
+        public bool Walking;
+        /// <summary>The player talking to them, or 0.</summary>
+        public int TalkingTo;
+    }
+
+    /// <summary>What a person is saying to a player, and the answers the player can give.</summary>
+    public sealed class Conversation
+    {
+        public int Person;
+        public string Name = "";
+        public string Say = "";
+        /// <summary>The answers, in order; the last one always ends the talk.</summary>
+        public readonly List<string> Choices = new List<string>();
+        internal readonly List<ChoiceDef> Defs = new List<ChoiceDef>();
     }
 
     /// <summary>What the player should do next in the echo ruin, and where.</summary>

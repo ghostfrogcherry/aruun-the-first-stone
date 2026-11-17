@@ -327,8 +327,8 @@ namespace Aruun.Core.Play
             }
         }
 
-        /// <summary>What this player should do next for "The World Remembers".</summary>
-        public Objective ObjectiveFor(int id)
+        /// <summary>What this player should do next in the echo ruin itself.</summary>
+        Objective RuinObjective(int id)
         {
             var o = new Objective { Title = "The World Remembers" };
             PlayerRec p;

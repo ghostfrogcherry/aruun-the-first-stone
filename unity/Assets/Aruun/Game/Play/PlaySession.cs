@@ -7,6 +7,7 @@ using Aruun.Core.Edits;
 using Aruun.Core.Farming;
 using Aruun.Core.Items;
 using Aruun.Core.Language;
+using Aruun.Core.People;
 using Aruun.Core.Play;
 using Aruun.Core.Ruins;
 using Aruun.Core.Survival;
@@ -101,6 +102,13 @@ namespace Aruun.Game
             Host.Join(LocalId, c, ToVec(spawnFeet), fresh);
             Say(fresh ? "You wake on Aruun with little more than the clothes you came in. Something old hums to the south. (Tab: bag and crafting)" : "Welcome back.");
 
+            try
+            {
+                Host.LoadPeople(PersonDef.FromJson(GameContent.ReadText("people", "people.json")),
+                    QuestDef.FromJson(GameContent.ReadText("quests", "quests.json")));
+            }
+            catch (Exception e) { Debug.LogError("Could not load the people and quests: " + e.Message); }
+
             _entityRoot = new GameObject("Entities").transform;
             RegisterDevKeys();
             if (_smoke)
@@ -157,9 +165,27 @@ namespace Aruun.Game
                 yield return new WaitForSecondsRealtime(0.6f);
             }
             note("fight redstrider: state " + c.State + " after " + swings + " swings, raw_meat " + me.C.Inv.Count("raw_meat") + ", hide " + me.C.Inv.Count("hide"));
+            SmokeElder(note, "before the ruin");
             yield return SmokeRuin(note);
+            yield return new WaitForSecondsRealtime(1f);
+            SmokeElder(note, "after the ruin");
             note("end: hp " + me.C.Hp.ToString("0") + ", day " + Host.Day + " " + (Host.TimeOfDay * 24).ToString("0.0") + "h, creatures " + Host.Creatures.Count + ", plants " + Host.PlantsInWorld.Count + ", structures " + Host.Structures.Count);
             File.WriteAllLines(Path.Combine(Application.persistentDataPath, "smoke.txt"), lines.ToArray());
+        }
+
+        /// <summary>Talks to the elder and takes the first answer, as a player would.</summary>
+        void SmokeElder(Action<string> note, string when)
+        {
+            PlayerRec me = Me;
+            PersonRec elder = Host.Person("elder");
+            if (elder == null) { note("village: no elder (people " + Host.People.Count + ", village " + (Host.Village != null) + ")"); return; }
+            me.Pos = elder.Pos + new Vec3(0, 0, 1.5);
+            me.RespawnAt = me.Pos;
+            Conversation c = Host.StartTalk(me, elder);
+            note("village " + when + ": " + c.Name + " says \"" + (c.Say.Length > 60 ? c.Say.Substring(0, 60) + "..." : c.Say) + "\"");
+            Host.Choose(LocalId, 0);
+            Host.EndTalk(LocalId);
+            note("village " + when + ": main quest stage " + me.C.Quests.Stage("main_remember") + " (1000 = done), objective: " + Host.ObjectiveFor(LocalId).Text);
         }
 
         /// <summary>The echo ruin, start to finish, through the host as a player would do it.</summary>
@@ -212,6 +238,44 @@ namespace Aruun.Game
             me.RespawnAt = r.ExitM;
             yield return new WaitForSecondsRealtime(2f);
             note("ruin exit objective: " + Host.ObjectiveFor(LocalId).Text + " (done " + Host.ObjectiveFor(LocalId).Done + ")");
+        }
+
+        readonly Dictionary<int, CreatureView> _people = new Dictionary<int, CreatureView>();
+
+        /// <summary>Draws the village's people: their model, walking or standing, turned the way they face.</summary>
+        void SyncPeople(float dt)
+        {
+            foreach (PersonRec r in Host.People)
+            {
+                CreatureView v;
+                if (!_people.TryGetValue(r.Id, out v))
+                {
+                    v = new CreatureView();
+                    if (ModelLibrary.Has(r.Def.Model))
+                    {
+                        v.Go = ModelLibrary.Instantiate(r.Def.Model);
+                        v.Rig = v.Go.GetComponent<VoxelRig>();
+                    }
+                    else
+                    {
+                        v.Go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+                        Destroy(v.Go.GetComponent<Collider>());
+                        v.Go.transform.localScale = new Vector3(0.6f, 0.9f, 0.6f);
+                    }
+                    v.Go.name = r.Def.ShortName;
+                    v.Go.transform.SetParent(_entityRoot, false);
+                    v.Go.transform.position = ToUnity(r.Pos);
+                    _people[r.Id] = v;
+                }
+                Transform t = v.Go.transform;
+                t.position = Vector3.Lerp(t.position, ToUnity(r.Pos), Mathf.Clamp01(dt * 18f));
+                t.rotation = Quaternion.Slerp(t.rotation, Quaternion.Euler(0f, (float)(r.Yaw * Mathf.Rad2Deg), 0f), Mathf.Clamp01(dt * 8f));
+                if (v.Rig != null)
+                {
+                    string clip = r.Walking ? "walk" : "idle";
+                    if (clip != v.Rig.CurrentClip && v.Rig.HasClip(clip)) v.Rig.Play(clip);
+                }
+            }
         }
 
         Light _heartLight;
@@ -283,6 +347,8 @@ namespace Aruun.Game
             {
                 if (PlayHud.BagOpen) { PlayHud.SetBag(false); return; }
                 if (PlayHud.Speaking) { PlayHud.CloseSpeak(); return; }
+                if (Me != null && Me.Talk != null) { Host.EndTalk(LocalId); return; }
+                if (PlayHud.JournalOpen) { PlayHud.JournalOpen = false; return; }
                 Cursor.lockState = Cursor.lockState == CursorLockMode.Locked ? CursorLockMode.None : CursorLockMode.Locked;
             });
         }
@@ -405,6 +471,7 @@ namespace Aruun.Game
             SyncPlants();
             SyncStructures();
             SyncRuin();
+            SyncPeople(dt);
 
             _saveTimer -= Time.unscaledDeltaTime;
             if (_saveTimer <= 0) { _saveTimer = 30f; Save(); }

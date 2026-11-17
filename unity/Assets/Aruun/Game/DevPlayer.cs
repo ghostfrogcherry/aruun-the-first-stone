@@ -193,8 +193,13 @@ namespace Aruun.Game
             int number = DevInput.NumberDown;
             if (me != null)
             {
+                // Talking to someone: numbers pick an answer.
+                if (me.Talk != null)
+                {
+                    if (number >= 0) Play.Host.Choose(PlaySession.LocalId, number);
+                }
                 // Speaking Avarra: X opens the panel, numbers pick words, Enter or X speaks.
-                if (PlayInput.Down(PlayKey.Speak) && !PlayHud.BagOpen && !dead)
+                else if (PlayInput.Down(PlayKey.Speak) && !PlayHud.BagOpen && !dead)
                 {
                     if (PlayHud.Speaking) SpeakNow(me);
                     else PlayHud.OpenSpeak();
@@ -214,6 +219,7 @@ namespace Aruun.Game
                     if (PlayInput.MiddleDown && !dead && PlayHud.LastPhrase.Count > 0) SpeakNow(me, PlayHud.LastPhrase);
                 }
                 if (PlayInput.Down(PlayKey.Bag)) { PlayHud.CloseSpeak(); PlayHud.SetBag(!PlayHud.BagOpen); }
+                if (PlayInput.Down(PlayKey.Journal)) PlayHud.JournalOpen = !PlayHud.JournalOpen;
             }
             else if (number >= 0 && number < View.World.Blocks.Placeable.Count) _slot = number;
 
