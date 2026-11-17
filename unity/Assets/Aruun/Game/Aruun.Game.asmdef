@@ -1,0 +1,13 @@
+{
+  "name": "Aruun.Game",
+  "rootNamespace": "Aruun.Game",
+  "references": [
+    "Aruun.Core",
+    "Unity.InputSystem"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "autoReferenced": true,
+  "noEngineReferences": false
+}

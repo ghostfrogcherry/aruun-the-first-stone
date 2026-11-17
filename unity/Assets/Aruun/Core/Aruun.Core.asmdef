@@ -1,0 +1,11 @@
+{
+  "name": "Aruun.Core",
+  "rootNamespace": "Aruun.Core",
+  "references": [],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "autoReferenced": true,
+  "noEngineReferences": true
+}

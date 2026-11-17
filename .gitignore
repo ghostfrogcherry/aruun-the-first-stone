@@ -11,3 +11,20 @@ export_presets.cfg
 # Tools
 __pycache__/
 .DS_Store
+
+# Unity (project lives in unity/)
+/unity/Library/
+/unity/Temp/
+/unity/Obj/
+/unity/Logs/
+/unity/UserSettings/
+/unity/Build/
+/unity/Builds/
+/unity/MemoryCaptures/
+/unity/*.csproj
+/unity/*.sln
+/unity/*.slnx
+/unity/.vs/
+/unity/.idea/
+/unity/Tests/**/bin/
+/unity/Tests/**/obj/
