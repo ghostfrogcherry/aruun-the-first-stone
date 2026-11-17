@@ -8,8 +8,9 @@ models, and buildings that are stamped into the world. No textures.
 ![creatures](preview_creatures.png)
 ![buildings and trees](preview_structures.png)
 
-To look at it all in the engine: start the game and click **Art gallery**, or open
-`scenes/art/gallery.tscn` and press F6. The gallery does not need Voxel Tools.
+To look at it all in the game (Unity): start it with `--gallery`, or `--gallery=creatures`
+for one category, and `--clip=walk` to see a clip. Models line up on a stand in front of you.
+For a picture from a terminal add `--shot=out.png` (see `unity/README.md`).
 
 ## The palette
 
@@ -40,29 +41,34 @@ To look at it all in the engine: start the game and click **Art gallery**, or op
 Both are plain MagicaVoxel `.vox` files. Things face forward (MagicaVoxel's front), stand on the
 ground plane and are centred on the origin.
 
-## Using art from code
+## Using art from code (Unity)
 
-```gdscript
-var jar := ModelLibrary.instantiate("clay_jar", true)    # true = add a simple collision box
-var beast: VoxelRig = ModelLibrary.instantiate("redstrider")
-beast.play("walk")                                       # clips are listed in models.json
-beast.part("head")                                       # pivot Node3D of a part
-beast.set_manual("neck")                                 # stop animating a part and drive it yourself
-var held := ModelLibrary.mesh("flint_axe")               # a Mesh; origin at the grip
-var picture := ModelLibrary.icon("flint_axe")            # 64 px icon
-var house := ContentDB.load_structure("vaari_dome_house")  # { voxels: [[x, y, z, block_id]] } for add_stamp
+```csharp
+using Aruun.Game.Art;
+GameObject jar = ModelLibrary.Instantiate("clay_jar");        // feet at its origin, facing +z
+GameObject beast = ModelLibrary.Instantiate("redstrider");    // rigged: gets a VoxelRig
+var rig = beast.GetComponent<VoxelRig>();
+rig.Play("walk");                                             // clips are listed in models.json
+rig.Part("head");                                             // pivot Transform of a part
+rig.SetManual("neck", true);                                  // stop animating a part and drive it yourself
+Mesh held = ModelLibrary.GetMesh("flint_axe");                // origin at the grip
+
+// Structures become blocks for the voxel world (Core, no Unity needed):
+var stamp = StructureStamp.FromVox(VoxFile.Load(path), blocks); // stamp.Voxels: x, y, z, block id; y = 0 is the floor
 ```
 
-Models come out in world units already (1 unit = 0.25 m), so nothing needs scaling.
-Crops have four growth stages: `grinleaf_s1` to `grinleaf_s4`.
+Sizes are real: 1 Unity unit = 1 m, model voxels are `voxel_m` (1/16 m) and structure
+voxels are the terrain's 0.25 m. Crops have four growth stages: `grinleaf_s1` to `grinleaf_s4`.
 
 Creatures are separate objects inside one `.vox` (body, head, legs...). The `rig` block in
 `models.json` says which part hangs off which and where it pivots, and holds small
-procedural clips (sine swings), enough for walk cycles until real animation exists.
+procedural clips (sine swings), enough for walk cycles until real animation exists. The rig
+numbers were written in Godot's axes; the loader mirrors them for Unity, so keep writing them
+as they are.
 
-Materials: `shaders/voxel_surface.gdshader` converts the palette colours correctly and gives
-each voxel a slightly different brightness. Uniforms: `cell_size`, `world_cells` (true for
-terrain), `value_jitter`, `roughness`, `metallic`, `emission_energy`.
+Code: reading and meshing is in `unity/Assets/Aruun/Core/Art` (tested with plain .NET, see
+`unity/README.md`); the Unity side is `unity/Assets/Aruun/Game/Art`. Materials: the terrain's
+`Aruun/Voxel` shader for normal colours and `Aruun/VoxelGlow` for `glow_*` colours.
 
 ## Making and changing art
 
@@ -83,7 +89,7 @@ terrain), `value_jitter`, `roughness`, `metallic`, `emission_energy`.
 ## Known limits
 
 - Rotated objects inside a `.vox` are read unrotated. Rotate the voxels, not the object.
-- Exported builds must include `*.vox` and `*.json` (Export > Resources > filters).
-- Voxel Tools' own `.vox` importer also picks these files up in the editor. That is harmless;
-  the game reads the files directly.
+- The game reads `content/` straight from the repo; built games read a copy in
+  `StreamingAssets/content`.
+- 64 px item icons are made by `build.py` as PNGs in `content/icons/`.
 - Vaari looks are exploratory, like the concept art. No first-person hands or HUD art yet.
