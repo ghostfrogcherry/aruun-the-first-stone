@@ -140,3 +140,63 @@ namespace Aruun.Core.Tests
         }
     }
 }
+
+namespace Aruun.Core.Tests
+{
+    using System.Collections.Generic;
+    using Aruun.Core.Worldgen;
+
+    public class WildSpawnTests
+    {
+        static Plants Load()
+        {
+            return Plants.FromJson(File.ReadAllText(Path.Combine(TestContent.Root, "farming", "plants.json")));
+        }
+
+        [Test]
+        public void TheSameSeedGivesTheSameWildNodes()
+        {
+            Plants plants = Load();
+            var a = WildSpawns.InCell(new HeightField(42), plants, 3, -2);
+            var b = WildSpawns.InCell(new HeightField(42), plants, 3, -2);
+            Assert.That(b.Count, Is.EqualTo(a.Count));
+            for (int i = 0; i < a.Count; i++)
+            {
+                Assert.That(b[i].Id, Is.EqualTo(a[i].Id));
+                Assert.That(b[i].X, Is.EqualTo(a[i].X));
+            }
+        }
+
+        [Test]
+        public void WildNodesSitOnTheGroundInTheirOwnCellAndPlace()
+        {
+            Plants plants = Load();
+            var field = new HeightField(42);
+            int flint = 0, total = 0;
+            var ids = new HashSet<string>();
+            for (int cx = -6; cx < 6; cx++)
+                for (int cz = -6; cz < 6; cz++)
+                    foreach (WildNode n in WildSpawns.InCell(field, plants, cx, cz))
+                    {
+                        total++;
+                        if (n.Plant == "flint_nodule") flint++;
+                        Assert.That(ids.Add(n.Id), Is.True, "ids are unique");
+                        Assert.That(WildSpawns.CellOf(n.X, plants.CellVoxels), Is.EqualTo(cx));
+                        Assert.That(WildSpawns.CellOf(n.Z, plants.CellVoxels), Is.EqualTo(cz));
+                        Assert.That(n.Y, Is.EqualTo(field.HeightAt(n.X, n.Z) + 1));
+                        Assert.That(WildSpawns.Fits(field, plants.Get(n.Plant).WildWhere, n.X, n.Z), Is.True);
+                    }
+            Assert.That(flint, Is.GreaterThan(40), "flint is easy to find, since the first tools need it");
+            Assert.That(total, Is.GreaterThan(flint));
+        }
+
+        [Test]
+        public void CellsWorkForNegativeCoordinates()
+        {
+            Assert.That(WildSpawns.CellOf(-1, 64), Is.EqualTo(-1));
+            Assert.That(WildSpawns.CellOf(-64, 64), Is.EqualTo(-1));
+            Assert.That(WildSpawns.CellOf(-65, 64), Is.EqualTo(-2));
+            Assert.That(WildSpawns.CellOf(63, 64), Is.EqualTo(0));
+        }
+    }
+}
