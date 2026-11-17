@@ -71,7 +71,7 @@ namespace Aruun.Game
             Register(KeyCode.T, "Teleport to the next named place", () => _player.CyclePlace(1));
             Register(KeyCode.T, "Teleport to the previous named place", () => _player.CyclePlace(-1), true);
             Register(KeyCode.G, "Teleport to where you are looking", () => _player.TeleportToLookTarget());
-            Register(KeyCode.H, "Home: the Teshari Confluence", () => _player.TeleportToVoxel(0, 0, "Home"));
+            Register(KeyCode.H, "Home: the Teshari Confluence", () => _player.TeleportToVoxel(24, -24, "Home"));
             Register(KeyCode.B, "Big dig (2 m) or small dig (0.6 m)", () => { _player.BigDig = !_player.BigDig; _player.Say(_player.BigDig ? "Big dig: 2 m" : "Small dig: 0.6 m"); });
             Register(KeyCode.Equals, "Fly faster", () => { _player.FlySpeed = Mathf.Min(_player.FlySpeed * 2f, 512f); _player.Say("Fly speed " + _player.FlySpeed + " m/s"); });
             Register(KeyCode.Minus, "Fly slower", () => { _player.FlySpeed = Mathf.Max(_player.FlySpeed / 2f, 1f); _player.Say("Fly speed " + _player.FlySpeed + " m/s"); });
