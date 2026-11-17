@@ -1,5 +1,5 @@
 {
-  "_comment": "Block ids are stable: never renumber, only append. Index 0 must be air. Aruun is a living world: lush greens and water over red soil and rock. Teal/purple glow is reserved for magick. collision:false = walk through; transparent:true = see through (alpha).",
+  "_comment": "Block ids are stable: never renumber, only append. Index 0 must be air. Aruun is a living world: lush greens and water over red soil and rock. Teal/purple glow is reserved for magick. collision:false = walk through; transparent:true = see through (alpha). tool: what can break it ('hand' = anything, even bare hands; 'axe' or 'pick' = only that kind of tool, with dig_power at least the hardness). health: how much digging one bite takes (a tool takes its dig_speed off per second).",
   "blocks": [
     {
       "id": 0,
@@ -13,7 +13,9 @@
       "name": "Red soil",
       "solid": true,
       "color": "#9a4a32",
-      "hardness": 1
+      "hardness": 1,
+      "tool": "hand",
+      "health": 4
     },
     {
       "id": 2,
@@ -21,7 +23,9 @@
       "name": "Rust rock",
       "solid": true,
       "color": "#7a3b2a",
-      "hardness": 2
+      "hardness": 2,
+      "tool": "pick",
+      "health": 12
     },
     {
       "id": 3,
@@ -29,7 +33,9 @@
       "name": "Deep stone",
       "solid": true,
       "color": "#4a4240",
-      "hardness": 3
+      "hardness": 3,
+      "tool": "pick",
+      "health": 20
     },
     {
       "id": 4,
@@ -37,7 +43,9 @@
       "name": "Moss",
       "solid": true,
       "color": "#4f6b3a",
-      "hardness": 1
+      "hardness": 1,
+      "tool": "hand",
+      "health": 3
     },
     {
       "id": 5,
@@ -45,7 +53,9 @@
       "name": "Dust sand",
       "solid": true,
       "color": "#b9825a",
-      "hardness": 1
+      "hardness": 1,
+      "tool": "hand",
+      "health": 3
     },
     {
       "id": 6,
@@ -53,7 +63,9 @@
       "name": "Ancient stone",
       "solid": true,
       "color": "#8c867c",
-      "hardness": 4
+      "hardness": 4,
+      "tool": "pick",
+      "health": 32
     },
     {
       "id": 7,
@@ -63,7 +75,9 @@
       "color": "#3fb8a8",
       "hardness": 99,
       "emissive": true,
-      "inscription": "word_rise"
+      "inscription": "word_rise",
+      "tool": "pick",
+      "health": 999
     },
     {
       "id": 8,
@@ -71,7 +85,9 @@
       "name": "Timber",
       "solid": true,
       "color": "#6e4b32",
-      "hardness": 1
+      "hardness": 1,
+      "tool": "axe",
+      "health": 10
     },
     {
       "id": 9,
@@ -79,7 +95,9 @@
       "name": "Meadow grass",
       "solid": true,
       "color": "#5e8f3c",
-      "hardness": 1
+      "hardness": 1,
+      "tool": "hand",
+      "health": 4
     },
     {
       "id": 10,
@@ -89,7 +107,9 @@
       "collision": false,
       "color": "#76a84a",
       "hardness": 0,
-      "shape": "cross"
+      "shape": "cross",
+      "tool": "hand",
+      "health": 1
     },
     {
       "id": 11,
@@ -97,7 +117,9 @@
       "name": "Leaves",
       "solid": true,
       "color": "#3d7536",
-      "hardness": 0
+      "hardness": 0,
+      "tool": "hand",
+      "health": 1
     },
     {
       "id": 12,
@@ -105,7 +127,9 @@
       "name": "Crimson leaves",
       "solid": true,
       "color": "#a8363a",
-      "hardness": 0
+      "hardness": 0,
+      "tool": "hand",
+      "health": 1
     },
     {
       "id": 13,
@@ -113,7 +137,9 @@
       "name": "Bark",
       "solid": true,
       "color": "#5a3f2c",
-      "hardness": 2
+      "hardness": 2,
+      "tool": "axe",
+      "health": 14
     },
     {
       "id": 14,
@@ -125,7 +151,9 @@
       "alpha": 0.62,
       "color": "#3a86a8",
       "hardness": 0,
-      "fluid": true
+      "fluid": true,
+      "tool": "hand",
+      "health": 0
     },
     {
       "id": 15,
@@ -135,7 +163,9 @@
       "collision": false,
       "color": "#e3b23c",
       "hardness": 0,
-      "shape": "cross"
+      "shape": "cross",
+      "tool": "hand",
+      "health": 1
     },
     {
       "id": 16,
@@ -145,7 +175,9 @@
       "collision": false,
       "color": "#ece4d2",
       "hardness": 0,
-      "shape": "cross"
+      "shape": "cross",
+      "tool": "hand",
+      "health": 1
     },
     {
       "id": 17,
@@ -155,7 +187,9 @@
       "collision": false,
       "color": "#4e9a5a",
       "hardness": 0,
-      "shape": "cross"
+      "shape": "cross",
+      "tool": "hand",
+      "health": 1
     },
     {
       "id": 18,
@@ -163,7 +197,9 @@
       "name": "Sandstone",
       "solid": true,
       "color": "#c9a78c",
-      "hardness": 3
+      "hardness": 3,
+      "tool": "pick",
+      "health": 16
     },
     {
       "id": 19,
@@ -171,7 +207,9 @@
       "name": "Dark sandstone",
       "solid": true,
       "color": "#a98570",
-      "hardness": 3
+      "hardness": 3,
+      "tool": "pick",
+      "health": 18
     },
     {
       "id": 20,
@@ -179,7 +217,9 @@
       "name": "Plaster",
       "solid": true,
       "color": "#dcc3a8",
-      "hardness": 2
+      "hardness": 2,
+      "tool": "pick",
+      "health": 8
     },
     {
       "id": 21,
@@ -187,7 +227,9 @@
       "name": "Clay tile",
       "solid": true,
       "color": "#b85f3c",
-      "hardness": 2
+      "hardness": 2,
+      "tool": "pick",
+      "health": 8
     },
     {
       "id": 22,
@@ -195,7 +237,9 @@
       "name": "Paving stone",
       "solid": true,
       "color": "#b3aca0",
-      "hardness": 3
+      "hardness": 3,
+      "tool": "pick",
+      "health": 18
     },
     {
       "id": 23,
@@ -203,7 +247,9 @@
       "name": "Basalt",
       "solid": true,
       "color": "#2e2928",
-      "hardness": 4
+      "hardness": 4,
+      "tool": "pick",
+      "health": 30
     },
     {
       "id": 24,
@@ -211,7 +257,9 @@
       "name": "Plank",
       "solid": true,
       "color": "#8f6a45",
-      "hardness": 1
+      "hardness": 1,
+      "tool": "axe",
+      "health": 8
     },
     {
       "id": 25,
@@ -219,7 +267,9 @@
       "name": "Reed thatch",
       "solid": true,
       "color": "#cd9c6c",
-      "hardness": 1
+      "hardness": 1,
+      "tool": "hand",
+      "health": 3
     },
     {
       "id": 26,
@@ -227,7 +277,9 @@
       "name": "Violet leaves",
       "solid": true,
       "color": "#6d3d82",
-      "hardness": 0
+      "hardness": 0,
+      "tool": "hand",
+      "health": 1
     },
     {
       "id": 27,
@@ -235,7 +287,9 @@
       "name": "Bronze",
       "solid": true,
       "color": "#9a7436",
-      "hardness": 4
+      "hardness": 4,
+      "tool": "pick",
+      "health": 36
     },
     {
       "id": 28,
@@ -243,7 +297,9 @@
       "name": "Awning cloth",
       "solid": true,
       "color": "#7c2f3e",
-      "hardness": 0
+      "hardness": 0,
+      "tool": "hand",
+      "health": 2
     },
     {
       "id": 29,
@@ -252,7 +308,9 @@
       "solid": true,
       "color": "#ffd27a",
       "hardness": 1,
-      "emissive": true
+      "emissive": true,
+      "tool": "hand",
+      "health": 4
     }
   ],
   "placeable": [

@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Aruun.Core.Content;
 using Aruun.Core.Edits;
+using Aruun.Core.Mining;
 using Aruun.Core.Worldgen;
 
 namespace Aruun.Core.Voxels
@@ -101,12 +102,12 @@ namespace Aruun.Core.Voxels
             if (!op.IsValid()) return result;
             lock (_editLock)
             {
-                op.ForEachCell((x, y, z) => SetCell(x, y, z, op.Block, op.Power, result));
+                op.ForEachCell((x, y, z) => SetCell(x, y, z, op.Block, op.Power, op.Tool, result));
             }
             return result;
         }
 
-        void SetCell(int x, int y, int z, ushort block, int power, EditResult result)
+        void SetCell(int x, int y, int z, ushort block, int power, ToolClass tool, EditResult result)
         {
             var coord = ChunkCoord.FromVoxel(x, y, z);
             VoxelChunk chunk;
@@ -120,7 +121,7 @@ namespace Aruun.Core.Voxels
             ushort old = chunk.Ids[index];
             if (old == block) return;
             BlockDef was = Blocks.Get(old);
-            if (block == 0 && !EditRules.Breaks(was.Hardness, power)) return;
+            if (block == 0 && !DigRules.CanBreak(was, tool, power)) return;
             // Building fills empty space (air, water, plants). It never overwrites something solid.
             if (block != 0 && was.Collision) return;
 
