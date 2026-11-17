@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Aruun.Core.Mining;
 
 namespace Aruun.Core.Content
 {
@@ -20,6 +21,10 @@ namespace Aruun.Core.Content
         public string Shape = "cube";
         /// <summary>Dig power needed to break it. 99 and above cannot be broken.</summary>
         public int Hardness;
+        /// <summary>What kind of tool breaks it: Hand (anything), Axe (wood) or Pick (stone and metal).</summary>
+        public ToolClass Tool = ToolClass.Hand;
+        /// <summary>How much digging one bite takes. A fitting tool wears off its dig speed per second.</summary>
+        public double Health;
         public byte R, G, B, A = 255;
 
         public bool IsCube { get { return Id != 0 && Shape == "cube"; } }
@@ -82,6 +87,9 @@ namespace Aruun.Core.Content
                 b.Emissive = MiniJson.Bool(o, "emissive");
                 b.Shape = MiniJson.Str(o, "shape", "cube");
                 b.Hardness = MiniJson.Int(o, "hardness");
+                b.Tool = ToolClasses.Parse(MiniJson.Str(o, "tool"), ToolClass.Hand);
+                if (b.Tool == ToolClass.Any) throw new FormatException("blocks.json: " + b.Key + " cannot need tool 'any'");
+                b.Health = MiniJson.Num(o, "health", 2 + 4 * Math.Min(b.Hardness, 10));
                 string hex = MiniJson.Str(o, "color", "#ff00ff");
                 if (hex.Length != 7 || hex[0] != '#') throw new FormatException("blocks.json: bad color '" + hex + "' on " + b.Key);
                 b.R = byte.Parse(hex.Substring(1, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);

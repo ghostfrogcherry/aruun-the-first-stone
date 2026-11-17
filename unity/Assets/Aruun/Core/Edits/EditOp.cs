@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using Aruun.Core.Mining;
 
 namespace Aruun.Core.Edits
 {
@@ -13,6 +14,11 @@ namespace Aruun.Core.Edits
     /// Block 0 (air) removes. A removing op only breaks blocks whose hardness is at most Power,
     /// so a weak tool takes the soil and leaves the rock. Any other block builds: it fills empty
     /// space (air, water, plants) and never overwrites something solid.
+    ///
+    /// Tool says what kind of tool a removing op was dug with. Any (the default) ignores tool
+    /// kinds; Hand, Axe or Pick only break blocks that kind of tool fits (see DigRules), so an
+    /// axe bite takes the trunk and leaves the stone beside it. The journal line only carries a
+    /// tool when it is not Any, so old saves read the same.
     /// </summary>
     public struct EditOp
     {
@@ -25,6 +31,7 @@ namespace Aruun.Core.Edits
         public int Radius10;
         public ushort Block;
         public int Power;
+        public ToolClass Tool;
 
         public const int MaxExtent = 256;
 
@@ -89,7 +96,21 @@ namespace Aruun.Core.Edits
             }
         }
 
+        /// <summary>The same op, dug with a tool of this kind.</summary>
+        public EditOp WithTool(ToolClass tool)
+        {
+            var op = this;
+            op.Tool = tool;
+            return op;
+        }
+
         public string ToLine()
+        {
+            string line = BaseLine();
+            return Tool == ToolClass.Any ? line : line + " " + ToolClasses.Name(Tool);
+        }
+
+        string BaseLine()
         {
             var c = CultureInfo.InvariantCulture;
             switch (Kind)
@@ -109,7 +130,13 @@ namespace Aruun.Core.Edits
             if (string.IsNullOrWhiteSpace(line)) return false;
             string[] p = line.Trim().Split(' ');
             int need = p[0] == "set" ? 6 : p[0] == "box" ? 9 : p[0] == "sphere" ? 7 : -1;
-            if (need < 0 || p.Length != need) return false;
+            if (need < 0 || (p.Length != need && p.Length != need + 1)) return false;
+            var tool = ToolClass.Any;
+            if (p.Length == need + 1)
+            {
+                try { tool = ToolClasses.Parse(p[need], ToolClass.Any); }
+                catch (FormatException) { return false; }
+            }
             int[] n = new int[need - 1];
             for (int i = 1; i < need; i++)
                 if (!int.TryParse(p[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out n[i - 1])) return false;
@@ -121,6 +148,7 @@ namespace Aruun.Core.Edits
                 case "box": op = Box(n[0], n[1], n[2], n[3], n[4], n[5], (ushort)block, n[7]); break;
                 default: op = Sphere(n[0], n[1], n[2], n[3], (ushort)block, n[5]); break;
             }
+            op.Tool = tool;
             return op.IsValid();
         }
     }
