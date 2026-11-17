@@ -12,10 +12,14 @@ namespace Aruun.Core.Worldgen
         public readonly HeightField Field;
         readonly BlockRegistry _blocks;
         readonly ushort _air, _tallGrass, _bark, _leaves, _crimsonLeaves, _water, _redSoil, _rustRock, _deepStone;
+        readonly ushort _ice, _marker, _lamp;
 
-        public TerrainGenerator(int seed, BlockRegistry blocks)
+        public TerrainGenerator(int seed, BlockRegistry blocks, WorldMap map = null)
         {
-            Field = new HeightField(seed);
+            Field = new HeightField(seed, map);
+            _ice = blocks.Has("ice") ? blocks.Id("ice") : blocks.Id("water");
+            _marker = blocks.Id("ancient_stone");
+            _lamp = blocks.Id("lamp_glow");
             _blocks = blocks;
             _air = blocks.Id("air");
             _tallGrass = blocks.Id("tall_grass");
@@ -43,14 +47,16 @@ namespace Aruun.Core.Worldgen
                     if (top < oy) continue; // this whole column of the chunk is air
                     string surface = Field.SurfaceKey(wx, wz, h);
                     ushort surfaceId = _blocks.Id(surface);
+                    bool frozen = h < HeightField.SeaLevel && Field.Frozen(wx, wz);
                     for (int y = 0; y < n; y++)
                     {
                         int wy = oy + y;
                         if (wy > top) break;
                         ushort id = LayerId(wy, h, surfaceId);
-                        if (wy == h + 1 && id == _air && surface == "grass")
+                        if (frozen && wy == HeightField.SeaLevel) id = _ice;
+                        if (wy == h + 1 && id == _air)
                         {
-                            string plant = Field.FloraAt(wx, wz);
+                            string plant = Field.FloraOn(wx, wz, surface);
                             if (plant != null) id = _blocks.Id(plant);
                         }
                         if (id != _air) chunk.Set(x, y, z, id);
@@ -58,7 +64,32 @@ namespace Aruun.Core.Worldgen
                 }
             }
             ApplyTrees(chunk);
+            if (Field.Map != null) ApplyMarkers(chunk);
             return chunk;
+        }
+
+        /// <summary>
+        /// A standing stone with a lamp on top at every named place on the map, until the real
+        /// towns are built there. 1 m square, 4 m tall.
+        /// </summary>
+        void ApplyMarkers(VoxelChunk chunk)
+        {
+            const int n = WorldConfig.ChunkSize;
+            int ox = chunk.Coord.OriginX, oy = chunk.Coord.OriginY, oz = chunk.Coord.OriginZ;
+            foreach (MapPlace p in Field.Map.Places)
+            {
+                if (p.X + 2 < ox || p.X - 2 >= ox + n || p.Z + 2 < oz || p.Z - 2 >= oz + n) continue;
+                int g = Field.HeightAt(p.X, p.Z);
+                if (g < HeightField.SeaLevel) g = HeightField.SeaLevel;
+                for (int wy = g + 1; wy <= g + 17; wy++)
+                for (int wz = p.Z - 2; wz < p.Z + 2; wz++)
+                for (int wx = p.X - 2; wx < p.X + 2; wx++)
+                {
+                    int x = wx - ox, y = wy - oy, z = wz - oz;
+                    if (x < 0 || y < 0 || z < 0 || x >= n || y >= n || z >= n) continue;
+                    chunk.Set(x, y, z, wy > g + 15 ? _lamp : _marker);
+                }
+            }
         }
 
         /// <summary>

@@ -1,0 +1,47 @@
+{
+  "_comment": "The world of Aruun, from the Vaari map. aruun_biomes.png has one pixel per map cell; paint it with exactly these colours. cell_m is how many metres of game world one cell covers. Places are in biome-map pixels (x right, y down; north is up, -y). Their directions from each other never change, whatever the seed. Heights are metres above sea level. Never renumber biome ids, only append.",
+  "image": "aruun_biomes.png",
+  "cell_m": 32,
+  "spawn": "teshari_confluence",
+  "biomes": [
+    {"id": 0,  "key": "deep_ocean",  "name": "Deep ocean",     "color": "#1e4a6e", "height_m": -14, "relief_m": 2,  "surface": "dust_sand",  "lush": 0},
+    {"id": 1,  "key": "shallow_sea", "name": "Shallow sea",    "color": "#3a86a8", "height_m": -3,  "relief_m": 2,  "surface": "dust_sand",  "lush": 0},
+    {"id": 2,  "key": "coast",       "name": "Coast and delta","color": "#c9b07a", "height_m": 1,   "relief_m": 1,  "surface": "dust_sand",  "lush": 0.4},
+    {"id": 3,  "key": "forest",      "name": "Forest",         "color": "#2f6b2a", "height_m": 8,   "relief_m": 6,  "surface": "grass",      "lush": 1.0, "trees": 1.6},
+    {"id": 4,  "key": "marsh",       "name": "Marsh",          "color": "#55705a", "height_m": 0.5, "relief_m": 0.5,"surface": "moss",       "lush": 0.9},
+    {"id": 5,  "key": "grassland",   "name": "Grassland",      "color": "#7fa84a", "height_m": 6,   "relief_m": 5,  "surface": "grass",      "lush": 0.65, "trees": 0.5},
+    {"id": 6,  "key": "desert",      "name": "Desert",         "color": "#e0913a", "height_m": 10,  "relief_m": 7,  "surface": "dust_sand",  "lush": 0.05, "mesas": 0.6},
+    {"id": 7,  "key": "volcanic",    "name": "Volcanic",       "color": "#7a2a1a", "height_m": 30,  "relief_m": 22, "surface": "basalt",     "lush": 0},
+    {"id": 8,  "key": "highlands",   "name": "Highlands",      "color": "#9a6a40", "height_m": 22,  "relief_m": 16, "surface": "rust_rock",  "lush": 0.15, "mesas": 0.4},
+    {"id": 9,  "key": "canyon",      "name": "Canyonlands",    "color": "#b8643a", "height_m": 26,  "relief_m": 4,  "surface": "red_soil",   "lush": 0.1, "mesas": 1.0, "canyons": 1.0},
+    {"id": 10, "key": "glacial",     "name": "Glacial",        "color": "#e8eef2", "height_m": 6,   "relief_m": 8,  "surface": "snow",       "lush": 0},
+    {"id": 11, "key": "bloom",       "name": "Bloom fields",   "color": "#8a62b0", "height_m": 5,   "relief_m": 4,  "surface": "snow",       "lush": 0.5, "flowers": "violet_bloom"}
+  ],
+  "peaks": [
+    {"key": "olympus_mons", "name": "Olympus Mons, Crown of Flame", "x": 66, "y": 84,  "radius_cells": 18, "height_m": 150, "crater": 0.25},
+    {"key": "pavonis_mons", "name": "Pavonis Mons, The Embering",   "x": 38, "y": 133, "radius_cells": 8,  "height_m": 70,  "crater": 0.3},
+    {"key": "arsia_mons",   "name": "Arsia Mons, The Red Sentinel", "x": 50, "y": 152, "radius_cells": 9,  "height_m": 80,  "crater": 0.3}
+  ],
+  "places": [
+    {"key": "teshbal",             "name": "Teshbal",                 "kind": "major_city",  "region": "Teshari", "x": 184, "y": 67},
+    {"key": "maerel",              "name": "Maerel",                  "kind": "settlement",  "region": "Teshari", "x": 207, "y": 63},
+    {"key": "kethis_crossing",     "name": "Kethis Crossing",         "kind": "settlement",  "region": "Teshari", "x": 127, "y": 94},
+    {"key": "teshari_confluence",  "name": "Teshari Confluence",      "kind": "settlement",  "region": "Teshari", "x": 159, "y": 102},
+    {"key": "eral_reach",          "name": "Eeral Reach",             "kind": "settlement",  "region": "Teshari", "x": 196, "y": 92},
+    {"key": "voral_reach",         "name": "Voral Reach",             "kind": "settlement",  "region": "Teshari", "x": 210, "y": 89},
+    {"key": "jorais_mouth",        "name": "Jorai's Mouth",           "kind": "port",        "region": "Teshari", "x": 112, "y": 72},
+    {"key": "suvan_delta",         "name": "Suvan Delta",             "kind": "settlement",  "region": "Teshari", "x": 225, "y": 72},
+    {"key": "elduun_marshes",      "name": "Elduun Marshes",          "kind": "settlement",  "region": "Sael",    "x": 246, "y": 95},
+    {"key": "khar_uln",            "name": "Khar Uln, Lavahold",      "kind": "major_city",  "region": "Kharuun", "x": 74,  "y": 120},
+    {"key": "jal_mer",             "name": "Waystation of Jal Mer",   "kind": "waystation",  "region": "Oravai",  "x": 155, "y": 139},
+    {"key": "oru",                 "name": "Waystation of Oru",       "kind": "waystation",  "region": "Oravai",  "x": 211, "y": 131},
+    {"key": "ruins_of_avarra",     "name": "Ruins of Avarra, City of Echoes", "kind": "ruin", "region": "Oravai", "x": 159, "y": 167},
+    {"key": "sael_prime",          "name": "Sael Prime, The High Below", "kind": "major_city", "region": "Sael",  "x": 217, "y": 150},
+    {"key": "keth_canyon_hub",     "name": "Keth Canyon Hub",         "kind": "settlement",  "region": "Sael",    "x": 262, "y": 151},
+    {"key": "veyrin_hold",         "name": "Veyrin Hold, Eastern Watch", "kind": "major_city", "region": "Sael",  "x": 313, "y": 151},
+    {"key": "ilyans_perch",        "name": "Ilyan's Perch",           "kind": "settlement",  "region": "Sael",    "x": 350, "y": 154},
+    {"key": "nerethal",            "name": "Nerethal",                "kind": "major_city",  "region": "Nerethi", "x": 325, "y": 78},
+    {"key": "veyrith_port",        "name": "Veyrith Port",            "kind": "port",        "region": "Nerethi", "x": 254, "y": 49},
+    {"key": "ilyens_gate",         "name": "Ilyen's Gate, Starwake Portal", "kind": "sacred_site", "region": "Ilyari", "x": 147, "y": 220}
+  ]
+}
