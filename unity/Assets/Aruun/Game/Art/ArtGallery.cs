@@ -42,6 +42,12 @@ namespace Aruun.Game.Art
 
         void Awake() { StartCoroutine(BuildNextFrame()); }
 
+        /// <summary>The terrain shader, tinted stone grey through vertex colours on the cube.</summary>
+        static Material StandMaterial()
+        {
+            return ModelLibrary.SolidMaterial;
+        }
+
         void Build()
         {
             Camera cam = Camera.main;
@@ -60,6 +66,7 @@ namespace Aruun.Game.Art
             float x = 0f, z = 0f, rowDepth = 0f;
             var stand = GameObject.CreatePrimitive(PrimitiveType.Cube);
             stand.name = "Stand";
+            stand.GetComponent<Renderer>().sharedMaterial = StandMaterial(); // Unity's default shader is not in builds
             stand.transform.SetParent(transform, false);
             foreach (string id in ids)
             {
@@ -78,6 +85,10 @@ namespace Aruun.Game.Art
             float depth = z + rowDepth + 1f;
             stand.transform.localPosition = new Vector3(0f, -0.25f, -depth * 0.5f + 0.5f);
             stand.transform.localScale = new Vector3(rowWidth + 1f, 0.5f, depth + 1f);
+            Mesh cube = stand.GetComponent<MeshFilter>().mesh;   // the voxel shader colours by vertex
+            var grey = new Color32[cube.vertexCount];
+            for (int i = 0; i < grey.Length; i++) grey[i] = new Color32(0x8a, 0x84, 0x7c, 255);
+            cube.colors32 = grey;
             Debug.Log("Art gallery: " + ids.Count + " models" + (_category != "" ? " in " + _category : ""));
         }
     }
