@@ -16,7 +16,7 @@ namespace Aruun.Game
     public sealed class LaunchOptions
     {
         public int Seed = 20261116;
-        public int ViewMeters = 128;
+        public int ViewMeters = 192;
         public string ShotPath;
         public float ShotAfter = 10f;
         public float[] Pose;

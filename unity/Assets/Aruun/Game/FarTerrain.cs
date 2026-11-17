@@ -16,7 +16,7 @@ namespace Aruun.Game
     /// </summary>
     public sealed class FarTerrain : MonoBehaviour
     {
-        public float Spacing = 8f;        // metres between samples
+        public float Spacing = 4f;        // metres between samples
         public float Radius = 1024f;      // metres from the viewer to the edge
         public float RebuildAfter = 96f;  // metres moved before the mesh is rebuilt
 
@@ -96,14 +96,25 @@ namespace Aruun.Game
                     else
                     {
                         b = blocks.Get(field.SurfaceKey(x, z, h));
-                        heights[i + j * n] = (h + 1) * v - 0.6f; // just under the voxel ground
+                        heights[i + j * n] = (h + 1) * v;       // the top of the voxel ground
                     }
                     Color c = new Color32(b.R, b.G, b.B, 255);
                     if (h >= HeightField.SeaLevel && b.Key == "grass")
                     {
-                        // Forest canopy from afar: darker where it is lush.
-                        float lush = field.Lushness(x, z) / 65536f;
-                        c = Color.Lerp(c, new Color(0.17f, 0.36f, 0.16f), Mathf.Clamp01(lush - 0.2f) * 0.8f);
+                        // Trees from afar: lift the land to the canopy where a tree stands, so
+                        // forests keep their bumpy outline and colour on the horizon.
+                        TreeSpot tree = field.TreeInCell(FloorDiv(x, HeightField.TreeCell), FloorDiv(z, HeightField.TreeCell));
+                        if (tree.Exists)
+                        {
+                            heights[i + j * n] = (tree.Base + tree.Trunk + tree.Radius * 0.4f) * v;
+                            BlockDef leaf = blocks.Get(tree.Crimson ? "crimson_leaves" : "leaves");
+                            c = new Color32(leaf.R, leaf.G, leaf.B, 255);
+                        }
+                        else
+                        {
+                            float lush = field.Lushness(x, z) / 65536f;
+                            c = Color.Lerp(c, new Color(0.24f, 0.45f, 0.2f), Mathf.Clamp01(lush - 0.3f) * 0.5f);
+                        }
                     }
                     colors[i + j * n] = c;
                 }
@@ -128,6 +139,8 @@ namespace Aruun.Game
                 }
             return d;
         }
+
+        static int FloorDiv(int a, int b) { int q = a / b; return (a % b != 0 && a < 0) ? q - 1 : q; }
 
         void Apply(Data d)
         {

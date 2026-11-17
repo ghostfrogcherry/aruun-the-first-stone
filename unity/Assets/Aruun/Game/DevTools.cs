@@ -92,7 +92,7 @@ namespace Aruun.Game
             Vector4 fog = Shader.GetGlobalVector("_AruunFog");
             Shader.SetGlobalVector("_AruunFog", new Vector4(m * 0.35f, fog.y, fog.z, 0f));
             var far = FindFirstObjectByType<FarTerrain>();
-            if (far != null) far.SetHole(m - 12f);
+            if (far != null) far.SetHole(m - 3f);
             QualitySettings.shadowDistance = Mathf.Min(m, 160f);
             _view.ReloadAll();
             _player.Say("View distance " + m + " m");
