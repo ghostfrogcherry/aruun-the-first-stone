@@ -108,7 +108,7 @@ namespace Aruun.Game
             player.Init(view, map, options.Seed, options.Fly || options.Pose != null);
             var day = cam.gameObject.AddComponent<DayNight>();
             day.Sun = sun;
-            if (options.Hour >= 0f) { day.Hour = options.Hour; day.Paused = true; }
+            if (options.Hour >= 0f) { day.Hour = options.Hour; day.Paused = true; day.SetHourSoon(options.Hour); }
             day.Apply();
             cam.gameObject.AddComponent<DevTools>().Init(player, view, day);
             // The game's rules: survival, creatures, crafting (see Play/PlaySession).

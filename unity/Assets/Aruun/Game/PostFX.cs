@@ -62,8 +62,8 @@ namespace Aruun.Game
             _mat.SetVector("_SunScreen", new Vector4(sp.x, sp.y, strength, 0f));
             Color sunCol = Shader.GetGlobalColor("_AruunSunColor").linear;
             _mat.SetColor("_ShaftColor", new Color(sunCol.r, sunCol.g * 0.85f, sunCol.b * 0.65f));
-            RenderTexture mask = RenderTexture.GetTemporary(src.width / 4, src.height / 4, 0, RenderTextureFormat.R8);
-            RenderTexture shafts = RenderTexture.GetTemporary(src.width / 4, src.height / 4, 0, RenderTextureFormat.R8);
+            RenderTexture mask = RenderTexture.GetTemporary(src.width / 4, src.height / 4, 0, RenderTextureFormat.R8, RenderTextureReadWrite.Linear);
+            RenderTexture shafts = RenderTexture.GetTemporary(src.width / 4, src.height / 4, 0, RenderTextureFormat.R8, RenderTextureReadWrite.Linear);
             if (strength > 0f)
             {
                 Graphics.Blit(src, mask, _mat, 3);

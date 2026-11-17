@@ -79,7 +79,7 @@ namespace Aruun.Game
             float spacing = Spacing, radius = Radius;
             HeightField field = _field;
             BlockRegistry blocks = _blocks;
-            float treesFrom = Mathf.Max(0f, _hole - RebuildAfter - 8f), treesTo = TreesTo;
+            float treesFrom = _hole + 40f, treesTo = TreesTo;   // a band of forest-coloured ground first, so the change is gradual
             _job = Task.Run(() => Build(field, blocks, at, spacing, radius, treesFrom, treesTo));
         }
 
@@ -177,12 +177,12 @@ namespace Aruun.Game
                     if (!t.Exists) continue;
                     float thick = t.Trunk < 28 ? 2 : 3;
                     float x = (t.X + thick * 0.5f) * v - centre.x, z = (t.Z + thick * 0.5f) * v - centre.y;
-                    float top = (t.Base + t.Trunk) * v, half = t.Radius * 0.8f * v;
-                    var lo = new Vector3(x - half, top - t.Radius * 0.45f * v, z - half);
-                    var hi = new Vector3(x + half, top + t.Radius * 0.85f * v, z + half);
+                    float top = (t.Base + t.Trunk) * v, half = t.Radius * 0.6f * v;
+                    var lo = new Vector3(x - half, top - t.Radius * 0.6f * v, z - half);
+                    var hi = new Vector3(x + half, top + t.Radius * 0.6f * v, z + half);
                     BlockDef leaf = t.Crimson ? red : green;
-                    var c = new Color32(leaf.R, leaf.G, leaf.B, 255);
-                    var side = new Color32((byte)(leaf.R * 0.78f), (byte)(leaf.G * 0.78f), (byte)(leaf.B * 0.78f), 255);
+                    var c = new Color32((byte)(leaf.R * 0.8f), (byte)(leaf.G * 0.8f), (byte)(leaf.B * 0.8f), 255);
+                    var side = new Color32((byte)(leaf.R * 0.6f), (byte)(leaf.G * 0.6f), (byte)(leaf.B * 0.6f), 255);
                     Quad(pos, nrm, col, idx, new Vector3(lo.x, hi.y, lo.z), new Vector3(lo.x, hi.y, hi.z), new Vector3(hi.x, hi.y, hi.z), new Vector3(hi.x, hi.y, lo.z), Vector3.up, c);
                     Quad(pos, nrm, col, idx, new Vector3(lo.x, lo.y, lo.z), new Vector3(lo.x, hi.y, lo.z), new Vector3(hi.x, hi.y, lo.z), new Vector3(hi.x, lo.y, lo.z), Vector3.back, side);
                     Quad(pos, nrm, col, idx, new Vector3(hi.x, lo.y, hi.z), new Vector3(hi.x, hi.y, hi.z), new Vector3(lo.x, hi.y, hi.z), new Vector3(lo.x, lo.y, hi.z), Vector3.forward, side);

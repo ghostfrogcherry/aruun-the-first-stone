@@ -37,7 +37,7 @@ float AruunHaze(float3 worldPos)
     float d = max(dist - _AruunFog.x, 0) / range;
     float h = (worldPos.y + _WorldSpaceCameraPos.y) * 0.5 - _AruunFog.w;
     float thin = lerp(1.0, 0.45, saturate(h / 120));
-    float haze = 1 - exp(-d * 2.6 * thin);
+    float haze = 1 - exp(-d * 2.0 * thin);
     haze = max(haze, smoothstep(0.82, 1.0, dist / _AruunFog.y)); // always gone by the horizon
     return saturate(haze * _AruunFog.z);
 }
