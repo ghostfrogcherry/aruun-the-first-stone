@@ -89,8 +89,11 @@ namespace Aruun.Game
             int chunks = Mathf.Clamp(_view.ViewChunks + metres / 8, 4, 64);
             _view.ViewChunks = chunks;
             float m = chunks * WorldConfig.ChunkSize * WorldConfig.VoxelSize;
-            Camera.main.farClipPlane = Mathf.Max(m * 1.5f, Camera.main.farClipPlane);
-            Shader.SetGlobalVector("_AruunFog", new Vector4(m * 0.5f, m * 0.95f, 1f, 0f));
+            Vector4 fog = Shader.GetGlobalVector("_AruunFog");
+            Shader.SetGlobalVector("_AruunFog", new Vector4(m * 0.35f, fog.y, fog.z, 0f));
+            var far = FindFirstObjectByType<FarTerrain>();
+            if (far != null) far.SetHole(m - 12f);
+            QualitySettings.shadowDistance = Mathf.Min(m, 160f);
             _view.ReloadAll();
             _player.Say("View distance " + m + " m");
         }

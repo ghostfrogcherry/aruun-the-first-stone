@@ -56,15 +56,22 @@ namespace Aruun.Game
             Camera cam = MainCamera();
             float viewMeters = options.ViewMeters;
             cam.nearClipPlane = 0.05f;
-            cam.farClipPlane = viewMeters * 1.5f;
+            const float farMeters = 1024f;    // far terrain reaches the horizon past the chunks
+            cam.farClipPlane = farMeters * 1.2f;
             cam.fieldOfView = 70f;
-            // A clear blue sky over a living world. A real sky and day-night cycle come later.
-            var sky = new Color(0.56f, 0.74f, 0.92f);
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = sky;
-            // The voxel shader draws its own fog, so it works the same in every build.
-            Shader.SetGlobalColor("_AruunFogColor", sky);
-            Shader.SetGlobalVector("_AruunFog", new Vector4(viewMeters * 0.5f, viewMeters * 0.95f, 1f, 0f));
+            // The sky and fog follow the time of day (DayNight sets their colours).
+            var skyMat = new Material(Resources.Load<Shader>("AruunSky")) { name = "Aruun sky" };
+            RenderSettings.skybox = skyMat;
+            cam.clearFlags = CameraClearFlags.Skybox;
+            // The voxel shaders draw their own fog, so it works the same in every build: light
+            // haze from the edge of the chunks out to the horizon.
+            Shader.SetGlobalVector("_AruunFog", new Vector4(viewMeters * 0.35f, farMeters, 0.92f, 0f));
+            QualitySettings.shadowDistance = Mathf.Min(viewMeters, 160f);
+            QualitySettings.shadowCascades = 4;
+            QualitySettings.shadowResolution = ShadowResolution.VeryHigh;
+            QualitySettings.shadowProjection = ShadowProjection.StableFit;
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = 240;
 
             // Start on dry land at the spawn place (the map puts it at the origin), looking north-east.
             HeightField field = world.Generator.Field;
@@ -80,15 +87,21 @@ namespace Aruun.Game
                 if (options.Pose.Length == 5) cam.transform.rotation = Quaternion.Euler(options.Pose[4], options.Pose[3], 0f);
             }
 
-            // A sun for anything drawn with Unity's own lit shaders (the voxel shader lights itself).
+            // The sun casts the shadows; DayNight moves it and sets its colour.
             var sun = new GameObject("Sun").AddComponent<Light>();
             sun.type = LightType.Directional;
+            sun.shadows = LightShadows.Soft;
+            sun.shadowBias = 0.04f;
+            sun.shadowNormalBias = 0.3f;
             sun.transform.rotation = Quaternion.LookRotation(-new Vector3(0.4f, 0.8f, 0.3f));
 
             var root = new GameObject("World");
             var view = root.AddComponent<WorldView>();
             view.ViewChunks = Mathf.CeilToInt(viewMeters / (WorldConfig.ChunkSize * WorldConfig.VoxelSize));
             view.Init(world, cam.transform);
+            var far = new GameObject("Far terrain").AddComponent<FarTerrain>();
+            far.Radius = farMeters;
+            far.Init(world, cam.transform, view.ViewChunks * WorldConfig.ChunkSize * WorldConfig.VoxelSize - 12f);
 
             var player = cam.gameObject.AddComponent<DevPlayer>();
             player.Init(view, map, options.Seed, options.Fly || options.Pose != null);
