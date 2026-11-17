@@ -1,0 +1,23 @@
+name: Core tests
+
+# Builds and tests the rules library (unity/Assets/Aruun/Core) with plain .NET.
+# No Unity install or licence is needed.
+on:
+  push:
+    branches: [main]
+    paths: ["unity/**", "content/**", ".github/workflows/core-tests.yml"]
+  pull_request:
+    paths: ["unity/**", "content/**", ".github/workflows/core-tests.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - run: dotnet test unity/Tests/Aruun.Core.Tests
