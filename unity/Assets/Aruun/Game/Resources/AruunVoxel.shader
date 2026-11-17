@@ -73,7 +73,7 @@ Shader "Aruun/Voxel"
                 // Sky light: brightest from straight above, blue-tinted from the sky colour,
                 // and a little warm light bounced up from the red ground.
                 float up = n.y * 0.5 + 0.5;
-                float3 sky = AruunLin(_AruunAmbient.rgb) * lerp(0.55, 1.0, up) + AruunLin(_AruunSkyTop.rgb) * 0.12 * up;
+                float3 sky = AruunLin(_AruunAmbient.rgb) * lerp(0.7, 1.0, up) + AruunLin(_AruunSkyTop.rgb) * 0.12 * up;
                 float3 bounce = float3(0.10, 0.06, 0.04) * (1 - up) * AruunLin(_AruunSunColor.rgb);
                 float3 light = AruunLin(_AruunSunColor.rgb) * sun * 1.15 + sky + bounce;
                 float3 col = AruunLin(i.color.rgb) * light;

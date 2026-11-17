@@ -19,7 +19,7 @@ namespace Aruun.Game
         public float Spacing = 4f;        // metres between samples
         public float Radius = 1024f;      // metres from the viewer to the edge
         public float RebuildAfter = 96f;  // metres moved before the mesh is rebuilt
-        public float TreesTo = 700f;      // metres: trees are drawn as simple blocks out to here
+        public float TreesTo = 0f;        // metres: trees as simple blocks out to here (0 = off; they read as boxes)
         float _hole;
 
         Transform _viewer;
@@ -146,7 +146,7 @@ namespace Aruun.Game
                     d.Indices[t++] = a; d.Indices[t++] = a + n; d.Indices[t++] = a + 1;
                     d.Indices[t++] = a + 1; d.Indices[t++] = a + n; d.Indices[t++] = a + n + 1;
                 }
-            AddTrees(d, field, blocks, centre, treesFrom, treesTo);
+            if (treesTo > treesFrom) AddTrees(d, field, blocks, centre, treesFrom, treesTo);
             return d;
         }
 

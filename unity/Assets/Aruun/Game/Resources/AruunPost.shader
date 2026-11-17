@@ -84,6 +84,9 @@ Shader "Hidden/Aruun/Post"
         c = c * _Gain.rgb + _Lift.rgb * (1 - c);
         float2 v = (i.uv - 0.5) * float2(_ScreenParams.x / _ScreenParams.y, 1);
         c *= 1 - _Vignette * dot(v, v);
+        // A touch of noise breaks up banding in dark gradients (dusk sky, haze).
+        float n = frac(sin(dot(i.uv * _ScreenParams.xy, float2(12.9898, 78.233))) * 43758.5453);
+        c += (n - 0.5) / 255.0;
         return half4(c, 1);
     }
     ENDCG
