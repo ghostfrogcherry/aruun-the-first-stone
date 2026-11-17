@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Aruun.Core;
 using Aruun.Core.Content;
 using Aruun.Core.Voxels;
+using Aruun.Core.Worldgen;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -23,7 +24,8 @@ namespace Aruun.Game
         public VoxelWorld World { get; private set; }
         public Transform Viewer;
         public int ViewChunks = 16;          // horizontal radius in chunks (8 m each)
-        public int ViewChunksDown = 2, ViewChunksUp = 3;
+        /// <summary>Chunks kept around the viewer's own height, for building in the air or digging down.</summary>
+        public int ViewChunksDown = 2, ViewChunksUp = 2;
         public int MeshesPerFrame = 6;
 
         public int ShownChunks { get { return _shown.Count; } }
@@ -38,6 +40,7 @@ namespace Aruun.Game
         readonly ConcurrentQueue<Built> _done = new ConcurrentQueue<Built>();
         readonly ConcurrentBag<Built> _pool = new ConcurrentBag<Built>();
         readonly List<ChunkCoord> _wanted = new List<ChunkCoord>();
+        readonly Dictionary<Vector2Int, Vector2Int> _columns = new Dictionary<Vector2Int, Vector2Int>();
         readonly List<Vector3> _positions = new List<Vector3>(), _normals = new List<Vector3>();
         readonly List<Color32> _colors = new List<Color32>();
         Material _opaque, _transparent;
@@ -104,14 +107,29 @@ namespace Aruun.Game
         void PlanAround(ChunkCoord centre)
         {
             _wanted.Clear();
-            for (int dy = -ViewChunksDown; dy <= ViewChunksUp; dy++)
-                for (int dz = -ViewChunks; dz <= ViewChunks; dz++)
-                    for (int dx = -ViewChunks; dx <= ViewChunks; dx++)
+            _columns.Clear();
+            for (int dz = -ViewChunks - 2; dz <= ViewChunks + 2; dz++)
+                for (int dx = -ViewChunks - 2; dx <= ViewChunks + 2; dx++)
+                {
+                    if (dx * dx + dz * dz > (ViewChunks + 2) * (ViewChunks + 2)) continue;
+                    int cx = centre.X + dx, cz = centre.Z + dz;
+                    int lo, hi;
+                    TerrainSpan(cx, cz, out lo, out hi);
+                    // The terrain's own span everywhere, so the ground shows from any height;
+                    // near the viewer also a band around their height, for building in the air.
+                    if (dx * dx + dz * dz <= 4)
                     {
-                        if (dx * dx + dz * dz > ViewChunks * ViewChunks) continue;
-                        ChunkCoord c = centre.Offset(dx, dy, dz);
+                        lo = Math.Min(lo, centre.Y - ViewChunksDown);
+                        hi = Math.Max(hi, centre.Y + ViewChunksUp);
+                    }
+                    _columns[new Vector2Int(cx, cz)] = new Vector2Int(lo, hi);
+                    if (dx * dx + dz * dz > ViewChunks * ViewChunks) continue;
+                    for (int cy = lo; cy <= hi; cy++)
+                    {
+                        var c = new ChunkCoord(cx, cy, cz);
                         if (!_shown.ContainsKey(c) && !_empty.Contains(c)) _wanted.Add(c);
                     }
+                }
             // Farthest first, because work is taken from the end of the list.
             _wanted.Sort((a, b) => Dist2(b, centre).CompareTo(Dist2(a, centre)));
 
@@ -131,11 +149,35 @@ namespace Aruun.Game
             _empty.RemoveWhere(c => !InRange(c, centre, 2));
         }
 
+        /// <summary>
+        /// The chunk heights a column of chunks can have terrain in: sampled ground heights,
+        /// down to a little below (cliff faces, lake beds) and up past the tallest tree.
+        /// </summary>
+        void TerrainSpan(int cx, int cz, out int lo, out int hi)
+        {
+            var field = World.Generator.Field;
+            int min = int.MaxValue, max = int.MinValue;
+            const int n = WorldConfig.ChunkSize;
+            for (int sz = 0; sz <= n; sz += n / 4)
+                for (int sx = 0; sx <= n; sx += n / 4)
+                {
+                    int h = field.HeightAt(cx * n + sx, cz * n + sz);
+                    if (h < min) min = h;
+                    if (h > max) max = h;
+                }
+            if (max < HeightField.SeaLevel) max = HeightField.SeaLevel;
+            lo = (min - 12) >> WorldConfig.ChunkShift;
+            hi = (max + 52) >> WorldConfig.ChunkShift; // trees reach about 48 voxels above the ground
+        }
+
         bool InRange(ChunkCoord c, ChunkCoord centre, int slack = 0)
         {
             int r = ViewChunks + slack;
-            int dx = c.X - centre.X, dy = c.Y - centre.Y, dz = c.Z - centre.Z;
-            return dx * dx + dz * dz <= r * r && dy >= -ViewChunksDown - slack && dy <= ViewChunksUp + slack;
+            int dx = c.X - centre.X, dz = c.Z - centre.Z;
+            if (dx * dx + dz * dz > r * r) return false;
+            Vector2Int span;
+            if (!_columns.TryGetValue(new Vector2Int(c.X, c.Z), out span)) return false;
+            return c.Y >= span.x - slack && c.Y <= span.y + slack;
         }
 
         static int Dist2(ChunkCoord a, ChunkCoord b)
