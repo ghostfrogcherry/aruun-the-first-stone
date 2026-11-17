@@ -91,6 +91,7 @@ namespace Aruun.Game
             view.Init(world, cam.transform);
 
             cam.gameObject.AddComponent<DevPlayer>().Init(view, map, options.Seed, options.Fly || options.Pose != null);
+            if (!string.IsNullOrEmpty(options.ShotPath)) DevInput.Enabled = false;
             if (!string.IsNullOrEmpty(options.ShotPath))
                 cam.gameObject.AddComponent<AutoScreenshot>().Init(options.ShotPath, options.ShotAfter, view);
             Debug.Log("Aruun started. Seed " + options.Seed + ", view " + viewMeters + " m, content at " + GameContent.Root);
