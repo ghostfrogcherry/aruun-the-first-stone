@@ -35,7 +35,40 @@ namespace Aruun.Core.Worldgen
         /// <summary>Ground height in voxels at column (x, z).</summary>
         public int HeightAt(int x, int z)
         {
-            if (Map != null) return MapHeight(x, z, Blend(x, z));
+            if (Map != null)
+            {
+                int wild = Wildness(x, z);
+                if (wild <= 0) return MapHeight(x, z, Blend(x, z));
+                if (wild >= One) return ProceduralHeight(x, z);
+                long a = MapHeight(x, z, Blend(x, z)), b = ProceduralHeight(x, z);
+                return (int)(a + (((b - a) * wild) >> 16));
+            }
+            return ProceduralHeight(x, z);
+        }
+
+        /// <summary>
+        /// 0 inside the painted map, rising to 65536 a few kilometres outside it: beyond the map
+        /// the land is the seed's own endless terrain, reached across a strip of open sea.
+        /// </summary>
+        public int Wildness(int x, int z)
+        {
+            if (Map == null) return One;
+            int c = Map.Cell;
+            int minX = -Map.SpawnPx * c - c / 2, maxX = (Map.Width - Map.SpawnPx) * c - c / 2;
+            int maxZ = Map.SpawnPy * c + c / 2, minZ = (Map.SpawnPy - Map.Height) * c + c / 2;
+            long dx = Math.Max(0, Math.Max(minX - x, x - maxX));
+            long dz = Math.Max(0, Math.Max(minZ - z, z - maxZ));
+            long d = Math.Max(dx, dz);
+            long fade = 24L * c;                         // 24 map cells (768 m) of sea, then wild land
+            if (d <= 0) return 0;
+            return d >= fade ? One : (int)(d * One / fade);
+        }
+
+        /// <summary>True where the painted map decides the land rather than the seed.</summary>
+        bool UseMap(int x, int z) { return Map != null && Wildness(x, z) < One / 2; }
+
+        int ProceduralHeight(int x, int z)
+        {
             long h = 28L * One + 64L * Fractal(x, z, 400, 4, 100) + 3L * Value(x, z, 33, 200);
             // Terraced red mesas: flat tops and steep sides where the mask is high.
             int m = MesaMask(x, z);
@@ -51,7 +84,7 @@ namespace Aruun.Core.Worldgen
 
         public bool IsMesa(int x, int z)
         {
-            if (Map != null)
+            if (UseMap(x, z))
             {
                 int w = Blend(x, z).Mesas;
                 return w > 0 && ((long)MesaMask(x, z) * w >> 16) > 20972;
@@ -62,7 +95,7 @@ namespace Aruun.Core.Worldgen
         /// <summary>0..65536: how overgrown the land is here (forest density, flowers).</summary>
         public int Lushness(int x, int z)
         {
-            if (Map != null)
+            if (UseMap(x, z))
             {
                 long l = ((long)Blend(x, z).Lush * (45875 + ((Value(x, z, 166, 400) * 19661L) >> 16))) >> 16; // 0.4..1
                 return l < 0 ? 0 : l > One ? One : (int)l;
@@ -74,7 +107,7 @@ namespace Aruun.Core.Worldgen
         /// <summary>Block key for the top voxel of a column of height h.</summary>
         public string SurfaceKey(int x, int z, int h)
         {
-            if (Map != null) return MapSurface(x, z, h);
+            if (UseMap(x, z)) return MapSurface(x, z, h);
             if (h <= SeaLevel + 1) return h >= SeaLevel - 2 ? "dust_sand" : "red_soil"; // beaches, red lake beds
             if (IsMesa(x, z)) return "red_soil";
             return "grass";
@@ -94,7 +127,7 @@ namespace Aruun.Core.Worldgen
         public string FloraOn(int x, int z, string surface)
         {
             if (surface == "grass" || surface == "moss") return FloraAt(x, z);
-            if (Map != null && surface == "snow")
+            if (surface == "snow" && UseMap(x, z))
             {
                 MapBiome b = Map.BiomeAt(Warp(x, z, 0), Warp(x, z, 1));
                 if (b.Flowers != null && Hash(x, z, 11) < 9830) return b.Flowers;
@@ -106,7 +139,7 @@ namespace Aruun.Core.Worldgen
         public string FloraAt(int x, int z)
         {
             int r = Hash(x, z, 11);
-            if (Map != null)
+            if (UseMap(x, z))
             {
                 MapBiome b = Map.BiomeAt(Warp(x, z, 0), Warp(x, z, 1));
                 if (b.Flowers != null && r < 9830) return b.Flowers; // 15 %
@@ -125,13 +158,13 @@ namespace Aruun.Core.Worldgen
             var t = new TreeSpot();
             int ox = cx * TreeCell, oz = cz * TreeCell;
             long chance = ((long)Lushness(ox, oz) * 55706) >> 16;                       // lush * 0.85
-            if (Map != null) chance = (chance * Blend(ox, oz).Trees) >> 16;
+            if (UseMap(ox, oz)) chance = (chance * Blend(ox, oz).Trees) >> 16;
             if (Hash(cx, cz, 21) > chance) return t;
             t.X = ox + 3 + ((Hash(cx, cz, 22) * (TreeCell - 6)) >> 16);
             t.Z = oz + 3 + ((Hash(cx, cz, 23) * (TreeCell - 6)) >> 16);
             int h = HeightAt(t.X, t.Z);
             if (h <= SeaLevel + 1 || IsMesa(t.X, t.Z)) return t;
-            if (Map != null && MapSurface(t.X, t.Z, h) != "grass") return t;
+            if (UseMap(t.X, t.Z) && MapSurface(t.X, t.Z, h) != "grass") return t;
             t.Exists = true;
             t.Base = h + 1;
             t.Trunk = 18 + ((Hash(cx, cz, 24) * 18) >> 16);
@@ -259,7 +292,7 @@ namespace Aruun.Core.Worldgen
         /// <summary>True where the sea freezes over (glacial and bloom-field water).</summary>
         public bool Frozen(int x, int z)
         {
-            return Map != null && Map.BiomeAt(Warp(x, z, 0), Warp(x, z, 1)).Surface == "snow";
+            return UseMap(x, z) && Map.BiomeAt(Warp(x, z, 0), Warp(x, z, 1)).Surface == "snow";
         }
 
         static long Isqrt(long v)

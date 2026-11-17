@@ -94,6 +94,25 @@ namespace Aruun.Core.Tests
         }
 
         [Test]
+        public void BeyondTheMapTheSeedTakesOver()
+        {
+            var mapped = new HeightField(77, Map);
+            var wild = new HeightField(77);
+            // Far east of the map's edge the land is the seed's own, not ocean forever.
+            int x = (Map.Width - Map.SpawnPx + 40) * Map.Cell;
+            int same = 0, land = 0;
+            for (int i = 0; i < 200; i++)
+            {
+                int z = (i - 100) * 97;
+                if (mapped.HeightAt(x, z) == wild.HeightAt(x, z)) same++;
+                if (mapped.HeightAt(x, z) > HeightField.SeaLevel) land++;
+            }
+            Assert.That(same, Is.EqualTo(200));
+            Assert.That(land, Is.GreaterThan(50), "there is land out there");
+            Assert.That(mapped.Wildness(0, 0), Is.EqualTo(0));
+        }
+
+        [Test]
         public void EveryPlaceHasAMarker()
         {
             BlockRegistry blocks = TestContent.Blocks();
@@ -111,10 +130,10 @@ namespace Aruun.Core.Tests
             if (string.IsNullOrEmpty(path)) Assert.Ignore("set ARUUN_WORLDMAP to write a picture");
             BlockRegistry blocks = TestContent.Blocks();
             var f = new HeightField(42, Map);
-            int step = Map.Cell / 4, w = Map.Width * 4, h = Map.Height * 4;
-            int x0 = Map.Places[0].X, z0 = Map.Places[0].Z;
-            // Find the map's top-left corner from the spawn cell.
-            x0 = -159 * Map.Cell; z0 = 102 * Map.Cell;
+            // The whole map plus 60 cells of the wild lands around it, two pixels per cell.
+            const int margin = 60;
+            int step = Map.Cell / 2, w = (Map.Width + 2 * margin) * 2, h = (Map.Height + 2 * margin) * 2;
+            int x0 = -(Map.SpawnPx + margin) * Map.Cell, z0 = (Map.SpawnPy + margin) * Map.Cell;
             using (var o = new BinaryWriter(File.Create(path)))
             {
                 o.Write(System.Text.Encoding.ASCII.GetBytes("P6 " + w + " " + h + " 255\n"));
