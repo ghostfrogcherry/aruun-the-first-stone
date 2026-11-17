@@ -57,6 +57,16 @@ place, 1 to 7 choose a block, F3 overlay, F5 save, Esc free the mouse.
 Edits are saved per seed under Unity's persistent data folder (`worlds/dev-<seed>/journal.txt`)
 and replayed on the next start.
 
+## Build and screenshot from a terminal
+
+```
+U=~/Unity/Hub/Editor/<version>/Editor/Unity
+$U -batchmode -nographics -projectPath unity -executeMethod Aruun.EditorTools.DevBuild.Linux -quit -logFile -
+unity/Builds/linux/Aruun --seed=42 --shot=/tmp/aruun.png --shot-after=10
+```
+
+`--pos=x,y,z,yaw,pitch` places the camera (metres, degrees) for repeatable shots.
+
 ## Tests
 
 ```

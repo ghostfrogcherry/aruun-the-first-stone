@@ -50,12 +50,25 @@ namespace Aruun.Game
             cam.transform.position = new Vector3(sx * WorldConfig.VoxelSize, ground + 12f, sz * WorldConfig.VoxelSize);
             cam.transform.rotation = Quaternion.Euler(20f, 45f, 0f);
 
+            if (options.Pose != null)
+            {
+                cam.transform.position = new Vector3(options.Pose[0], options.Pose[1], options.Pose[2]);
+                if (options.Pose.Length == 5) cam.transform.rotation = Quaternion.Euler(options.Pose[4], options.Pose[3], 0f);
+            }
+
+            // A sun for anything drawn with Unity's own lit shaders (the voxel shader lights itself).
+            var sun = new GameObject("Sun").AddComponent<Light>();
+            sun.type = LightType.Directional;
+            sun.transform.rotation = Quaternion.LookRotation(-new Vector3(0.4f, 0.8f, 0.3f));
+
             var root = new GameObject("World");
             var view = root.AddComponent<WorldView>();
             view.ViewChunks = Mathf.CeilToInt(viewMeters / (WorldConfig.ChunkSize * WorldConfig.VoxelSize));
             view.Init(world, cam.transform);
 
             cam.gameObject.AddComponent<DevPlayer>().Init(view, options.Seed);
+            if (!string.IsNullOrEmpty(options.ShotPath))
+                cam.gameObject.AddComponent<AutoScreenshot>().Init(options.ShotPath, options.ShotAfter, view);
             Debug.Log("Aruun started. Seed " + options.Seed + ", view " + viewMeters + " m, content at " + GameContent.Root);
         }
     }
