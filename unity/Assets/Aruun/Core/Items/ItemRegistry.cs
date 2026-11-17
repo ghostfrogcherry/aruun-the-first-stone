@@ -66,6 +66,8 @@ namespace Aruun.Core.Items
         readonly Dictionary<string, List<Drop>> _drops = new Dictionary<string, List<Drop>>();
 
         public ToolSet Tools { get; private set; }
+        /// <summary>Bare-hands weapon stats (the "unarmed" object).</summary>
+        public Dictionary<string, object> UnarmedRaw { get; private set; }
         public BlockRegistry Blocks { get; private set; }
         public IReadOnlyList<Recipe> Recipes { get { return _recipeOrder; } }
 
@@ -127,6 +129,9 @@ namespace Aruun.Core.Items
         {
             var root = MiniJson.ParseObject(itemsJson);
             var reg = new ItemRegistry { Blocks = blocks, Tools = ToolSet.FromJson(itemsJson) };
+            object unarmed;
+            root.TryGetValue("unarmed", out unarmed);
+            reg.UnarmedRaw = unarmed as Dictionary<string, object> ?? new Dictionary<string, object>();
             int blockStack = MiniJson.Int(root, "block_stack", 999);
             for (int i = 1; i < blocks.Count; i++)
             {
