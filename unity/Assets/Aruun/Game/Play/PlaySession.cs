@@ -38,6 +38,8 @@ namespace Aruun.Game
         public readonly List<HostEvent> MyEvents = new List<HostEvent>();
 
         string _charPath;
+        /// <summary>A --smoke run: a fresh character, and nothing it does is saved.</summary>
+        bool _smoke;
         float _saveTimer = 30f;
         readonly Dictionary<int, CreatureView> _creatures = new Dictionary<int, CreatureView>();
         readonly Dictionary<int, GameObject> _plants = new Dictionary<int, GameObject>();
@@ -59,6 +61,7 @@ namespace Aruun.Game
             View = view;
             string[] args = Environment.GetCommandLineArgs();
             SurvivalOnly = Array.IndexOf(args, "--survival") >= 0;
+            _smoke = Array.IndexOf(args, "--smoke") >= 0;
             string rulesetId = SurvivalOnly ? "hardcore" : "light";
             foreach (string a in args) if (a.StartsWith("--ruleset=", StringComparison.Ordinal)) rulesetId = a.Substring(10);
 
@@ -81,7 +84,7 @@ namespace Aruun.Game
             Directory.CreateDirectory(dir);
             _charPath = Path.Combine(dir, "character.txt");
             var c = new CharacterState(items, rules);
-            bool fresh = Array.IndexOf(args, "--new-character") >= 0 || !File.Exists(_charPath);
+            bool fresh = _smoke || Array.IndexOf(args, "--new-character") >= 0 || !File.Exists(_charPath);
             if (!fresh)
             {
                 try { c.FromText(File.ReadAllText(_charPath)); }
@@ -92,7 +95,11 @@ namespace Aruun.Game
 
             _entityRoot = new GameObject("Entities").transform;
             RegisterDevKeys();
-            if (Array.IndexOf(args, "--smoke") >= 0) StartCoroutine(Smoke());
+            if (_smoke)
+            {
+                Debug.Log("[smoke] scheduled; nothing from this run is saved");
+                StartCoroutine(Smoke());
+            }
         }
 
         /// <summary>
@@ -104,7 +111,8 @@ namespace Aruun.Game
         {
             var lines = new List<string>();
             Action<string> note = t => { lines.Add(t); Debug.Log("[smoke] " + t); };
-            yield return new WaitForSeconds(6f);
+            note("waiting for the world to settle");
+            yield return new WaitForSecondsRealtime(6f);
             PlayerRec me = Me;
             note("start: hp " + me.C.Hp + ", bag empty " + me.C.Inv.IsEmpty + ", plants nearby " + Host.PlantsInWorld.Count + ", creatures " + Host.Creatures.Count);
             GiveKit();
@@ -131,14 +139,14 @@ namespace Aruun.Game
             for (int i = 0; i < 32; i++) if (me.C.Inv.KeyAt(i) == "reed_spear") me.C.Selected = i;
             Vec3 fwd = me.Facing.Flat.Normalized;
             Creature c = Host.SpawnCreature("redstrider", new Vec3(me.Pos.X + fwd.X * 1.5, Host.GroundHeight(me.Pos.X + fwd.X * 1.5, me.Pos.Z + fwd.Z * 1.5), me.Pos.Z + fwd.Z * 1.5), 777);
-            yield return new WaitForSeconds(1f);
+            yield return new WaitForSecondsRealtime(1f);
             int swings = 0;
             for (; swings < 40 && c.State != "dead"; swings++)
             {
                 c.Pos = me.Pos + fwd * 1.5;
                 me.C.Stamina = me.C.StaminaMax;
                 Host.Attack(LocalId, false);
-                yield return new WaitForSeconds(0.6f);
+                yield return new WaitForSecondsRealtime(0.6f);
             }
             note("fight redstrider: state " + c.State + " after " + swings + " swings, raw_meat " + me.C.Inv.Count("raw_meat") + ", hide " + me.C.Inv.Count("hide"));
             note("end: hp " + me.C.Hp.ToString("0") + ", day " + Host.Day + " " + (Host.TimeOfDay * 24).ToString("0.0") + "h, creatures " + Host.Creatures.Count + ", plants " + Host.PlantsInWorld.Count + ", structures " + Host.Structures.Count);
@@ -233,6 +241,7 @@ namespace Aruun.Game
 
         public void Save()
         {
+            if (_smoke) return;
             PlayerRec me = Me;
             if (me == null) return;
             try { File.WriteAllText(_charPath, me.C.ToText()); }
@@ -252,7 +261,7 @@ namespace Aruun.Game
             foreach (HostEdit e in Host.Edits)
             {
                 View.MarkDirty(e.Result.Dirty);
-                if (Journal != null) Journal(e.Op);
+                if (Journal != null && !_smoke) Journal(e.Op);
             }
             Host.Edits.Clear();
             foreach (var m in Host.Messages) if (m.Key == LocalId) Say(m.Value);
