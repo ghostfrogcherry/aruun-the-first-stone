@@ -25,12 +25,14 @@ Shader "Aruun/Voxel"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #pragma multi_compile_fog
             #include "UnityCG.cginc"
 
             float4 _SunDir;
             fixed4 _Sun;
             fixed4 _Sky;
+            // Set globally by the game (Shader.SetGlobal*): distance fog in metres.
+            float4 _AruunFogColor;
+            float4 _AruunFog; // x start, y end, z strength 0..1
 
             struct appdata
             {
@@ -43,7 +45,7 @@ Shader "Aruun/Voxel"
             {
                 float4 pos : SV_POSITION;
                 fixed4 color : COLOR;
-                UNITY_FOG_COORDS(0)
+                float fog : TEXCOORD0;
             };
 
             v2f vert(appdata v)
@@ -59,15 +61,18 @@ Shader "Aruun/Voxel"
                 albedo = GammaToLinearSpace(albedo); // palette colours are sRGB
                 #endif
                 o.color = fixed4(albedo * light, v.color.a);
-                UNITY_TRANSFER_FOG(o, o.pos);
+                float dist = distance(mul(unity_ObjectToWorld, v.vertex).xyz, _WorldSpaceCameraPos);
+                o.fog = saturate((dist - _AruunFog.x) / max(_AruunFog.y - _AruunFog.x, 0.001)) * _AruunFog.z;
                 return o;
             }
 
             fixed4 frag(v2f i) : SV_Target
             {
-                fixed4 c = i.color;
-                UNITY_APPLY_FOG(i.fogCoord, c);
-                return c;
+                float3 fogColor = _AruunFogColor.rgb;
+                #ifndef UNITY_COLORSPACE_GAMMA
+                fogColor = GammaToLinearSpace(fogColor);
+                #endif
+                return fixed4(lerp(i.color.rgb, fogColor, i.fog), i.color.a);
             }
             ENDCG
         }

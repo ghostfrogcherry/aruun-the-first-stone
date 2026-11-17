@@ -36,11 +36,9 @@ namespace Aruun.Game
             var sky = new Color(0.56f, 0.74f, 0.92f);
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = sky;
-            RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogColor = sky;
-            RenderSettings.fogStartDistance = viewMeters * 0.55f;
-            RenderSettings.fogEndDistance = viewMeters * 0.98f;
+            // The voxel shader draws its own fog, so it works the same in every build.
+            Shader.SetGlobalColor("_AruunFogColor", sky);
+            Shader.SetGlobalVector("_AruunFog", new Vector4(viewMeters * 0.5f, viewMeters * 0.95f, 1f, 0f));
 
             // Start a little above dry land near the origin, looking across it.
             HeightField field = world.Generator.Field;
