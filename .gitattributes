@@ -13,3 +13,5 @@ content/icons/*.png -filter -diff -merge
 content/art/*.png -filter -diff -merge
 docs/art/*.png -filter -diff -merge
 docs/unity/*.png -filter -diff -merge
+content/world/*.png -filter -diff -merge
+docs/world/*.png -filter -diff -merge

@@ -9,9 +9,16 @@ namespace Aruun.Game
     /// Keyboard and mouse for the development build, read through whichever input system the
     /// project has switched on. Real, rebindable player input (and controllers) replaces this.
     /// </summary>
+    /// <summary>One-press dev keys. They always work, with no menu open.</summary>
+    public enum DevKey { Fly, Map, Place, Home, BigDig, Faster, Slower, Screenshot, Help, ThirdPerson, Jump, Shift }
+
     public static class DevInput
     {
 #if ENABLE_INPUT_SYSTEM
+        static readonly Key[] DevKeys = { Key.F, Key.M, Key.T, Key.H, Key.B, Key.Equals, Key.Minus, Key.F2, Key.F1, Key.V, Key.Space, Key.LeftShift };
+        public static bool Down(DevKey k) { return Pressed(DevKeys[(int)k]); }
+        public static bool Holding(DevKey k) { return Held(DevKeys[(int)k]); }
+        public static bool ClickDown { get { return Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame; } }
         static bool Held(Key k) { return Keyboard.current != null && Keyboard.current[k].isPressed; }
         static bool Pressed(Key k) { return Keyboard.current != null && Keyboard.current[k].wasPressedThisFrame; }
 
@@ -33,6 +40,9 @@ namespace Aruun.Game
             }
         }
 #else
+        static readonly KeyCode[] DevKeys = { KeyCode.F, KeyCode.M, KeyCode.T, KeyCode.H, KeyCode.B, KeyCode.Equals, KeyCode.Minus, KeyCode.F2, KeyCode.F1, KeyCode.V, KeyCode.Space, KeyCode.LeftShift };
+        public static bool Down(DevKey k) { return Input.GetKeyDown(DevKeys[(int)k]); }
+        public static bool Holding(DevKey k) { return Input.GetKey(DevKeys[(int)k]); }
         public static Vector2 Move { get { return new Vector2((Input.GetKey(KeyCode.D) ? 1 : 0) - (Input.GetKey(KeyCode.A) ? 1 : 0), (Input.GetKey(KeyCode.W) ? 1 : 0) - (Input.GetKey(KeyCode.S) ? 1 : 0)); } }
         public static float Rise { get { return (Input.GetKey(KeyCode.Space) ? 1 : 0) - (Input.GetKey(KeyCode.LeftControl) ? 1 : 0); } }
         public static bool Fast { get { return Input.GetKey(KeyCode.LeftShift); } }

@@ -8,7 +8,9 @@ namespace Aruun.Game
     ///   --seed=1234      world seed (default 20261116)
     ///   --view=160       view distance in metres
     ///   --shot=out.png   save a screenshot after --shot-after seconds (default 10), then quit
-    ///   --pos=x,y,z,yaw,pitch   start the camera here (metres and degrees)
+    ///   --pos=x,y,z,yaw,pitch   start the camera here (metres and degrees), flying
+    ///   --fly            start flying instead of walking
+    ///   --play           skip the title screen (also skipped by --seed, --shot, --pos, --gallery)
     /// More arrive with their features (--host, --join, --world).
     /// </summary>
     public sealed class LaunchOptions
@@ -18,6 +20,9 @@ namespace Aruun.Game
         public string ShotPath;
         public float ShotAfter = 10f;
         public float[] Pose;
+        public bool Fly;
+        /// <summary>Go straight into the world instead of showing the title screen.</summary>
+        public bool SkipTitle;
 
         public static LaunchOptions FromCommandLine()
         {
@@ -25,6 +30,9 @@ namespace Aruun.Game
             foreach (string arg in Environment.GetCommandLineArgs())
             {
                 int v;
+                if (arg.StartsWith("--seed=") || arg.StartsWith("--shot=") || arg.StartsWith("--pos=") || arg == "--play" ||
+                    arg.StartsWith("--gallery")) o.SkipTitle = true;
+                if (arg == "--fly") o.Fly = true;
                 if (arg.StartsWith("--seed=") && TryInt(arg.Substring(7), out v)) o.Seed = v;
                 else if (arg.StartsWith("--seed=")) o.Seed = StableHash(arg.Substring(7)); // words work as seeds too
                 else if (arg.StartsWith("--view=") && TryInt(arg.Substring(7), out v)) o.ViewMeters = Math.Max(32, Math.Min(v, 512));

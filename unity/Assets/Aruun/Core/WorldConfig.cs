@@ -21,7 +21,7 @@ namespace Aruun.Core
         public const float EarthGravity = 9.81f;
 
         /// <summary>Bump when worldgen output changes, so old saves can be detected.</summary>
-        public const int GenerationVersion = 1;
+        public const int GenerationVersion = 2;
 
         /// <summary>How far a character can reach to dig or place, in voxels (6 m).</summary>
         public const int ReachVoxels = 24;

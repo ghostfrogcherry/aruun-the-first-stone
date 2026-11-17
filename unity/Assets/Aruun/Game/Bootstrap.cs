@@ -18,9 +18,17 @@ namespace Aruun.Game
         {
             if (Object.FindFirstObjectByType<WorldView>() != null) return;
             LaunchOptions options = LaunchOptions.FromCommandLine();
-            BlockRegistry blocks = GameContent.LoadBlocks();
-            var world = new VoxelWorld(options.Seed, blocks);
+            MainCamera();
+            if (!options.SkipTitle)
+            {
+                new GameObject("Title").AddComponent<TitleScreen>().Init(options);
+                return;
+            }
+            StartWorld(options);
+        }
 
+        static Camera MainCamera()
+        {
             Camera cam = Camera.main;
             if (cam == null)
             {
@@ -28,6 +36,24 @@ namespace Aruun.Game
                 cam = camObject.AddComponent<Camera>();
                 camObject.AddComponent<AudioListener>();
             }
+            return cam;
+        }
+
+        /// <summary>Loads the map and the world for options.Seed and drops the player at the spawn place.</summary>
+        public static void StartWorld(LaunchOptions options)
+        {
+            BlockRegistry blocks = GameContent.LoadBlocks();
+            WorldMap map = null;
+            try
+            {
+                map = WorldMap.FromText(GameContent.ReadText("world", "map.json"), GameContent.ReadText("world", "aruun_biomes.txt"));
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError("Could not load the world map, using endless land instead: " + e.Message);
+            }
+            var world = new VoxelWorld(options.Seed, blocks, map);
+            Camera cam = MainCamera();
             float viewMeters = options.ViewMeters;
             cam.nearClipPlane = 0.05f;
             cam.farClipPlane = viewMeters * 1.5f;
@@ -40,13 +66,13 @@ namespace Aruun.Game
             Shader.SetGlobalColor("_AruunFogColor", sky);
             Shader.SetGlobalVector("_AruunFog", new Vector4(viewMeters * 0.5f, viewMeters * 0.95f, 1f, 0f));
 
-            // Start a little above dry land near the origin, looking across it.
+            // Start on dry land at the spawn place (the map puts it at the origin), looking north-east.
             HeightField field = world.Generator.Field;
             int sx = 0, sz = 0;
             for (int i = 0; i < 400 && field.HeightAt(sx, sz) <= HeightField.SeaLevel + 2; i++) { sx += 16; sz += 9; }
             float ground = field.HeightAt(sx, sz) * WorldConfig.VoxelSize;
-            cam.transform.position = new Vector3(sx * WorldConfig.VoxelSize, ground + 12f, sz * WorldConfig.VoxelSize);
-            cam.transform.rotation = Quaternion.Euler(20f, 45f, 0f);
+            cam.transform.position = new Vector3(sx * WorldConfig.VoxelSize, ground + 1.7f, sz * WorldConfig.VoxelSize);
+            cam.transform.rotation = Quaternion.Euler(5f, 45f, 0f);
 
             if (options.Pose != null)
             {
@@ -64,7 +90,7 @@ namespace Aruun.Game
             view.ViewChunks = Mathf.CeilToInt(viewMeters / (WorldConfig.ChunkSize * WorldConfig.VoxelSize));
             view.Init(world, cam.transform);
 
-            cam.gameObject.AddComponent<DevPlayer>().Init(view, options.Seed);
+            cam.gameObject.AddComponent<DevPlayer>().Init(view, map, options.Seed, options.Fly || options.Pose != null);
             if (!string.IsNullOrEmpty(options.ShotPath))
                 cam.gameObject.AddComponent<AutoScreenshot>().Init(options.ShotPath, options.ShotAfter, view);
             Debug.Log("Aruun started. Seed " + options.Seed + ", view " + viewMeters + " m, content at " + GameContent.Root);
