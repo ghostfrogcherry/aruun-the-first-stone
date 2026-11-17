@@ -1,4 +1,5 @@
 using Aruun.Core.Content;
+using Aruun.Core.Ruins;
 using Aruun.Core.Voxels;
 
 namespace Aruun.Core.Worldgen
@@ -10,6 +11,8 @@ namespace Aruun.Core.Worldgen
     public sealed class TerrainGenerator
     {
         public readonly HeightField Field;
+        /// <summary>The echo ruin south of the spawn place (null without a map).</summary>
+        public readonly EchoRuin Ruin;
         readonly BlockRegistry _blocks;
         readonly ushort _air, _tallGrass, _bark, _leaves, _crimsonLeaves, _water, _redSoil, _rustRock, _deepStone;
         readonly ushort _ice, _marker, _lamp;
@@ -30,6 +33,7 @@ namespace Aruun.Core.Worldgen
             _redSoil = blocks.Id("red_soil");
             _rustRock = blocks.Id("rust_rock");
             _deepStone = blocks.Id("deep_stone");
+            if (map != null) Ruin = EchoRuin.ForMap(Field, blocks);
         }
 
         public VoxelChunk Generate(ChunkCoord coord)
@@ -65,6 +69,7 @@ namespace Aruun.Core.Worldgen
             }
             ApplyTrees(chunk);
             if (Field.Map != null) ApplyMarkers(chunk);
+            if (Ruin != null) Ruin.Stamp(chunk);
             return chunk;
         }
 

@@ -343,6 +343,28 @@
       "hardness": 2,
       "tool": "pick",
       "health": 10
+    },
+    {
+      "id": 33,
+      "key": "echo_seal",
+      "name": "Echo seal",
+      "solid": true,
+      "color": "#4f8c8a",
+      "hardness": 50,
+      "emissive": true,
+      "tool": "pick",
+      "health": 999
+    },
+    {
+      "id": 34,
+      "key": "echo_heart",
+      "name": "Echo heart",
+      "solid": true,
+      "color": "#7ff0dc",
+      "hardness": 50,
+      "emissive": true,
+      "tool": "pick",
+      "health": 999
     }
   ],
   "placeable": [
