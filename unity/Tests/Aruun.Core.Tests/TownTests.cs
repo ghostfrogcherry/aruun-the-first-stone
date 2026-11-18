@@ -235,5 +235,37 @@ namespace Aruun.Core.Tests
             Assert.That(again.Quests.IsActive("side_watch"), Is.True);
             Assert.That(again.Quests.IsDone("side_hearth"), Is.True);
         }
+
+        [Test]
+        public void TheOldSteadingCanBeClaimedWithATether()
+        {
+            var h = NewHost(out var p);
+            Assert.That(h.Village.Buildings.Exists(b => b.Key == "steading"), Is.True);
+            Vec3 plinth = h.Village.SteadingPlinth;
+            int gx = (int)System.Math.Floor(plinth.X * 4), gz = (int)System.Math.Floor(plinth.Z * 4), gy = (int)System.Math.Round(plinth.Y * 4) - 1;
+            Assert.That(h.World.Blocks.Get(h.World.Get(gx, gy, gz)).Collision, Is.True, "the plinth is solid");
+            Assert.That(h.World.Get(gx, gy + 1, gz), Is.EqualTo(0), "with room for a Tether on top");
+
+            // Dael offers the steading once the flint is brought.
+            p.C.Quests.Set("side_watch", QuestLog.Done);
+            Conversation c = Talk(h, p, "watcher");
+            Assert.That(c.Choices.Count, Is.GreaterThan(0));
+            h.Choose(1, 0);
+            Assert.That(p.C.Quests.IsActive("side_steading"), Is.True);
+            h.EndTalk(1);
+            Assert.That(h.ObjectiveFor(1).Target.HasValue, Is.True, "the HUD points at the steading");
+
+            p.Pos = plinth + new Vec3(0, 0, -1.5);
+            p.C.Inv.Add("tether_stone", 1);
+            for (int i = 0; i < Inventory.Size; i++) if (p.C.Inv.KeyAt(i) == "tether_stone") p.C.Selected = i;
+            Assert.That(h.UseHeld(1, true, gx, gy, gz, gx, gy + 1, gz), Is.True);
+            Assert.That(h.WorldFlags.Contains(Host.SteadingFlag), Is.True);
+            Run(h, 0.2);
+            Assert.That(h.CurrentStage(p, "side_steading").Id, Is.EqualTo("tell"));
+            Talk(h, p, "watcher");
+            h.Choose(1, 0);
+            Assert.That(p.C.Quests.IsDone("side_steading"), Is.True);
+            Assert.That(p.C.Inv.Count("stone_brick"), Is.EqualTo(160));
+        }
     }
 }

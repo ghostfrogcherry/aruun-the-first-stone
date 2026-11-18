@@ -49,6 +49,8 @@ namespace Aruun.Core.Town
         /// <summary>The college's middle, and the library's floor height (300 m up, far above everything).</summary>
         public const int CollegeZ = 340;
         public const int LibraryY = 1200;
+        /// <summary>The old steading: an abandoned homestead outside the wall, south-east, off the ruin road (voxels).</summary>
+        public const int SteadingX = 120, SteadingZ = -256;
 
         public readonly List<VillageBuilding> Buildings = new List<VillageBuilding>();
         /// <summary>Named spots (where people live), in metres. Y = 0 means "on the ground there".</summary>
@@ -99,6 +101,7 @@ namespace Aruun.Core.Town
             WallTowers();
             College();
             Library();
+            Steading();
 
             Spots["elder"] = M(0, 24, 0);
             Spots["cook"] = M(-30, -8, 0);
@@ -612,6 +615,7 @@ namespace Aruun.Core.Town
             if (x * x + z * z <= keep * keep) return true;
             int m = radius + 10;
             if (x >= -100 - m && x <= 100 + m && z >= CollegeZ - 90 - m && z <= CollegeZ + 80 + m) return true;
+            if (Math.Abs(x - SteadingX) <= 24 + m && z >= SteadingZ - 36 - m && z <= SteadingZ + 16 + m) return true;
             return PavedRoad(x, z, radius + 3);
         }
 
@@ -625,6 +629,54 @@ namespace Aruun.Core.Town
 
         /// <summary>Is this point (metres) in the library, the place behind the college door?</summary>
         public bool InLibrary(Vec3 p) { return p.Y * WorldConfig.VoxelsPerMeter > LibraryY - 40; }
+
+        // ------------------------------------------------------------------ the old steading
+
+        /// <summary>Where a Tether set on the steading's plinth stands (metres): the first home a castaway can claim.</summary>
+        public Vec3 SteadingPlinth { get; private set; }
+
+        /// <summary>
+        /// An abandoned homestead (placeholder name): a roofless stone-and-timber cottage, half its
+        /// walls fallen, a cold hearth, and in the yard a carved plinth where a Tether once stood.
+        /// Set a new Tether on the plinth and the steading is yours; mend it with shape building.
+        /// The carving is dark stone: nothing glows until a Tether wakes it.
+        /// </summary>
+        void Steading()
+        {
+            int cx = SteadingX, cz = SteadingZ;
+            int x0 = cx - 12, x1 = cx + 11, z0 = cz - 8, z1 = cz + 9;     // a 6 m x 4.5 m cottage
+            int f = Ground(cx, cz);
+            Pad(x0 - 6, z0 - 18, x1 + 6, z1 + 4, f, 40);   // the yard runs south, toward the plinth
+            ushort cobble = B("cobble"), timber = B("dark_timber"), plank = B("plank"), brick = B("stone_brick");
+            _bp.Box(x0, f, z0, x1, f, z1, plank, _moss);
+            // Low stone walls: whole on the west and north, broken down to a course or two elsewhere.
+            _bp.Walls(x0, f + 1, z0, x1, f + 3, z1, 1, cobble, _moss);
+            _bp.Box(x0, f + 4, z0, x0, f + 10, z1, cobble, _moss);                 // west wall stands
+            _bp.Box(x0, f + 4, z1, x1 - 8, f + 9, z1, cobble, _moss);              // north wall, mostly
+            _bp.Box(x1, f + 4, z0 + 4, x1, f + 6, z0 + 9, cobble, _moss);          // a stump of the east wall
+            // The doorway, facing the yard (south).
+            _bp.Box(cx - 2, f + 1, z0, cx + 1, f + 3, z0, _air);
+            // Corner posts; one still carries a beam, the rest end in splinters.
+            _bp.Box(x0, f + 1, z0, x0, f + 12, z0, timber);
+            _bp.Box(x0, f + 1, z1, x0, f + 12, z1, timber);
+            _bp.Box(x1, f + 1, z1, x1, f + 7, z1, timber);
+            _bp.Box(x1, f + 1, z0, x1, f + 5, z0, timber);
+            _bp.Box(x0, f + 12, z0, x0, f + 12, z1, timber);
+            // What is left of the roof: a few courses of blue tile fallen against the west wall.
+            _bp.Box(x0 + 1, f + 9, z0 + 2, x0 + 3, f + 10, z1 - 3, B("roof_blue_dark"));
+            _bp.Box(x0 + 4, f + 1, z0 + 6, x0 + 5, f + 2, z0 + 11, B("roof_blue_dark"));
+            // A cold hearth against the north wall.
+            _bp.Box(cx - 3, f + 1, z1 - 3, cx + 2, f + 1, z1 - 1, brick);
+            _bp.Box(cx - 2, f + 1, z1 - 2, cx + 1, f + 1, z1 - 2, B("cobble"));
+            // The Tether plinth in the yard, 3 m in front of the door: brick, ringed with carved stone.
+            int px = cx, pz = z0 - 12;
+            _bp.Box(px - 3, f + 1, pz - 3, px + 2, f + 1, pz + 2, brick, _moss);
+            _bp.Box(px - 2, f + 2, pz - 2, px + 1, f + 2, pz + 1, B("rune_stone"));
+            _bp.Box(px - 1, f + 2, pz - 1, px, f + 2, pz, brick);
+            SteadingPlinth = M(px, pz, f + 3);
+            Spots["steading"] = SteadingPlinth;
+            Buildings.Add(new VillageBuilding { Key = "steading", X = cx, Z = cz, Floor = f, MinX = x0, MaxX = x1, MinZ = z0, MaxZ = z1, Height = 13 });
+        }
 
         // ------------------------------------------------------------------ worldgen
 

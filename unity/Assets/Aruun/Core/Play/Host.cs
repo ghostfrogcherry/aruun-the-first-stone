@@ -294,6 +294,7 @@ namespace Aruun.Core.Play
             {
                 p.C.Tether = new[] { gx, gy + 1, gz };
                 Say(p.Id, "You plant a Tether. This is home now: you will wake here.");
+                ClaimSteading(p, at);
             }
             else Say(p.Id, "You set down a " + sdef.Name.ToLowerInvariant());
             Fx("place", p.Id, 0, 0, at);

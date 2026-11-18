@@ -538,6 +538,16 @@ namespace Aruun.Game
                 me.RespawnAt = at;
                 Say("The inscription table. Look at its worktop and press E.");
             });
+            DevTools.Register(KeyCode.O, "Go to the old steading's yard (the first Tether base)", () =>
+            {
+                PlayerRec me = Me;
+                if (me == null || Host.Village == null) { Say("This world has no steading"); return; }
+                Vec3 at = Host.Village.SteadingPlinth + new Vec3(0, 0, -2);
+                me.Pos = at;
+                me.RespawnAt = at;
+                me.ArriveYaw = 0;
+                Say("The old steading. Set a Tether on the carved plinth to claim it.");
+            });
             DevTools.Register(KeyCode.U, "Know every Avarra word", () =>
             {
                 PlayerRec me = Me;

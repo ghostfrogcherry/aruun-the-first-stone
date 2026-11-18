@@ -253,6 +253,8 @@ namespace Aruun.Core.Play
             }
             string flag = MiniJson.Str(when, "flag");
             if (flag.Length > 0 && !WorldFlags.Contains(flag)) return false;
+            string after = MiniJson.Str(when, "after");
+            if (after.Length > 0 && !p.C.Quests.IsDone(after)) return false;
             return true;
         }
 
@@ -408,6 +410,11 @@ namespace Aruun.Core.Play
                 if (r != null) o.Target = r.Pos;
             }
             else if (s.Target == "ruin" && Ruin != null) o.Target = Ruin.EntranceM;
+            else if (s.Target.StartsWith("spot:", StringComparison.Ordinal) && Village != null)
+            {
+                Vec3 at;
+                if (Village.Spots.TryGetValue(s.Target.Substring(5), out at)) o.Target = at;
+            }
             return o;
         }
     }

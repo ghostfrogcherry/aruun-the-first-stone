@@ -77,5 +77,20 @@ namespace Aruun.Core.Play
             Say(p.Id, "Built: " + Shapes.Name(s).ToLowerInvariant() + ", " + built + " " + def.Name.ToLowerInvariant() + ".");
             return "";
         }
+
+        /// <summary>World flag set when a Tether stands on the old steading's plinth.</summary>
+        public const string SteadingFlag = "steading_claimed";
+
+        /// <summary>A Tether set on the steading's plinth wakes the carving and claims the place.</summary>
+        void ClaimSteading(PlayerRec p, Vec3 at)
+        {
+            if (Village == null || WorldFlags.Contains(SteadingFlag)) return;
+            Vec3 plinth = Village.SteadingPlinth;
+            if (Vec3.FlatDistance(at, plinth) > 0.6 || Math.Abs(at.Y - plinth.Y) > 0.4) return;
+            WorldFlags.Add(SteadingFlag);
+            Fx("glow", p.Id, 0, 0, plinth);
+            Say(p.Id, "The carving round the plinth answers the Tether. The old steading is yours: mend its walls with shape building (C).");
+            AdvanceQuestFlags();
+        }
     }
 }
