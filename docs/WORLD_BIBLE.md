@@ -6,6 +6,9 @@ This is the one reference for what Aruun *is*. Before adding a place, word, crea
 building or system, check it against this file. If something here is wrong, fix this file
 first, then the content.
 
+How the game *plays* (the core loop, combat, Occlusion phases, the five acts, the roadmap)
+lives in [GAME_DESIGN.md](GAME_DESIGN.md).
+
 ## How to read this
 
 Every statement carries one tag:
@@ -756,8 +759,9 @@ chat and this file gets updated.
    them, or should Claude propose some? Is Dohm ("Heavy") canon?
 5. **The old builders:** any of the eight questions in section 6 you already have answers to.
 6. **Occlusion enemies and the first two bosses.**
-7. **Sky colour** (pink like the concept art, or blue) and the big planet in the Occlusion
-   image.
+7. **Sky colour**: answered 2026-11-18. Bruh's concept boards are the visual target, so the
+   sky is pink/orange/violet (see [GAME_DESIGN.md](GAME_DESIGN.md) §2). Still open: what the big
+   red planet in the sky is.
 8. **Humans in Teshbal**, Elduun Marshes' region, the *Keth* and *Ily-* name families,
    Earth names vs Vaari titles in game text.
 
