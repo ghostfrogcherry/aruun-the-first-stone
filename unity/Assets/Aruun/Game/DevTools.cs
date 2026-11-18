@@ -195,7 +195,14 @@ namespace Aruun.Game
                 Box(y, 640, 92, text);
                 y += 98;
             }
-            if (_stats) { Box(y, 640, 92, _statsText.Length > 0 ? _statsText : "Measuring..."); y += 98; }
+            if (_stats)
+            {
+                // Tall enough for every line, however many there are.
+                int lines = _statsText.Split('\n').Length;
+                float h = 12 + lines * 19;
+                Box(y, 640, h, _statsText.Length > 0 ? _statsText : "Measuring...");
+                y += h + 6;
+            }
             if (_help)
             {
                 var sb = new StringBuilder();

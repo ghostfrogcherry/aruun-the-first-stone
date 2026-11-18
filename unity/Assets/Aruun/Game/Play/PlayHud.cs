@@ -136,7 +136,8 @@ namespace Aruun.Game
 
             // Time of day and the mode, top right.
             double tod = h.TimeOfDay;
-            int hour = (int)(tod * 24), minute = (int)((tod * 24 - hour) * 60);
+            int mins = (int)(tod * 24 * 60) % (24 * 60);        // a time of exactly 1.0 is midnight, not 24:00
+            int hour = mins / 60, minute = mins % 60;
             string clock = "Day " + h.Day + "   " + hour.ToString("00") + ":" + minute.ToString("00") + (h.IsNight ? "   night" : "");
             string where = me.Flags.Contains("sheltered") ? "sheltered" : "in the open";
             if (me.Flags.Contains("near_heat")) where += ", by a fire";

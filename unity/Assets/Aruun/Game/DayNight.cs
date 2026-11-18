@@ -30,7 +30,7 @@ namespace Aruun.Game
         /// <summary>Lamp light (sRGB): warm amber, the colour of places people live (visual guide).</summary>
         public static readonly Color LampColor = new Color(1f, 0.64f, 0.30f);
         /// <summary>Lamp strength at night and in full day (daylight drowns it out anyway).</summary>
-        public float LampNight = 4f, LampDay = 1.2f;
+        public float LampNight = 2.6f, LampDay = 0.9f;
         /// <summary>Moonlight (sRGB): cool and blue, bright enough to find your way by.</summary>
         public Color MoonColor = new Color(0.46f, 0.53f, 0.70f);
         public Color NightAmbient = new Color(0.30f, 0.35f, 0.48f);
@@ -59,7 +59,8 @@ namespace Aruun.Game
         {
             get
             {
-                int h = Mathf.FloorToInt(Hour), m = Mathf.FloorToInt((Hour - h) * 60f);
+                int mins = Mathf.FloorToInt(Hour * 60f) % (24 * 60);   // never shows 24:00
+                int h = mins / 60, m = mins % 60;
                 return h.ToString("00") + ":" + m.ToString("00") + (Paused ? " (paused)" : "");
             }
         }
@@ -94,7 +95,7 @@ namespace Aruun.Game
             bool moonUp = height <= -0.017f;                         // the sun's own light is gone by here
             Color moonColor = MoonColor * night;
             Vector3 moonDir = new Vector3(-sunDir.x, -sunDir.y, sunDir.z);
-            if (moonDir.y < 0.25f) moonDir.y = 0.25f;                // keep the moon up while it fades in
+            if (moonDir.y < 0.6f) moonDir.y = 0.6f;                  // keep the moon high: a low moon barely lights flat ground
             moonDir.Normalize();
 
             // Sky light: day blue, a warm tint at dawn and dusk, moonlit blue at night.

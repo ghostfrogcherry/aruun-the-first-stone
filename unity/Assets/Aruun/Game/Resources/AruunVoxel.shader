@@ -95,8 +95,9 @@ Shader "Aruun/Voxel"
                     float r = _AruunLamps[k].w;
                     float f = saturate(1 - dist2 / (r * r));
                     float wrap = saturate(dot(n, d * rsqrt(dist2 + 1e-4)) * 0.7 + 0.3);
-                    lamp += f * f * wrap / (1 + dist2 * 0.15);
+                    lamp += f * f * wrap / (1 + dist2 * 0.3);
                 }
+                lamp = lamp / (1 + lamp * 0.6);   // soft ceiling: no blown-out pool right under a lamp
                 light += AruunLin(_AruunLampColor.rgb) * _AruunLampColor.a * lamp;
 
                 float3 col = AruunLin(i.color.rgb) * light;
