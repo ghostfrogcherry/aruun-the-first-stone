@@ -325,6 +325,7 @@ namespace Aruun.Core.Play
         void Complete(PlayerRec p, QuestDef q)
         {
             p.C.Quests.Set(q.Id, QuestLog.Done);
+            AwardFor(p, "quest");
             var parts = new List<string>();
             foreach (var kv in q.RewardItems)
             {

@@ -74,6 +74,7 @@ namespace Aruun.Core.Play
             public double At;
             public int Player;
             public AttackProfile Prof;
+            public bool Heavy;
         }
 
         public Host(VoxelWorld world, ItemRegistry items, Ruleset rules, Plants plants, IEnumerable<CreatureDef> creatures, int seed)
@@ -104,6 +105,7 @@ namespace Aruun.Core.Play
             if (fresh) c.SetupNew();
             var p = new PlayerRec { Id = id, C = c, Pos = pos };
             Players[id] = p;
+            SetUpSkills(p, fresh);
             return p;
         }
 
@@ -499,7 +501,7 @@ namespace Aruun.Core.Play
             p.Guard = false;
             p.NextAttack = Time + prof.Cooldown;
             p.CombatAt = Time;
-            _swings.Add(new Swing { At = Time + prof.Windup, Player = id, Prof = prof });
+            _swings.Add(new Swing { At = Time + prof.Windup, Player = id, Prof = prof, Heavy = heavy });
             Fx("swing", id, 0, heavy ? 1 : 0, p.Pos);
             return true;
         }
@@ -552,6 +554,7 @@ namespace Aruun.Core.Play
                     HitCreature(c, s.Prof.Damage, s.Prof.Poise, CombatRules.Knockback(p.Chest, centre, s.Prof.Knockback, c.Def.Mass), p.Id);
                     hitAny = true;
                 }
+                if (s.Heavy) Slam(p, s.Prof);
                 if (hitAny)
                 {
                     p.CombatAt = Time;
@@ -579,6 +582,7 @@ namespace Aruun.Core.Play
             OnCreatureKilled(c, byPlayer);
             PlayerRec p;
             if (byPlayer == 0 || !Players.TryGetValue(byPlayer, out p)) return;
+            if (c.Def.Behavior == "guardian") AwardFor(p, "boss");
             var parts = new List<string>();
             foreach (object o in MiniJson.List(c.Def.Raw, "drops"))
             {
@@ -601,7 +605,7 @@ namespace Aruun.Core.Play
             if (!Players.TryGetValue(id, out p)) return;
             double debt;
             p.C.Cond.TryGetValue("gravity_debt", out debt);
-            double dmg = CombatRules.FallDamage(speed, Rules, debt);
+            double dmg = CombatRules.FallDamage(speed, Rules, debt) * p.C.Mods["fall_damage_mult"];
             if (dmg > 0) DamagePlayer(id, dmg, p.Pos, "fall");
         }
 
@@ -669,6 +673,7 @@ namespace Aruun.Core.Play
                 return;
             }
             if (p.C.Tick(flags, dt)) Die(p);
+            AnnouncePoints(p);
         }
 
         HashSet<string> EnvironmentFlags(PlayerRec p)
@@ -979,7 +984,7 @@ namespace Aruun.Core.Play
         public void ShovePlayer(int player, Vec3 velocity, double seconds)
         {
             PlayerRec p;
-            if (Players.TryGetValue(player, out p)) p.Shove = velocity;
+            if (Players.TryGetValue(player, out p)) p.Shove = velocity * p.C.Mods["knockback_taken_mult"];
         }
 
         public void NoteHit(int player, string tag, double withinS, int count, string buff)

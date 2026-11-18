@@ -11,6 +11,7 @@ using Aruun.Core.Language;
 using Aruun.Core.Net;
 using Aruun.Core.People;
 using Aruun.Core.Play;
+using Aruun.Core.Skills;
 using Aruun.Core.Ruins;
 using Aruun.Core.Survival;
 using Aruun.Game.Art;
@@ -113,6 +114,12 @@ namespace Aruun.Game
                 foreach (string problem in Host.Inscriptions.Validate(Host.Lexicon, items)) Debug.LogWarning("inscriptions.json: " + problem);
             }
             catch (Exception e) { Debug.LogError("Could not load the inscription rules: " + e.Message); }
+            try
+            {
+                Host.Tree = SkillTree.FromJson(GameContent.ReadText("skills", "graviturge.json"));
+                foreach (string problem in Host.Tree.Validate()) Debug.LogWarning("graviturge.json: " + problem);
+            }
+            catch (Exception e) { Debug.LogError("Could not load the skill tree: " + e.Message); }
             Host.SpawnCreatures = Array.IndexOf(args, "--no-creatures") < 0 && DevInput.Enabled;
 
             string dir = Path.Combine(Application.persistentDataPath, "worlds", (SurvivalOnly ? "survival-" : "dev-") + seed);

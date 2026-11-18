@@ -82,6 +82,28 @@ for rule in ins.get("words", []) + ins.get("compositions", []):
     for cls in rule.get("fits", []):
         if cls not in item_classes:
             err(f"inscriptions: '{rid}' fits '{cls}', which no item is")
+# Skill trees: unique ids, known requirements, mods the game reads, a layout with no two nodes on one cell.
+SKILL_MODS = {"debt_cost_mult", "debt_repay_mult", "damage_mult", "slam_radius_mult", "slam_damage_mult", "slam_debt",
+              "fall_damage_mult", "knockback_taken_mult", "hp_max_mult", "stamina_max_mult", "stamina_regen_mult",
+              "damage_taken_mult", "hp_regen"}
+for path in sorted((CONTENT / "skills").glob("*.json")):
+    tree = load(path)
+    ids = [n.get("id") for n in tree.get("nodes", [])]
+    if len(ids) != len(set(ids)):
+        err(f"skills/{path.name}: repeated node id")
+    cells = set()
+    for n in tree.get("nodes", []):
+        for r in n.get("requires", []):
+            if r not in ids:
+                err(f"skills/{path.name}: '{n.get('id')}' requires unknown node '{r}'")
+        for m in n.get("mods", {}):
+            if m not in SKILL_MODS:
+                err(f"skills/{path.name}: '{n.get('id')}' uses mod '{m}', which nothing reads")
+        cell = (n.get("x", 0), n.get("y", 0))
+        if cell in cells:
+            err(f"skills/{path.name}: '{n.get('id')}' sits on a cell another node uses")
+        cells.add(cell)
+
 for b in blocks.get("blocks", []):
     if b.get("inscription") and b["inscription"] not in word_ids:
         err(f"blocks: '{b['key']}' inscribes unknown word '{b['inscription']}'")

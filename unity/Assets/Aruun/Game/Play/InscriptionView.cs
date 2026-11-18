@@ -316,6 +316,11 @@ namespace Aruun.Game
                 case "resonate":
                     Resonate(h, e);
                     break;
+                case "slam":
+                    // A Fallhammer slam (a player's: creature slams carry the creature's id).
+                    // Dust and grit thrown out from the impact, earth-coloured: weight, not light.
+                    if (e.Creature == 0) Dust(PlaySession.ToUnity(e.At), (float)e.Value);
+                    break;
                 case "shockwave":
                     Ring(PlaySession.ToUnity(e.At) + Vector3.up * 0.15f, (float)e.Value, 40, 0.5f);
                     Flash(PlaySession.ToUnity(e.At) + Vector3.up, 1.6f, (float)e.Value + 2f, 0.35f);
@@ -338,6 +343,22 @@ namespace Aruun.Game
             }
             Ring(at, 1.6f, 18, 0.35f);
             Flash(at, 1.2f, 4f, 0.3f);
+        }
+
+        static readonly Color DustColour = new Color32(0x80, 0x5d, 0x4b, 0xff);   // Ancient Stone
+        static readonly Color GritColour = new Color32(0xd5, 0xb7, 0x7c, 0xff);   // Warm Sand
+
+        void Dust(Vector3 at, float radius)
+        {
+            int count = Mathf.Clamp((int)(radius * 12), 16, 48);
+            for (int i = 0; i < count; i++)
+            {
+                float a = i * Mathf.PI * 2 / count + Random.Range(-0.1f, 0.1f);
+                Vector3 dir = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+                Color c = (i & 1) == 0 ? DustColour : GritColour;
+                Spawn(Bit(c), at + dir * 0.3f + Vector3.up * 0.1f, dir * (radius * Random.Range(1.6f, 2.4f)) + Vector3.up * Random.Range(1.5f, 3f),
+                      Random.Range(0.45f, 0.8f), Random.Range(0.06f, 0.12f), true, 0f);
+            }
         }
 
         void Ring(Vector3 at, float radius, int count, float seconds)

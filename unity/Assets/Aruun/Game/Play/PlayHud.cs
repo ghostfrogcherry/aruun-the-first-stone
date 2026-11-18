@@ -5,6 +5,7 @@ using Aruun.Core.Items;
 using Aruun.Core.Language;
 using Aruun.Core.People;
 using Aruun.Core.Play;
+using Aruun.Core.Skills;
 using Aruun.Core.Survival;
 using UnityEngine;
 
@@ -58,15 +59,19 @@ namespace Aruun.Game
         int _picked = -1;
         Vector2 _recipeScroll;
         float _hurtFlash;
+        GUIStyle _node;
         GUIStyle _small, _centre, _title, _tiny, _tinyCentre, _bold;
 
         /// <summary>The bag was opened at an inscription table: the inscription panel replaces crafting.</summary>
         public static bool TableMode { get; private set; }
+        /// <summary>The bag was opened on the skill tree (P) instead of the bag and crafting.</summary>
+        public static bool SkillsMode { get; private set; }
 
-        public static void SetBag(bool open, bool table = false)
+        public static void SetBag(bool open, bool table = false, bool skills = false)
         {
             BagOpen = open;
             TableMode = open && table;
+            SkillsMode = open && skills;
             Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = open;
         }
@@ -387,6 +392,7 @@ namespace Aruun.Game
         void DrawBag(PlaySession s, PlayerRec me)
         {
             Host h = s.Host;
+            if (SkillsMode) { DrawSkills(h, me); return; }
             Inventory inv = me.C.Inv;
             float w = Screen.width, ht = Screen.height;
             float slot = 58, cols = 8;
@@ -438,6 +444,64 @@ namespace Aruun.Game
                 ry += 48;
             }
             GUI.EndScrollView();
+        }
+
+        // ================================================================ skills
+
+        static readonly Color Learned = new Color32(0x52, 0x7c, 0x62, 0xff);    // Living Green
+        static readonly Color Open = new Color32(0x31, 0x5e, 0x68, 0xff);       // Deep Teal
+        static readonly Color Shut = new Color(0.13f, 0.13f, 0.15f, 1f);
+        static readonly Color KeystoneRim = new Color32(0xd5, 0xb7, 0x7c, 0xff); // Warm Sand
+
+        /// <summary>The discipline's tree: the root at the bottom, three branches growing up. Click a node to learn it.</summary>
+        void DrawSkills(Host h, PlayerRec me)
+        {
+            float w = Screen.width, ht = Screen.height;
+            float pw = 820, ph = 470, px = w / 2 - pw / 2, py = ht / 2 - ph / 2;
+            Box(new Rect(px, py, pw, ph), new Color(0.05f, 0.05f, 0.07f, 0.92f));
+            SkillTree t = h.Tree;
+            if (t == null) { GUI.Label(new Rect(px + 14, py + 10, pw, 24), "No skill tree in this world.", _title); return; }
+            GUI.Label(new Rect(px + 14, py + 8, 300, 24), t.Name + "   (P closes)", _title);
+            GUI.Label(new Rect(px + pw - 220, py + 12, 206, 22), me.C.SkillPoints + (me.C.SkillPoints == 1 ? " point" : " points") + " to spend", _bold);
+            GUI.Label(new Rect(px + 14, py + 32, pw - 28, 20), "Points come from learning words, finishing quests and felling guardians. One keystone only.", _small);
+
+            const float nw = 120, nh = 40, colW = 130, rowH = 74;
+            // Columns run from -3 to 2, so the centre sits half a column right of the root.
+            float ox = px + pw / 2 - nw / 2 + colW * 0.5f, oy = py + ph - 70;
+            System.Func<SkillNode, Rect> at = n => new Rect(ox + n.X * colW, oy - n.Y * rowH, nw, nh);
+            if (_node == null) _node = new GUIStyle(GUI.skin.label) { fontSize = 12, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter, wordWrap = true };
+            // Links first, under the nodes: down from the node, across, then down into what it needs.
+            foreach (SkillNode n in t.Nodes)
+                foreach (string req in n.Requires)
+                {
+                    if (!t.Has(req)) continue;
+                    Rect a = at(n), b = at(t.Get(req));
+                    bool lit = me.C.Skills.Contains(req);
+                    Color c = lit ? new Color(0.5f, 0.6f, 0.5f, 0.9f) : new Color(0.35f, 0.35f, 0.38f, 0.8f);
+                    float ax = a.center.x, bx = b.center.x, midY = (a.yMax + b.y) / 2;
+                    Box(new Rect(ax - 1.5f, a.yMax, 3, midY - a.yMax), c);
+                    Box(new Rect(Mathf.Min(ax, bx) - 1.5f, midY - 1.5f, Mathf.Abs(ax - bx) + 3, 3), c);
+                    Box(new Rect(bx - 1.5f, midY, 3, b.y - midY), c);
+                }
+            string hover = "";
+            Event e = Event.current;
+            foreach (SkillNode n in t.Nodes)
+            {
+                Rect r = at(n);
+                bool has = me.C.Skills.Contains(n.Id);
+                string why = has ? "" : t.WhyNot(me.C, n.Id);
+                if (n.Keystone) Box(new Rect(r.x - 3, r.y - 3, r.width + 6, r.height + 6), KeystoneRim);
+                Box(r, has ? Learned : why.Length == 0 ? Open : Shut);
+                GUI.color = has || why.Length == 0 ? Color.white : new Color(1, 1, 1, 0.55f);
+                GUI.Label(new Rect(r.x + 4, r.y + 2, r.width - 8, r.height - 4), n.Name, _node);
+                GUI.color = Color.white;
+                if (r.Contains(e.mousePosition))
+                {
+                    hover = n.Name + (n.Keystone ? " (keystone)" : "") + ": " + n.Text + (has ? "   Learned." : why.Length > 0 ? "   (" + why + ")" : "   Click to learn.");
+                    if (e.type == EventType.MouseDown && !has) { h.LearnSkill(PlaySession.LocalId, n.Id); e.Use(); }
+                }
+            }
+            if (hover.Length > 0) GUI.Label(new Rect(px + 14, py + 54, pw - 28, 40), hover, _small);
         }
 
         // ================================================================ inscriptions

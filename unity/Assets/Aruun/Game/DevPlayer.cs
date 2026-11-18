@@ -225,6 +225,7 @@ namespace Aruun.Game
                 }
                 if (PlayInput.Down(PlayKey.Bag)) { PlayHud.CloseSpeak(); PlayHud.SetBag(!PlayHud.BagOpen); }
                 if (PlayInput.Down(PlayKey.Journal)) PlayHud.JournalOpen = !PlayHud.JournalOpen;
+                if (PlayInput.Down(PlayKey.Skills)) { PlayHud.CloseSpeak(); PlayHud.SetBag(!(PlayHud.BagOpen && PlayHud.SkillsMode), false, true); }
             }
             else if (number >= 0 && number < View.World.Blocks.Placeable.Count) _slot = number;
 
