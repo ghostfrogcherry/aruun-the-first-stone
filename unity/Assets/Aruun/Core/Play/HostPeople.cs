@@ -6,6 +6,7 @@ using Aruun.Core.Creatures;
 using Aruun.Core.People;
 using Aruun.Core.Ruins;
 using Aruun.Core.Town;
+using Aruun.Core.Net;
 
 namespace Aruun.Core.Play
 {
@@ -184,6 +185,7 @@ namespace Aruun.Core.Play
         /// <summary>The player picks answer `index` in their conversation. Returns the next one, or null when it ends.</summary>
         public Conversation Choose(int id, int index)
         {
+            if (Link != null) { Link.Send("choose", Wire.Join(index)); PlayerRec me; return Players.TryGetValue(id, out me) ? me.Talk : null; }
             PlayerRec p;
             if (!Players.TryGetValue(id, out p) || p.Talk == null) return null;
             PersonRec r = PersonById(p.Talk.Person);
@@ -205,6 +207,7 @@ namespace Aruun.Core.Play
 
         public void EndTalk(int id)
         {
+            if (Link != null) { Link.Send("endtalk", ""); PlayerRec me; if (Players.TryGetValue(id, out me)) me.Talk = null; return; }
             PlayerRec p;
             if (!Players.TryGetValue(id, out p) || p.Talk == null) return;
             PersonRec r = PersonById(p.Talk.Person);

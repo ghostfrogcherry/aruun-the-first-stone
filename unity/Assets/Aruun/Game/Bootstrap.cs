@@ -17,8 +17,20 @@ namespace Aruun.Game
         static void Start()
         {
             if (Object.FindFirstObjectByType<WorldView>() != null) return;
+            Coop.ReadName();
             LaunchOptions options = LaunchOptions.FromCommandLine();
             MainCamera();
+            if (options.JoinAddress != null)
+            {
+                string error = Coop.Connect(options.JoinAddress, System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "--new-character") >= 0);
+                if (error != null)
+                {
+                    Debug.LogError("Could not join " + options.JoinAddress + ": " + error);
+                    new GameObject("Title").AddComponent<TitleScreen>().Init(options, error);
+                    return;
+                }
+                options.Seed = Coop.Welcome.Seed;
+            }
             if (!options.SkipTitle)
             {
                 new GameObject("Title").AddComponent<TitleScreen>().Init(options);

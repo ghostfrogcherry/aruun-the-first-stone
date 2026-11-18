@@ -67,9 +67,12 @@ namespace Aruun.Game
             Seed = seed;
             _fly = fly;
             _mover = new Mover(view.World);
-            string dir = Path.Combine(Application.persistentDataPath, "worlds", "dev-" + seed);
+            // A friend's world lives on the friend's machine: when joining, start from the
+            // host's edits only, and keep nothing of ours for that seed.
+            string dir = Path.Combine(Application.persistentDataPath, "worlds", (Coop.Joining ? "joined-" : "dev-") + seed);
             Directory.CreateDirectory(dir);
             _journalPath = Path.Combine(dir, "journal.txt");
+            if (Coop.Joining && File.Exists(_journalPath)) File.Delete(_journalPath);
             LoadJournal();
             _journal = new StreamWriter(_journalPath, true);
             if (new FileInfo(_journalPath).Length == 0) _journal.WriteLine(Journal.Header(seed));
@@ -155,6 +158,8 @@ namespace Aruun.Game
             if (!fly) SettleOnGround();
             Say(_fly ? "Flying (no collisions)" : "Walking");
         }
+
+        public void FlushJournal() { if (_journal != null) _journal.Flush(); }
 
         public void SaveEdits() { _journal.Flush(); if (Play != null) Play.Save(); Say("Saved"); }
 
@@ -304,7 +309,7 @@ namespace Aruun.Game
         void Survive(PlayerRec me)
         {
             Host host = Play.Host;
-            const int id = PlaySession.LocalId;
+            int id = PlaySession.LocalId;
             Vector3 eye = Feet + Vector3.up * EyeHeight;
             Vector3 d = transform.forward;
             Vector3 o = eye / V;

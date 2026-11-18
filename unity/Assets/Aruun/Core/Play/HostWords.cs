@@ -5,6 +5,7 @@ using Aruun.Core.Creatures;
 using Aruun.Core.Language;
 using Aruun.Core.Ruins;
 using Aruun.Core.Voxels;
+using Aruun.Core.Net;
 
 namespace Aruun.Core.Play
 {
@@ -91,6 +92,7 @@ namespace Aruun.Core.Play
         /// </summary>
         public bool Speak(int id, IList<string> phrase, Vec3 eye, Vec3 dir)
         {
+            if (Link != null) { Link.Send("speak", Wire.Join(eye, dir) + "\t" + string.Join("\t", phrase)); return true; }
             PlayerRec p;
             if (!Players.TryGetValue(id, out p) || !p.Alive) return false;
             if (Lexicon == null) { Say(id, "No words are loaded."); return false; }
