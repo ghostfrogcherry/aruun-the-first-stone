@@ -152,6 +152,9 @@ namespace Aruun.Game
             _entityRoot = new GameObject("Entities").transform;
             gameObject.AddComponent<InscriptionView>();
             RegisterDevKeys();
+            // Co-op keeps running when the window is in the background: a host that alt-tabs
+            // would otherwise freeze every friend and time out anyone joining.
+            if (_client != null || Coop.Hosting) Application.runInBackground = true;
             if (_client != null)
             {
                 _client.Attach(Host, Coop.Welcome);
