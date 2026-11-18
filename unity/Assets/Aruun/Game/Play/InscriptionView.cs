@@ -24,8 +24,8 @@ namespace Aruun.Game
     /// </summary>
     public sealed class InscriptionView : MonoBehaviour
     {
-        /// <summary>Unlit ancient mechanism (Deep Teal) and active ancient language (Resonance).</summary>
-        public static readonly Color Carved = new Color32(0x31, 0x5E, 0x68, 255);
+        /// <summary>A quiet carved glyph (darker than the Deep Teal stone it is cut into) and active ancient language (Resonance).</summary>
+        public static readonly Color Carved = new Color32(0x16, 0x2C, 0x31, 255);   // Deep Teal, cut deeper: the grooves of a quiet glyph
         public static readonly Color Active = new Color32(0x62, 0xB8, 0xB1, 255);
 
         // ================================================================ glyph meshes
@@ -241,7 +241,7 @@ namespace Aruun.Game
             bool ringing = h.Resonating(me);
             foreach (var g in _heldGlyphs) g.Hold = ringing;
             // A fine shiver while it rings: felt more than seen.
-            Vector3 rest = new Vector3(0.36f, -0.3f, 0.62f);
+            Vector3 rest = new Vector3(0.34f, -0.36f, 0.7f);
             _held.localPosition = ringing ? rest + Random.insideUnitSphere * 0.004f : Vector3.Lerp(_held.localPosition, rest, Time.deltaTime * 10f);
             if (_heldLight != null)
             {
@@ -258,8 +258,8 @@ namespace Aruun.Game
             if (ModelLibrary.Has(key))
             {
                 GameObject model = ModelLibrary.Instantiate(key, _held);
-                model.transform.localScale = Vector3.one * 0.55f;
-                model.transform.localPosition = new Vector3(0, -0.05f, 0.05f);
+                model.transform.localScale = Vector3.one * 0.28f;
+                model.transform.localPosition = new Vector3(0, -0.06f, 0.05f);
                 foreach (var r in model.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             }
             // The words sit in a row on a small inlaid plate, read left to right.
@@ -267,8 +267,17 @@ namespace Aruun.Game
             {
                 WordDef w = h.Lexicon != null ? h.Lexicon.Word(words[i]) : null;
                 if (w == null || w.Glyph.Length == 0) continue;
-                var plate = GlyphPlate.Make(w.Glyph, 0.012f, _held, "glyph " + w.Id);
-                plate.Root.localPosition = new Vector3(-0.045f + i * 0.075f, 0.06f, -0.02f);
+                // An inlay of Deep Teal stone on the side of the tool, turned to face you, with the
+                // word's glyph cut into it: the same shape as on the ruin wall.
+                const float cell = 0.018f;
+                var plate = GlyphPlate.Make(w.Glyph, cell, _held, "glyph " + w.Id);
+                plate.Root.localRotation = Quaternion.Inverse(_held.localRotation);
+                plate.Root.localPosition = new Vector3(-0.15f + i * 0.13f, 0.02f, -0.03f);
+                var inlay = new GameObject("inlay");
+                inlay.transform.SetParent(plate.Root, false);
+                inlay.transform.localPosition = new Vector3(0, 0, cell * 0.45f);
+                inlay.AddComponent<MeshFilter>().sharedMesh = GlyphMesh(new[] { "#" }, cell * 6.4f, cell * 0.5f, new Color32(0x31, 0x5E, 0x68, 255));
+                inlay.AddComponent<MeshRenderer>().sharedMaterial = ModelLibrary.SolidMaterial;
                 _heldGlyphs.Add(plate);
             }
             _heldLight = new GameObject("resonance").AddComponent<Light>();

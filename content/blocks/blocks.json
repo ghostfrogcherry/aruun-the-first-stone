@@ -72,9 +72,8 @@
       "key": "inscribed_stone",
       "name": "Inscribed stone",
       "solid": true,
-      "color": "#3fb8a8",
+      "color": "#315e68",
       "hardness": 99,
-      "emissive": true,
       "inscription": "word_rise",
       "tool": "pick",
       "health": 999
@@ -371,7 +370,7 @@
       "key": "inscription_table",
       "name": "Inscription table",
       "solid": true,
-      "color": "#315e68",
+      "color": "#4a4440",
       "hardness": 99,
       "tool": "pick",
       "health": 999

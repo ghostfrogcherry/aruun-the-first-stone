@@ -173,7 +173,7 @@ namespace Aruun.Game
             DrawObjective(h, me, w);
             double debt;
             if (c.Cond.TryGetValue("gravity_debt", out debt) && debt > 0.5)
-                Bar(new Rect(x, y - 2 - 14, 240, 12), (float)(debt / 100), new Color(0.35f, 0.75f, 0.75f), "");
+                Bar(new Rect(x, y + 48, 240, 8), (float)(debt / 100), new Color(0.35f, 0.75f, 0.75f), "");   // under stamina, clear of the condition chips
             if (Speaking) DrawSpeak(h, me, w, by);
 
             if (c.Dead)
