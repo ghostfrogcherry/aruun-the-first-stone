@@ -53,7 +53,7 @@ namespace Aruun.Game
         readonly Vector4[] _lampArray = new Vector4[MaxLamps];
         public const int MaxLamps = 16;
         /// <summary>How far a lamp's light reaches, in metres.</summary>
-        public float LampRadius = 8f;
+        public float LampRadius = 10f;
         static readonly int LampsId = Shader.PropertyToID("_AruunLamps");
         static readonly int LampCountId = Shader.PropertyToID("_AruunLampCount");
         /// <summary>Lamps lighting the scene now (for the stats overlay).</summary>
