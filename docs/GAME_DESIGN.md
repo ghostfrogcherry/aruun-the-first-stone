@@ -534,7 +534,7 @@ corridor.
 
 | Act | Bruh's goal | **[PROPOSED]** What the player does | **[PROPOSED]** Systems introduced | **[PROPOSED]** Act ends when |
 | --- | --- | --- | --- | --- |
-| **1. Establish yourself** | Learn the world, basic equipment, survival, the starting region. | Wake at the First Stone. Reach the Teshari Confluence. Craft flint tools, eat, sleep, meet people, claim the old steading. | Survival, mining tiers, crafting, combat basics, lock-on, town, first quests, first home. | You read your first word. |
+| **1. Establish yourself** | Learn the world, basic equipment, survival, the starting region. | Earth prologue (STORY.md §3, PROPOSED as playable). Wake at the First Stone. Reach the Teshari Confluence. Craft flint tools, eat, sleep, meet people, claim the old steading. | Survival, mining tiers, crafting, combat basics, lock-on, town, first quests, first home. | You read your first word. |
 | **2. Discover the old world** | Investigate ruins, meet the language, first forgotten technology. | Echo Ruin, first words, first inscription (Ulun pick), first mechanisms, the Echo Sentinel. First scripted Occlusion glimpsed from afar. | Language, inscriptions, ruins, mechanisms, journal. | The buried passage opens a road out of the basin. |
 | **3. Become capable** | Class abilities, better equipment, more dangerous places, larger threats. | Second region, the Grand College, skill trees, combinations, scripted Occlusions up close. **Boss 1.** | Classes and skills, combinations, Earth-gravity fights, travel. | Boss 1 falls and you can sense Occlusions. |
 | **4. Confront the instability** | Defeat the second boss and enter random Occlusions. | Harder regions, a larger Occlusion arc, **boss 2**. | Occlusion scars, Earth materials, expedition pressure. | Boss 2 falls; random Occlusions begin. |
@@ -543,6 +543,7 @@ corridor.
 Acts 1 and 2 are roughly what the current demo covers. The demo (M4) ends near the end of act 2.
 
 **[OPEN]** Where the story ends, and whether the player can (or wants to) go home to Earth.
+The protagonist, prologue and mysteries the acts carry are in [STORY.md](STORY.md).
 
 ---
 
@@ -628,6 +629,7 @@ In the order that unblocks the most:
 ## Related documents
 
 - [World Bible](WORLD_BIBLE.md): canon, lore, open questions.
+- [Story](STORY.md): the protagonist, the prologue, the three mysteries.
 - [Visual consistency report](VISUAL_CONSISTENCY_REPORT.md)
 - [Inscriptions](design/inscriptions.md): the inscription slice as built.
 - [Mob behaviours](design/mob_behaviours.md)

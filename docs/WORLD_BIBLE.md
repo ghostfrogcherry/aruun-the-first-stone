@@ -161,6 +161,13 @@ These are Bruh's rules from 2026-11-16 and 2026-11-17.
 **[CANON]** Player premise: a human from Earth, stranded on Aruun when an Occlusion broke. The
 demo opens with the player waking inside the First Stone circle as the breach closes.
 
+**[CANON]** Origin (Bruh, 2026-11-18): the player is an ordinary cybersecurity worker on Earth
+who, vibe-coding a pattern-finding app with an AI assistant, got outputs that were Avarra and
+were caught in a local failure of the Great Occlusion. The First Stone's carved channels lit as
+the breach closed. Whether the program caused the breach, found a weakness, or was answered
+from the other side is the central mystery and stays **[OPEN]** on purpose. Full prologue,
+narrative rules and open choices: [STORY.md](STORY.md).
+
 **[OPEN]** Who or what are the enemies that come with Occlusions? Earth things, things from
 between, or Aruun creatures driven mad by the gravity change?
 
@@ -783,4 +790,4 @@ chat and this file gets updated.
 | Tether | Avarra-inscribed homestead stone | PROPOSED |
 | Grand College | The great castle-college | CANON, link to Lyceum OPEN |
 | Vaari | The main sapient people | CANON |
-| Castaway | The player: an Earth human stranded by an Occlusion | CANON |
+| Castaway | The player: an Earth human (a cybersecurity worker) stranded by an Occlusion; see STORY.md | CANON |
