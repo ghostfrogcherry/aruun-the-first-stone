@@ -137,6 +137,8 @@ namespace Aruun.Game
             sb.Append("Chunks: ").Append(_view.ShownChunks).Append(" shown, ").Append(_view.PendingChunks).Append(" building on ")
               .Append(_view.WorkerThreads).Append(" threads, ").Append(_view.World.LoadedChunks).Append(" in memory\n");
             sb.Append("Geometry: ").Append((verts / 1000)).Append("k vertices, ").Append((tris / 1000)).Append("k triangles\n");
+            sb.Append("Lamps: ").Append(_view.LitLamps).Append(" lighting the view, ").Append(_view.KnownLamps).Append(" loaded; night ")
+              .Append(Mathf.RoundToInt(_day.Night * 100)).Append("%\n");
             sb.Append("Memory: ").Append(Profiler.GetTotalAllocatedMemoryLong() / (1024 * 1024)).Append(" MB used, GC heap ")
               .Append(GC.GetTotalMemory(false) / (1024 * 1024)).Append(" MB\n");
             sb.Append("View ").Append(_view.ViewChunks * WorldConfig.ChunkSize * WorldConfig.VoxelSize).Append(" m, time ").Append(_day.Clock)

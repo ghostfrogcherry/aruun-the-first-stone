@@ -1,6 +1,8 @@
 // Vertex-coloured voxels lit by the sun (with shadows) and the sky. Corner shading (ambient
 // occlusion) is baked into the vertex colours by the mesher. Sun, sky and fog come from
 // shader globals set by DayNight, so every voxel material follows the time of day.
+// Lamps: WorldView hands over the nearest lamps (_AruunLamps) and this pass adds their warm
+// light per pixel. Faces with vertex alpha 0 in the opaque pass are lamps themselves and glow.
 Shader "Aruun/Voxel"
 {
     Properties
@@ -33,6 +35,10 @@ Shader "Aruun/Voxel"
             float4 _AruunAmbient;
             float4 _AruunSkyTop;
             float _HoleRadius;
+            // Up to 16 lamps near the camera: xyz in metres, w = reach in metres. Colour from DayNight (a = strength).
+            float4 _AruunLamps[16];
+            float _AruunLampCount;
+            float4 _AruunLampColor;
 
             struct appdata
             {
@@ -76,13 +82,33 @@ Shader "Aruun/Voxel"
                 float3 sky = AruunLin(_AruunAmbient.rgb) * lerp(0.7, 1.0, up) + AruunLin(_AruunSkyTop.rgb) * 0.12 * up;
                 float3 bounce = float3(0.10, 0.06, 0.04) * (1 - up) * AruunLin(_AruunSunColor.rgb);
                 float3 light = AruunLin(_AruunSunColor.rgb) * sun * 1.15 + sky + bounce;
+
+                // Warm lamp light: smooth falloff to zero at the lamp's reach, softly wrapped so
+                // faces turned a little away still catch some.
+                float lamp = 0;
+                int lamps = (int)_AruunLampCount;
+                for (int k = 0; k < 16; k++)
+                {
+                    if (k >= lamps) break;
+                    float3 d = _AruunLamps[k].xyz - i.world;
+                    float dist2 = dot(d, d);
+                    float r = _AruunLamps[k].w;
+                    float f = saturate(1 - dist2 / (r * r));
+                    float wrap = saturate(dot(n, d * rsqrt(dist2 + 1e-4)) * 0.7 + 0.3);
+                    lamp += f * f * wrap / (1 + dist2 * 0.15);
+                }
+                light += AruunLin(_AruunLampColor.rgb) * _AruunLampColor.a * lamp;
+
                 float3 col = AruunLin(i.color.rgb) * light;
+                // A lamp face: lit from within, bright enough at night for the bloom to catch it.
+                float glows = 1 - step(0.004, i.color.a);
+                col = lerp(col, AruunLin(i.color.rgb) * (0.9 + _AruunLampColor.a * 0.55), glows);
                 // Without the post stack, a gentle filmic shoulder so sunlit faces do not clip.
                 col = lerp(col / (1 + col * 0.18) * 1.12, col, _AruunPostOn);
 
                 float3 view = normalize(i.world - _WorldSpaceCameraPos);
                 col = lerp(col, AruunInscatter(view), AruunHaze(i.world));
-                return fixed4(col, i.color.a);
+                return fixed4(col, max(i.color.a, glows));
             }
             ENDCG
         }

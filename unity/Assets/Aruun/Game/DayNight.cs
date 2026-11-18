@@ -24,9 +24,21 @@ namespace Aruun.Game
         static readonly int SkyTopId = Shader.PropertyToID("_AruunSkyTop");
         static readonly int SkyHorizonId = Shader.PropertyToID("_AruunSkyHorizon");
         static readonly int FogColorId = Shader.PropertyToID("_AruunFogColor");
+        static readonly int LampColorId = Shader.PropertyToID("_AruunLampColor");
+        static readonly int NightId = Shader.PropertyToID("_AruunNight");
+
+        /// <summary>Lamp light (sRGB): warm amber, the colour of places people live (visual guide).</summary>
+        public static readonly Color LampColor = new Color(1f, 0.64f, 0.30f);
+        /// <summary>Lamp strength at night and in full day (daylight drowns it out anyway).</summary>
+        public float LampNight = 4f, LampDay = 1.2f;
+        /// <summary>Moonlight (sRGB): cool and blue, bright enough to find your way by.</summary>
+        public Color MoonColor = new Color(0.46f, 0.53f, 0.70f);
+        public Color NightAmbient = new Color(0.30f, 0.35f, 0.48f);
+        /// <summary>0 by day, 1 at full night (for the stats overlay and dev tools).</summary>
+        public float Night { get; private set; }
 
         // Key colours through the day (sRGB): night, dawn/dusk, day.
-        static readonly Color NightTop = new Color(0.02f, 0.03f, 0.08f), NightHorizon = new Color(0.07f, 0.09f, 0.16f);
+        static readonly Color NightTop = new Color(0.03f, 0.05f, 0.13f), NightHorizon = new Color(0.12f, 0.15f, 0.26f);
         static readonly Color DawnTop = new Color(0.25f, 0.33f, 0.55f), DawnHorizon = new Color(0.98f, 0.62f, 0.42f);
         static readonly Color DayTop = new Color(0.26f, 0.52f, 0.88f), DayHorizon = new Color(0.70f, 0.83f, 0.95f);
 
@@ -75,24 +87,39 @@ namespace Aruun.Game
 
             Color sunColor = Color.Lerp(new Color(1f, 0.55f, 0.32f), new Color(1f, 0.96f, 0.88f), Mathf.Clamp01(height * 3f));
             sunColor *= Mathf.Clamp01(height * 6f + 0.1f) * 1.05f;
-            // Moonlight keeps nights readable.
-            Color ambient = Color.Lerp(new Color(0.10f, 0.12f, 0.20f), new Color(0.46f, 0.55f, 0.66f), day);
+            // After sunset the moon takes over the key light: it fades in as the sun sinks, from
+            // the opposite side of the sky, so there is no moment of total darkness.
+            float night = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(-0.04f, -0.25f, height));
+            Night = 1f - day;
+            bool moonUp = height <= -0.017f;                         // the sun's own light is gone by here
+            Color moonColor = MoonColor * night;
+            Vector3 moonDir = new Vector3(-sunDir.x, -sunDir.y, sunDir.z);
+            if (moonDir.y < 0.25f) moonDir.y = 0.25f;                // keep the moon up while it fades in
+            moonDir.Normalize();
+
+            // Sky light: day blue, a warm tint at dawn and dusk, moonlit blue at night.
+            Color ambient = Color.Lerp(NightAmbient, new Color(0.46f, 0.55f, 0.66f), day);
             ambient = Color.Lerp(ambient, new Color(0.55f, 0.45f, 0.45f), glow * 0.3f);
 
-            Shader.SetGlobalVector(SunDirId, height > -0.05f ? sunDir : new Vector3(-sunDir.x, -sunDir.y, sunDir.z) * 1f);
-            Shader.SetGlobalColor(SunColorId, height > -0.05f ? sunColor : new Color(0.12f, 0.14f, 0.22f));
+            Vector3 keyDir = moonUp ? moonDir : sunDir;
+            Shader.SetGlobalVector(SunDirId, keyDir);
+            Shader.SetGlobalColor(SunColorId, moonUp ? moonColor : sunColor);
             Shader.SetGlobalColor(AmbientId, ambient);
             Shader.SetGlobalColor(SkyTopId, top);
             Shader.SetGlobalColor(SkyHorizonId, horizon);
             Shader.SetGlobalColor(FogColorId, horizon);
+            Color lamp = LampColor;
+            lamp.a = Mathf.Lerp(LampNight, LampDay, day);
+            Shader.SetGlobalColor(LampColorId, lamp);
+            Shader.SetGlobalFloat(NightId, Night);
             Camera cam = Camera.main;
             if (cam != null) cam.backgroundColor = horizon;
             if (Sun != null)
             {
-                Vector3 lightFrom = height > -0.05f ? sunDir : new Vector3(-sunDir.x, -sunDir.y, sunDir.z);
-                Sun.transform.rotation = Quaternion.LookRotation(-lightFrom);
-                Sun.color = height > -0.05f ? sunColor : new Color(0.25f, 0.3f, 0.45f);
-                Sun.intensity = height > -0.05f ? 1f : 0.25f;
+                Sun.transform.rotation = Quaternion.LookRotation(-keyDir);
+                Sun.color = moonUp ? moonColor : sunColor;
+                Sun.intensity = 1f;
+                Sun.shadowStrength = moonUp ? 0.75f : 1f;
             }
         }
     }
