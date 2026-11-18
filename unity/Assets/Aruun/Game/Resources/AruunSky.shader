@@ -15,6 +15,7 @@ Shader "Aruun/Sky"
             #include "AruunAtmosphere.cginc"
 
             float4 _AruunSkyTop;
+            float _AruunNight;
 
             struct v2f { float4 pos : SV_POSITION; float3 dir : TEXCOORD0; };
 
@@ -40,6 +41,13 @@ Shader "Aruun/Sky"
                 float3 sun = AruunLin(_AruunSunColor.rgb);
                 // A bright disc (bloom turns it into glare) and a soft halo.
                 col += sun * (smoothstep(0.99965, 0.99985, c) * 40 + pow(c, 300) * 1.5 + pow(c, 40) * 0.25);
+                // Stars at night: one in a few hundred cells of a grid on the sky, twinkling slowly.
+                float3 sd = d * 220;
+                float3 cell = floor(sd);
+                float h = frac(sin(dot(cell, float3(12.9898, 78.233, 37.719))) * 43758.5453);
+                float tw = 0.7 + 0.3 * sin(_Time.y * (1 + h * 3) + h * 40);
+                float star = step(0.9975, h) * saturate(1 - length(frac(sd) - 0.5) * 2.6) * tw;
+                col += star * float3(0.85, 0.9, 1.0) * 1.6 * _AruunNight * saturate(d.y * 4);
                 return fixed4(col, 1);
             }
             ENDCG

@@ -14,13 +14,18 @@ namespace Aruun.Core.Voxels
         public readonly List<byte> Colors = new List<byte>();        // r, g, b, a per vertex
         public readonly List<int> Opaque = new List<int>();
         public readonly List<int> Transparent = new List<int>();
+        /// <summary>
+        /// Light sources in the chunk (lamps and other emissive blocks), merged so a cluster of
+        /// lamp voxels is one light: x, y, z (centre, chunk-local voxels) and the voxel count.
+        /// </summary>
+        public readonly List<float> Lights = new List<float>();
 
         public int VertexCount { get { return Positions.Count / 3; } }
         public bool IsEmpty { get { return Opaque.Count == 0 && Transparent.Count == 0; } }
 
         public void Clear()
         {
-            Positions.Clear(); Normals.Clear(); Colors.Clear(); Opaque.Clear(); Transparent.Clear();
+            Positions.Clear(); Normals.Clear(); Colors.Clear(); Opaque.Clear(); Transparent.Clear(); Lights.Clear();
         }
     }
 }

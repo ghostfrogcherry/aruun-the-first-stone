@@ -17,7 +17,9 @@ namespace Aruun.Core.Voxels
         const int N = WorldConfig.ChunkSize;
 
         readonly BlockRegistry _blocks;
-        readonly bool[] _cube, _opaque, _cross;
+        readonly bool[] _cube, _opaque, _cross, _emissive;
+        /// <summary>Emissive voxels within this many voxels of a light join it.</summary>
+        const int LightMerge = 4;
         // Block id in the low 16 bits, the face's four corner shades above it, so only faces that
         // look the same are merged.
         readonly int[] _mask = new int[N * N];
@@ -30,12 +32,14 @@ namespace Aruun.Core.Voxels
             _cube = new bool[blocks.Count];
             _opaque = new bool[blocks.Count];
             _cross = new bool[blocks.Count];
+            _emissive = new bool[blocks.Count];
             for (int i = 0; i < blocks.Count; i++)
             {
                 BlockDef b = blocks.Get(i);
                 _cube[i] = b.IsCube;
                 _opaque[i] = b.IsOpaqueCube;
                 _cross[i] = b.Id != 0 && b.Shape == "cross";
+                _emissive[i] = b.Id != 0 && b.Emissive;
             }
         }
 
@@ -150,9 +154,11 @@ namespace Aruun.Core.Voxels
                 if (corner == 2 || corner == 3) p[v] += h;
                 mesh.Positions.Add(p[0]); mesh.Positions.Add(p[1]); mesh.Positions.Add(p[2]);
                 mesh.Normals.Add(d == 0 ? dir : 0); mesh.Normals.Add(d == 1 ? dir : 0); mesh.Normals.Add(d == 2 ? dir : 0);
-                int shade = b.Transparent ? 255 : Shade[(ao >> (corner * 2)) & 3];
+                bool glows = b.Emissive && !b.Transparent;
+                int shade = b.Transparent || glows ? 255 : Shade[(ao >> (corner * 2)) & 3];
                 mesh.Colors.Add((byte)(b.R * shade / 255)); mesh.Colors.Add((byte)(b.G * shade / 255));
-                mesh.Colors.Add((byte)(b.B * shade / 255)); mesh.Colors.Add(b.A);
+                // Alpha 0 on an opaque face marks it as glowing (the voxel shader lights it itself).
+                mesh.Colors.Add((byte)(b.B * shade / 255)); mesh.Colors.Add(glows ? (byte)0 : b.A);
             }
             var indices = b.Transparent ? mesh.Transparent : mesh.Opaque;
             // Split the quad along the diagonal whose corners are most alike, so shading does not
@@ -193,7 +199,9 @@ namespace Aruun.Core.Voxels
             for (int x = 0; x < N; x++)
             {
                 ushort id = padded[PaddedIndex(x + 1, y + 1, z + 1)];
-                if (id >= _cross.Length || !_cross[id]) continue;
+                if (id >= _cross.Length) continue;
+                if (_emissive[id]) AddLight(mesh, x, y, z);
+                if (!_cross[id]) continue;
                 BlockDef b = _blocks.Get(id);
                 for (int diag = 0; diag < 2; diag++)
                 {
@@ -208,6 +216,24 @@ namespace Aruun.Core.Voxels
                     foreach (int k in order) mesh.Opaque.Add(first + k);
                 }
             }
+        }
+
+        /// <summary>Adds an emissive voxel to the nearest light in the chunk, or starts a new one.</summary>
+        static void AddLight(MeshData mesh, int x, int y, int z)
+        {
+            var l = mesh.Lights;
+            float cx = x + 0.5f, cy = y + 0.5f, cz = z + 0.5f;
+            for (int i = 0; i < l.Count; i += 4)
+            {
+                float n = l[i + 3];
+                if (System.Math.Abs(l[i] - cx) <= LightMerge && System.Math.Abs(l[i + 1] - cy) <= LightMerge && System.Math.Abs(l[i + 2] - cz) <= LightMerge)
+                {
+                    l[i] = (l[i] * n + cx) / (n + 1); l[i + 1] = (l[i + 1] * n + cy) / (n + 1); l[i + 2] = (l[i + 2] * n + cz) / (n + 1);
+                    l[i + 3] = n + 1;
+                    return;
+                }
+            }
+            l.Add(cx); l.Add(cy); l.Add(cz); l.Add(1);
         }
 
         static void AddCrossVertex(MeshData mesh, BlockDef b, float x, float y, float z)
