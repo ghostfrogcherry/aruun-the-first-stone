@@ -108,6 +108,25 @@
           "choices": []
         },
         {
+          "when": {"quest": "side_steading", "state": "none", "after": "side_watch"},
+          "say": "You've a good eye for stone. There's a steading past the wall, south-east, off the ruin road. Empty as long as I've kept the watch. The carved stone in its yard held a Tether once.",
+          "choices": [
+            {"text": "Could I make it my home?", "do": {"start": "side_steading"}, "reply": "Set a new Tether on that stone and it's yours. Walls need mending, mind."}
+          ]
+        },
+        {
+          "when": {"quest": "side_steading", "state": "active", "stage": "tell"},
+          "say": "I saw the light take, out past the wall. So the old place has someone again.",
+          "choices": [
+            {"text": "It's mine now.", "do": {"advance": "side_steading"}, "reply": "Then you'll want to mend it. Take this stone and timber; I won't be needing it."}
+          ]
+        },
+        {
+          "when": {"quest": "side_steading", "state": "active"},
+          "say": "The steading's south-east, past the wall. Set a Tether on the carved stone in the yard.",
+          "choices": []
+        },
+        {
           "when": {"quest": "side_watch", "state": "done"},
           "say": "Quiet night so far. If you see eyes in the grass, come back to the fire.",
           "choices": []

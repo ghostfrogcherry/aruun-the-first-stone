@@ -165,6 +165,8 @@ namespace Aruun.Core.Net
                 case "fall": _host.ReportFall(id, Wire.D(a[0])); break;
                 case "choose": _host.Choose(id, Wire.I(a[0])); break;
                 case "endtalk": _host.EndTalk(id); break;
+                case "skill": _host.LearnSkill(id, a[0]); break;
+                case "build": _host.BuildShape(id, (Building.Shape)Wire.I(a[0]), Wire.I(a[1]), Wire.I(a[2]), Wire.I(a[3]), Wire.I(a[4]), Wire.I(a[5]), Wire.I(a[6])); break;
                 case "speak": _host.Speak(id, a.Skip(6).ToList(), Wire.V(a, 0), Wire.V(a, 3)); break;
             }
         }
@@ -187,9 +189,24 @@ namespace Aruun.Core.Net
             var c = new CharacterState(_host.Items, _host.Rules);
             bool fresh = charText.Trim().Length == 0;
             if (!fresh) c.FromText(charText);
-            Vec3 at = _host.SpawnPoint + new Vec3((id - 1) * 1.5, 0, 0);
+            // Arrive a few steps in front of the host, facing them, so friends see each other at once.
+            PlayerRec hostP;
+            Vec3 at, look;
+            if (_host.Players.TryGetValue(1, out hostP) && hostP.Alive && (_host.Village == null || !_host.Village.InLibrary(hostP.Pos)))
+            {
+                Vec3 fwd = hostP.Facing.Flat.Length > 0.01 ? hostP.Facing.Flat.Normalized : Vec3.Forward;
+                Vec3 side = new Vec3(fwd.Z, 0, -fwd.X);
+                at = hostP.Pos + fwd * 3.5 + side * ((id - FirstGuestId) * 1.5);
+                look = hostP.Pos;
+            }
+            else
+            {
+                at = _host.SpawnPoint + new Vec3((id - 1) * 1.5, 0, 0);
+                look = at + Vec3.Forward;
+            }
             at = new Vec3(at.X, _host.GroundHeight(at.X, at.Z), at.Z);
-            _host.Join(id, c, at, fresh);
+            PlayerRec joined = _host.Join(id, c, at, fresh);
+            joined.ArriveYaw = Math.Atan2(look.X - at.X, look.Z - at.Z);
             if (!fresh && c.Dead) { c.Dead = false; c.Hp = Math.Max(c.Hp, c.HpMax * 0.5); }
 
             var sb = new StringBuilder();

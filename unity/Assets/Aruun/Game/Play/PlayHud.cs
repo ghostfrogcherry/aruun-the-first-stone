@@ -5,6 +5,7 @@ using Aruun.Core.Items;
 using Aruun.Core.Language;
 using Aruun.Core.People;
 using Aruun.Core.Play;
+using Aruun.Core.Skills;
 using Aruun.Core.Survival;
 using UnityEngine;
 
@@ -23,6 +24,8 @@ namespace Aruun.Game
         public static float DigFraction;
         /// <summary>Set by the player: what the crosshair is on ("Flint nodule", "Redstrider"), or "".</summary>
         public static string LookingAt = "";
+        /// <summary>What shape building is doing, shown above the hotbar ("" when not building a shape).</summary>
+        public static string ShapeLine = "";
 
         /// <summary>The quest journal (L) is open.</summary>
         public static bool JournalOpen;
@@ -58,15 +61,19 @@ namespace Aruun.Game
         int _picked = -1;
         Vector2 _recipeScroll;
         float _hurtFlash;
+        GUIStyle _node;
         GUIStyle _small, _centre, _title, _tiny, _tinyCentre, _bold;
 
         /// <summary>The bag was opened at an inscription table: the inscription panel replaces crafting.</summary>
         public static bool TableMode { get; private set; }
+        /// <summary>The bag was opened on the skill tree (P) instead of the bag and crafting.</summary>
+        public static bool SkillsMode { get; private set; }
 
-        public static void SetBag(bool open, bool table = false)
+        public static void SetBag(bool open, bool table = false, bool skills = false)
         {
             BagOpen = open;
             TableMode = open && table;
+            SkillsMode = open && skills;
             Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = open;
         }
@@ -166,6 +173,11 @@ namespace Aruun.Game
             var heldStack = c.Inv[c.Selected];
             if (heldStack.HasValue && heldStack.Value.Inscribed) held += "  ·  " + WordNames(h, heldStack.Value.WordList);
             GUI.Label(new Rect(w / 2 - 150, by - 22, 300, 22), held, _centre);
+            if (ShapeLine.Length > 0)
+            {
+                Box(new Rect(w / 2 - 260, by - 48, 520, 22), new Color(0, 0, 0, 0.45f));
+                GUI.Label(new Rect(w / 2 - 260, by - 48, 520, 22), ShapeLine, _centre);
+            }
 
             // Crosshair: what you look at and how far a dig has got.
             if (!BagOpen)
@@ -180,7 +192,7 @@ namespace Aruun.Game
                 }
             }
 
-            DrawObjective(h, me, w);
+            DrawObjective(h, me, w, s.Hosting || s.Joined ? 78 : 60);   // below the clock box, which grows a line in co-op
             double debt;
             if (c.Cond.TryGetValue("gravity_debt", out debt) && debt > 0.5)
                 Bar(new Rect(x, y + 48, 240, 8), (float)(debt / 100), new Color(0.35f, 0.75f, 0.75f), "");   // under stamina, clear of the condition chips
@@ -288,7 +300,7 @@ namespace Aruun.Game
         }
 
         /// <summary>The quest line, top right under the clock: what to do and which way it is.</summary>
-        void DrawObjective(Host h, PlayerRec me, float w)
+        void DrawObjective(Host h, PlayerRec me, float w, float top)
         {
             // Survival-only has no story to follow: the ruin is still there to find.
             if (PlaySession.Instance != null && PlaySession.Instance.SurvivalOnly) return;
@@ -304,10 +316,10 @@ namespace Aruun.Game
                 else if (to.Y > 3) where += ", above";
             }
             float bw = 300;
-            Box(new Rect(w - bw - 10, 60, bw, where.Length > 0 ? 82 : 64), new Color(0, 0, 0, 0.45f));
-            GUI.Label(new Rect(w - bw - 2, 62, bw - 12, 22), o.Title, _title);
-            GUI.Label(new Rect(w - bw - 2, 84, bw - 12, 40), o.Text, _small);
-            if (where.Length > 0) GUI.Label(new Rect(w - bw - 2, 120, bw - 12, 20), where, _small);
+            Box(new Rect(w - bw - 10, top, bw, where.Length > 0 ? 82 : 64), new Color(0, 0, 0, 0.45f));
+            GUI.Label(new Rect(w - bw - 2, top + 2, bw - 12, 22), o.Title, _title);
+            GUI.Label(new Rect(w - bw - 2, top + 24, bw - 12, 40), o.Text, _small);
+            if (where.Length > 0) GUI.Label(new Rect(w - bw - 2, top + 60, bw - 12, 20), where, _small);
         }
 
         /// <summary>Where a direction lies relative to where you look: ahead, left, behind-right...</summary>
@@ -387,6 +399,7 @@ namespace Aruun.Game
         void DrawBag(PlaySession s, PlayerRec me)
         {
             Host h = s.Host;
+            if (SkillsMode) { DrawSkills(h, me); return; }
             Inventory inv = me.C.Inv;
             float w = Screen.width, ht = Screen.height;
             float slot = 58, cols = 8;
@@ -438,6 +451,64 @@ namespace Aruun.Game
                 ry += 48;
             }
             GUI.EndScrollView();
+        }
+
+        // ================================================================ skills
+
+        static readonly Color Learned = new Color32(0x52, 0x7c, 0x62, 0xff);    // Living Green
+        static readonly Color Open = new Color32(0x31, 0x5e, 0x68, 0xff);       // Deep Teal
+        static readonly Color Shut = new Color(0.13f, 0.13f, 0.15f, 1f);
+        static readonly Color KeystoneRim = new Color32(0xd5, 0xb7, 0x7c, 0xff); // Warm Sand
+
+        /// <summary>The discipline's tree: the root at the bottom, three branches growing up. Click a node to learn it.</summary>
+        void DrawSkills(Host h, PlayerRec me)
+        {
+            float w = Screen.width, ht = Screen.height;
+            float pw = 820, ph = 470, px = w / 2 - pw / 2, py = ht / 2 - ph / 2;
+            Box(new Rect(px, py, pw, ph), new Color(0.05f, 0.05f, 0.07f, 0.92f));
+            SkillTree t = h.Tree;
+            if (t == null) { GUI.Label(new Rect(px + 14, py + 10, pw, 24), "No skill tree in this world.", _title); return; }
+            GUI.Label(new Rect(px + 14, py + 8, 300, 24), t.Name + "   (P closes)", _title);
+            GUI.Label(new Rect(px + pw - 220, py + 12, 206, 22), me.C.SkillPoints + (me.C.SkillPoints == 1 ? " point" : " points") + " to spend", _bold);
+            GUI.Label(new Rect(px + 14, py + 32, pw - 28, 20), "Points come from learning words, finishing quests and felling guardians. One keystone only.", _small);
+
+            const float nw = 120, nh = 40, colW = 130, rowH = 74;
+            // Columns run from -3 to 2, so the centre sits half a column right of the root.
+            float ox = px + pw / 2 - nw / 2 + colW * 0.5f, oy = py + ph - 70;
+            System.Func<SkillNode, Rect> at = n => new Rect(ox + n.X * colW, oy - n.Y * rowH, nw, nh);
+            if (_node == null) _node = new GUIStyle(GUI.skin.label) { fontSize = 12, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter, wordWrap = true };
+            // Links first, under the nodes: down from the node, across, then down into what it needs.
+            foreach (SkillNode n in t.Nodes)
+                foreach (string req in n.Requires)
+                {
+                    if (!t.Has(req)) continue;
+                    Rect a = at(n), b = at(t.Get(req));
+                    bool lit = me.C.Skills.Contains(req);
+                    Color c = lit ? new Color(0.5f, 0.6f, 0.5f, 0.9f) : new Color(0.35f, 0.35f, 0.38f, 0.8f);
+                    float ax = a.center.x, bx = b.center.x, midY = (a.yMax + b.y) / 2;
+                    Box(new Rect(ax - 1.5f, a.yMax, 3, midY - a.yMax), c);
+                    Box(new Rect(Mathf.Min(ax, bx) - 1.5f, midY - 1.5f, Mathf.Abs(ax - bx) + 3, 3), c);
+                    Box(new Rect(bx - 1.5f, midY, 3, b.y - midY), c);
+                }
+            string hover = "";
+            Event e = Event.current;
+            foreach (SkillNode n in t.Nodes)
+            {
+                Rect r = at(n);
+                bool has = me.C.Skills.Contains(n.Id);
+                string why = has ? "" : t.WhyNot(me.C, n.Id);
+                if (n.Keystone) Box(new Rect(r.x - 3, r.y - 3, r.width + 6, r.height + 6), KeystoneRim);
+                Box(r, has ? Learned : why.Length == 0 ? Open : Shut);
+                GUI.color = has || why.Length == 0 ? Color.white : new Color(1, 1, 1, 0.55f);
+                GUI.Label(new Rect(r.x + 4, r.y + 2, r.width - 8, r.height - 4), n.Name, _node);
+                GUI.color = Color.white;
+                if (r.Contains(e.mousePosition))
+                {
+                    hover = n.Name + (n.Keystone ? " (keystone)" : "") + ": " + n.Text + (has ? "   Learned." : why.Length > 0 ? "   (" + why + ")" : "   Click to learn.");
+                    if (e.type == EventType.MouseDown && !has) { h.LearnSkill(PlaySession.LocalId, n.Id); e.Use(); }
+                }
+            }
+            if (hover.Length > 0) GUI.Label(new Rect(px + 14, py + 54, pw - 28, 40), hover, _small);
         }
 
         // ================================================================ inscriptions

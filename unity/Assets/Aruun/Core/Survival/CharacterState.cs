@@ -7,6 +7,7 @@ using Aruun.Core.Content;
 using Aruun.Core.Items;
 using Aruun.Core.Mining;
 using Aruun.Core.People;
+using Aruun.Core.Skills;
 
 namespace Aruun.Core.Survival
 {
@@ -34,6 +35,15 @@ namespace Aruun.Core.Survival
         public QuestLog Quests = new QuestLog();
         /// <summary>Inscription compositions this character has found by cutting their words together (ids from inscriptions.json).</summary>
         public HashSet<string> Combos = new HashSet<string>();
+        /// <summary>Skill tree nodes this character has learned, and points not yet spent.</summary>
+        public HashSet<string> Skills = new HashSet<string>();
+        public int SkillPoints;
+        /// <summary>Points earned since the host last told the player. The host clears it.</summary>
+        public int NewPoints;
+        /// <summary>The discipline's tree, set by the host. Its learned nodes join the modifiers every tick.</summary>
+        public SkillTree Tree;
+        /// <summary>False for a save from before skill trees, so the host can back-pay its points once.</summary>
+        public bool HasSkillSave = true;
         /// <summary>Home Tether position in voxels, if one is set.</summary>
         public int[] Tether;
         public bool Dead;
@@ -67,6 +77,10 @@ namespace Aruun.Core.Survival
             foreach (var kv in _rules.StartingItems) Inv.Add(kv.Key, kv.Value);
             Lang = new WordKnowledge();
             Quests = new QuestLog();
+            Skills.Clear();
+            SkillPoints = 0;
+            NewPoints = 0;
+            HasSkillSave = true;
             foreach (var w in _rules.StartingWords) Learn(w);
             Dead = false;
             Downed = 0;
@@ -109,8 +123,14 @@ namespace Aruun.Core.Survival
             }
             foreach (var id in ended) Buffs.Remove(id);
             AddGearFlags(flags);
+            double debtBefore;
+            bool hasDebt = Cond.TryGetValue("gravity_debt", out debtBefore);
             TickResult result = Conditions.Tick(Cond, _rules, flags, Buffs.Keys, dt);
             Mods = result.Mods;
+            if (Tree != null) Tree.AddMods(this, Mods);
+            // Skills change how fast debt is repaid: scale only the part that went down.
+            if (hasDebt && Cond["gravity_debt"] < debtBefore)
+                Cond["gravity_debt"] = Math.Max(0, debtBefore - (debtBefore - Cond["gravity_debt"]) * Mods["debt_repay_mult"]);
             Bands = result.Bands;
             if (flags.Contains("sprinting"))
             {
@@ -189,7 +209,17 @@ namespace Aruun.Core.Survival
         public void Learn(string word)
         {
             Lang.Teach(word);
-            if (!Words.Contains(word)) Words.Add(word);
+            if (Words.Contains(word)) return;
+            Words.Add(word);
+            if (Tree != null) Award(Tree.Award("word"));
+        }
+
+        /// <summary>Earns skill points; the host tells the player at its next tick.</summary>
+        public void Award(int points)
+        {
+            if (points <= 0) return;
+            SkillPoints += points;
+            NewPoints += points;
         }
 
         // ---- Saving. One "key value" pair per line, so a save is easy to read and diff.
@@ -209,6 +239,8 @@ namespace Aruun.Core.Survival
             foreach (var kv in Quests.All) sb.Append("quest ").Append(kv.Key).Append(' ').Append(kv.Value).Append('\n');
             foreach (var kv in Lang.Places) foreach (var place in kv.Value) sb.Append("seen ").Append(kv.Key).Append(' ').Append(place).Append('\n');
             foreach (var combo in Combos) sb.Append("combo ").Append(combo).Append('\n');
+            foreach (var skill in Skills) sb.Append("skill ").Append(skill).Append('\n');
+            sb.Append("points ").Append(SkillPoints).Append('\n');
             if (Tether != null) sb.AppendFormat(c, "tether {0} {1} {2}\n", Tether[0], Tether[1], Tether[2]);
             foreach (var line in Inv.ToText().Split('\n'))
                 if (line.Length > 0) sb.Append("slot ").Append(line).Append('\n');
@@ -225,6 +257,10 @@ namespace Aruun.Core.Survival
             Lang = new WordKnowledge();
             Quests = new QuestLog();
             Combos.Clear();
+            Skills.Clear();
+            SkillPoints = 0;
+            NewPoints = 0;
+            HasSkillSave = false;
             var seen = new List<string[]>();
             Tether = null;
             Hp = _rules.Num("vitals", "hp", 100);
@@ -263,6 +299,12 @@ namespace Aruun.Core.Survival
                         if (p.Length == 2 && int.TryParse(p[1], out qs)) Quests.Set(p[0], qs);
                         break;
                     case "combo": Combos.Add(rest); break;
+                    case "skill": Skills.Add(rest); break;
+                    case "points":
+                        int pts;
+                        if (int.TryParse(rest, out pts)) SkillPoints = Math.Max(0, pts);
+                        HasSkillSave = true;
+                        break;
                     case "tether":
                         int x, y, z;
                         if (p.Length == 3 && int.TryParse(p[0], out x) && int.TryParse(p[1], out y) && int.TryParse(p[2], out z))

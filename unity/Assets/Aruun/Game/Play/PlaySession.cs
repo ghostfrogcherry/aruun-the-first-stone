@@ -11,6 +11,7 @@ using Aruun.Core.Language;
 using Aruun.Core.Net;
 using Aruun.Core.People;
 using Aruun.Core.Play;
+using Aruun.Core.Skills;
 using Aruun.Core.Ruins;
 using Aruun.Core.Survival;
 using Aruun.Game.Art;
@@ -113,6 +114,12 @@ namespace Aruun.Game
                 foreach (string problem in Host.Inscriptions.Validate(Host.Lexicon, items)) Debug.LogWarning("inscriptions.json: " + problem);
             }
             catch (Exception e) { Debug.LogError("Could not load the inscription rules: " + e.Message); }
+            try
+            {
+                Host.Tree = SkillTree.FromJson(GameContent.ReadText("skills", "graviturge.json"));
+                foreach (string problem in Host.Tree.Validate()) Debug.LogWarning("graviturge.json: " + problem);
+            }
+            catch (Exception e) { Debug.LogError("Could not load the skill tree: " + e.Message); }
             Host.SpawnCreatures = Array.IndexOf(args, "--no-creatures") < 0 && DevInput.Enabled;
 
             string dir = Path.Combine(Application.persistentDataPath, "worlds", (SurvivalOnly ? "survival-" : "dev-") + seed);
@@ -221,8 +228,65 @@ namespace Aruun.Game
             yield return SmokeInscriptionMore(note);
             yield return new WaitForSecondsRealtime(1f);
             SmokeElder(note, "after the ruin");
+            yield return SmokeM4(note);
             note("end: hp " + me.C.Hp.ToString("0") + ", day " + Host.Day + " " + (Host.TimeOfDay * 24).ToString("0.0") + "h, creatures " + Host.Creatures.Count + ", plants " + Host.PlantsInWorld.Count + ", structures " + Host.Structures.Count);
             File.WriteAllLines(Path.Combine(Application.persistentDataPath, "smoke.txt"), lines.ToArray());
+        }
+
+        /// <summary>M4: skill points and the tree, a Fallhammer slam, the steading claimed and mended with a shape.</summary>
+        System.Collections.IEnumerator SmokeM4(Action<string> note)
+        {
+            PlayerRec me = Me;
+            if (Host.Tree == null) { note("m4: no skill tree loaded"); yield break; }
+            note("m4 skills: " + me.C.SkillPoints + " points after the ruin, " + me.C.Words.Count + " words");
+            int pts = me.C.SkillPoints;
+            foreach (string id in new[] { "sense_of_down", "heavy_hand", "wide_fall" })
+                note("m4 learn " + id + ": '" + Host.LearnSkill(LocalId, id) + "'");
+            yield return null;   // the new modifiers apply on the next tick
+            yield return null;
+            note("m4 skills: " + me.C.SkillPoints + " left of " + pts + ", debt_cost_mult " + me.C.Mods["debt_cost_mult"].ToString("0.00"));
+
+            // A heavy Fallhammer blow beside a redstrider that is outside the swing's arc.
+            for (int i = 0; i < 32; i++) if (me.C.Inv.KeyAt(i) == "fallhammer") me.C.Selected = i;
+            Vec3 fwd = me.Facing.Flat.Normalized, side = new Vec3(fwd.Z, 0, -fwd.X);
+            Vec3 spot = me.Pos + fwd * 1.6 + side * 2.4;
+            Creature c = Host.SpawnCreature("redstrider", new Vec3(spot.X, Host.GroundHeight(spot.X, spot.Z), spot.Z), 778);
+            double hp = c.Hp;
+            me.C.Stamina = me.C.StaminaMax;
+            note("m4 slam: attack " + Host.Attack(LocalId, true));
+            // Hold it in place until the blow lands; a redstrider would rather run.
+            for (float t0 = Time.realtimeSinceStartup; Time.realtimeSinceStartup - t0 < 1.2f;) { c.Pos = new Vec3(spot.X, c.Pos.Y, spot.Z); yield return null; }
+            note("m4 slam: redstrider hp " + hp.ToString("0") + " -> " + c.Hp.ToString("0") + " (" + c.State + ")");
+
+            // The steading: plant a Tether on the plinth, then mend the east wall with a shape.
+            if (Host.Village == null) { note("m4 steading: no village"); yield break; }
+            Vec3 plinth = Host.Village.SteadingPlinth;
+            int gx = (int)Math.Floor(plinth.X * 4), gz = (int)Math.Floor(plinth.Z * 4), gy = (int)Math.Round(plinth.Y * 4) - 1;
+            me.Pos = plinth + new Vec3(0, -0.5, -1.5);
+            me.RespawnAt = me.Pos;
+            yield return new WaitForSecondsRealtime(2f);   // let the chunks there load
+            me.C.Inv.Add("tether_stone", 1);
+            for (int i = 0; i < 32; i++) if (me.C.Inv.KeyAt(i) == "tether_stone") me.C.Selected = i;
+            note("m4 steading: plinth is " + Host.World.Blocks.Get(Host.World.Get(gx, gy, gz)).Name + ", set tether " + Host.UseHeld(LocalId, true, gx, gy, gz, gx, gy + 1, gz) +
+                 ", claimed " + Host.WorldFlags.Contains(Host.SteadingFlag));
+            me.C.Inv.Add("stone_brick", 300);
+            for (int i = 0; i < 32; i++) if (me.C.Inv.KeyAt(i) == "stone_brick") me.C.Selected = i;
+            int x1 = Aruun.Core.Town.Village.SteadingX + 11, z0 = Aruun.Core.Town.Village.SteadingZ - 8, z1 = Aruun.Core.Town.Village.SteadingZ + 9;
+            int fy = gy - 1;   // the plinth stands one course above the yard floor
+            me.Pos = new Vec3((x1 - 6) / 4.0, (fy + 1) / 4.0, (z0 + z1) / 8.0);
+            me.RespawnAt = me.Pos;
+            string why = Host.BuildShape(LocalId, Aruun.Core.Building.Shape.Wall, x1, fy + 1, z0 + 1, x1, fy + 10, z1 - 1);
+            note("m4 build east wall: '" + why + "', stone_brick left " + me.C.Inv.Count("stone_brick"));
+            // Stand in the yard looking at the mended cottage, for the screenshot.
+            // Midday, bag closed, standing in the yard south-west of the plinth, looking at plinth and cottage.
+            PlayHud.SetBag(false);
+            double tod = Host.TimeOfDay;
+            Host.Time += ((0.5 - tod) % 1 + 1) % 1 * Host.Rules.DayLength;
+            Vec3 stand = plinth + new Vec3(-2.5, -0.5, -4.5);
+            me.Pos = stand;
+            me.RespawnAt = stand;   // the player's body follows a respawn point, not a bare position
+            Vec3 lookAt = new Vec3(Aruun.Core.Town.Village.SteadingX / 4.0, plinth.Y, (Aruun.Core.Town.Village.SteadingZ - 4) / 4.0);
+            me.ArriveYaw = Math.Atan2(lookAt.X - stand.X, lookAt.Z - stand.Z);
         }
 
         /// <summary>Talks to the elder and takes the first answer, as a player would.</summary>
@@ -530,6 +594,16 @@ namespace Aruun.Game
                 me.Pos = at;
                 me.RespawnAt = at;
                 Say("The inscription table. Look at its worktop and press E.");
+            });
+            DevTools.Register(KeyCode.O, "Go to the old steading's yard (the first Tether base)", () =>
+            {
+                PlayerRec me = Me;
+                if (me == null || Host.Village == null) { Say("This world has no steading"); return; }
+                Vec3 at = Host.Village.SteadingPlinth + new Vec3(0, 0, -2);
+                me.Pos = at;
+                me.RespawnAt = at;
+                me.ArriveYaw = 0;
+                Say("The old steading. Set a Tether on the carved plinth to claim it.");
             });
             DevTools.Register(KeyCode.U, "Know every Avarra word", () =>
             {

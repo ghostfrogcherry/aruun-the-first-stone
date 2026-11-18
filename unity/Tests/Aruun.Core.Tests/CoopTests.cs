@@ -36,6 +36,7 @@ namespace Aruun.Core.Tests
             host.Lexicon = Lexicon.FromJson(File.ReadAllText(Path.Combine(TestContent.Root, "language", "lexicon.json")));
             host.LoadPeople(PersonDef.FromJson(File.ReadAllText(Path.Combine(TestContent.Root, "people", "people.json"))),
                 QuestDef.FromJson(File.ReadAllText(Path.Combine(TestContent.Root, "quests", "quests.json"))));
+            host.Tree = Skills.SkillTree.FromJson(File.ReadAllText(Path.Combine(TestContent.Root, "skills", "graviturge.json")));
             host.SpawnPoint = new Vec3(6, host.GroundHeight(6, -6), -6);
             return host;
         }
@@ -121,6 +122,23 @@ namespace Aruun.Core.Tests
 
                 // People are mirrored by id.
                 Assert.That(pair.Mirror.People.Count, Is.EqualTo(pair.Real.People.Count));
+            }
+        }
+
+        [Test]
+        public void AFriendArrivesInFrontOfTheHostAndLearnsSkillsThere()
+        {
+            using (var pair = Connect())
+            {
+                Vec3 off = pair.Real.Players[2].Pos - pair.HostPlayer.Pos;
+                Assert.That(off.FlatLength, Is.InRange(2.5, 5.0), "a few steps away, not shoulder to shoulder");
+                Assert.That(off.Z, Is.GreaterThan(2), "in front of the host, who faces north");
+
+                Assert.That(pair.Real.Players[2].C.SkillPoints, Is.EqualTo(pair.Real.Tree.StartPoints));
+                pair.Mirror.LearnSkill(2, "sense_of_down");
+                pair.Until(() => pair.Real.Players[2].C.Skills.Contains("sense_of_down"), 5, "the skill on the host");
+                pair.Until(() => pair.Friend.C.Skills.Contains("sense_of_down"), 5, "the skill back on the friend's screen");
+                Assert.That(pair.Real.Players[2].C.SkillPoints, Is.EqualTo(pair.Real.Tree.StartPoints - 1));
             }
         }
 

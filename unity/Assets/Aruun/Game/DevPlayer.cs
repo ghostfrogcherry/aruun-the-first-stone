@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.IO;
 using Aruun.Core;
+using Aruun.Core.Building;
+using Aruun.Core.Items;
 using Aruun.Core.Edits;
 using Aruun.Core.Physics;
 using Aruun.Core.Play;
@@ -225,6 +227,7 @@ namespace Aruun.Game
                 }
                 if (PlayInput.Down(PlayKey.Bag)) { PlayHud.CloseSpeak(); PlayHud.SetBag(!PlayHud.BagOpen); }
                 if (PlayInput.Down(PlayKey.Journal)) PlayHud.JournalOpen = !PlayHud.JournalOpen;
+                if (PlayInput.Down(PlayKey.Skills)) { PlayHud.CloseSpeak(); PlayHud.SetBag(!(PlayHud.BagOpen && PlayHud.SkillsMode), false, true); }
             }
             else if (number >= 0 && number < View.World.Blocks.Placeable.Count) _slot = number;
 
@@ -296,13 +299,63 @@ namespace Aruun.Game
             }
             AnimateAvatar(dt, move);
 
-            if (!locked || _mapScreen.Open || dead) { StopDig(); return; }
+            if (!locked || _mapScreen.Open || dead) { StopDig(); if (_preview != null) _preview.Hide(); PlayHud.ShapeLine = ""; return; }
             if (me == null || _bigDig)
             {
                 if (DevInput.DigDown || DevInput.PlaceDown) Act(DevInput.DigDown);
                 return;
             }
             Survive(me);
+        }
+
+        /// <summary>The shape being built with (C cycles), and its first corner once set.</summary>
+        public static Shape BuildShape = Shape.Single;
+        bool _hasCorner;
+        int _cx, _cy, _cz;
+        ShapePreview _preview;
+
+        /// <summary>
+        /// Shape building while a block is held and the shape is not Single: the first right
+        /// click sets a corner, the second builds the shape between it and where you look.
+        /// Returns true when it handled the right click.
+        /// </summary>
+        bool BuildShapes(Host host, PlayerRec me, VoxelHit hit)
+        {
+            if (_preview == null) _preview = new GameObject("ShapePreview").AddComponent<ShapePreview>();
+            ItemDef held;
+            bool block = host.Items.TryGet(me.C.HeldKey, out held) && held.Kind == "block";
+            if (PlayInput.Down(PlayKey.Shape))
+            {
+                BuildShape = Shapes.Next(BuildShape);
+                _hasCorner = false;
+                Play.Say("Shape: " + Shapes.Name(BuildShape) + (BuildShape == Shape.Single ? "" : ". Hold a block, right click a first corner, then the second."));
+            }
+            if (!block || BuildShape == Shape.Single) { _hasCorner = false; _preview.Hide(); PlayHud.ShapeLine = ""; return false; }
+            if (PlayInput.Down(PlayKey.Back)) _hasCorner = false;   // Backspace drops the first corner
+            if (!hit.Hit)
+            {
+                _preview.Hide();
+                PlayHud.ShapeLine = Shapes.Name(BuildShape) + ": look at a surface";
+                return PlayInput.RightDown;
+            }
+            int bx = hit.PrevX, by = hit.PrevY, bz = hit.PrevZ;
+            if (!_hasCorner)
+            {
+                _preview.Show(bx, by, bz, bx, by, bz);
+                PlayHud.ShapeLine = Shapes.Name(BuildShape) + ": right click the first corner   (C: shape)";
+                if (PlayInput.RightDown) { _hasCorner = true; _cx = bx; _cy = by; _cz = bz; }
+                return PlayInput.RightDown;
+            }
+            Shapes.Snap(BuildShape, _cx, _cy, _cz, ref bx, ref by, ref bz);
+            _preview.Show(_cx, _cy, _cz, bx, by, bz);
+            ushort id = host.World.Blocks.Id(held.Block);
+            int cost = host.ShapeCost(BuildShape, _cx, _cy, _cz, bx, by, bz, id);
+            int have = me.C.Inv.Count(me.C.HeldKey);
+            PlayHud.ShapeLine = Shapes.Name(BuildShape) + ": " + cost + " " + held.Name.ToLowerInvariant() + " (you have " + have + ")   right click builds, Backspace cancels";
+            if (!PlayInput.RightDown) return false;
+            host.BuildShape(PlaySession.LocalId, BuildShape, _cx, _cy, _cz, bx, by, bz);
+            _hasCorner = false;
+            return true;
         }
 
         /// <summary>The survival controls: dig with what you hold, swing, place, eat, gather.</summary>
@@ -329,7 +382,7 @@ namespace Aruun.Game
             else if (PlayInput.LeftDown && !hit.Hit) Swing(host.Attack(id, false));
             else StopDig();
 
-            if (PlayInput.RightDown)
+            if (!BuildShapes(host, me, hit) && PlayInput.RightDown)
                 host.UseHeld(id, hit.Hit, hit.X, hit.Y, hit.Z, hit.PrevX, hit.PrevY, hit.PrevZ);
             if (PlayInput.Down(PlayKey.Interact) && !host.Interact(id, PlaySession.ToVec(eye), PlaySession.ToVec(d)))
                 Play.Say("Nothing to gather there");

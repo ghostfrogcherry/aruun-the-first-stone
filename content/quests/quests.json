@@ -1,5 +1,5 @@
 {
-  "_comment": "Quests. Each has stages in order; a stage is finished by talking to someone (an 'advance' choice in content/people/people.json, which takes the stage's needs from the bag) or by a world flag (done_when). target points the HUD: 'person:<id>', 'ruin', or ''. Names are placeholders.",
+  "_comment": "Quests. Each has stages in order; a stage is finished by talking to someone (an 'advance' choice in content/people/people.json, which takes the stage's needs from the bag) or by a world flag (done_when). target points the HUD: 'person:<id>', 'ruin', 'spot:<village spot>', or ''. Names are placeholders.",
   "quests": [
     {
       "id": "main_remember",
@@ -29,6 +29,16 @@
         {"id": "bring", "text": "Bring Dael 8 flint. Flint nodules lie on rocky ground; gather them with E.", "target": "person:watcher", "needs": {"flint": 8}}
       ],
       "reward": {"items": {"flint_pick": 1, "cord": 4}}
+    },
+    {
+      "id": "side_steading",
+      "title": "A Place of Your Own",
+      "giver": "watcher",
+      "stages": [
+        {"id": "claim", "text": "Set a Tether on the carved plinth at the old steading, beyond the wall to the south-east. A Tether stone takes 16 rust rock and 2 flint, and you must know a word of Avarra to make one.", "target": "spot:steading", "done_when": {"flag": "steading_claimed"}},
+        {"id": "tell", "text": "Tell Dael the steading has a Tether again.", "target": "person:watcher"}
+      ],
+      "reward": {"items": {"stone_brick": 160, "dark_timber": 80, "roof_blue": 60}}
     }
   ]
 }
