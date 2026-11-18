@@ -283,6 +283,30 @@ namespace Aruun.Game
         float _ruinCheck;
 
         /// <summary>Lights the ruin's lamps (once) and the heart's glow until it falls.</summary>
+        bool _townLit;
+
+        /// <summary>Lights the town's lamp posts (warm) and the college's crystals and rune lamps (blue), once.</summary>
+        void SyncTown()
+        {
+            if (_townLit || Host.Village == null) return;
+            _townLit = true;
+            var root = new GameObject("Town lights").transform;
+            foreach (Vec3 at in Host.Village.Lamps) TownLight(root, at, new Color(1f, 0.8f, 0.55f), 9f, 1.3f);
+            foreach (Vec3 at in Host.Village.BlueLamps) TownLight(root, at, new Color(0.45f, 0.7f, 1f), 12f, 1.8f);
+        }
+
+        static void TownLight(Transform root, Vec3 at, Color color, float range, float intensity)
+        {
+            var l = new GameObject("lamp").AddComponent<Light>();
+            l.transform.SetParent(root, false);
+            l.transform.position = ToUnity(at);
+            l.type = LightType.Point;
+            l.range = range;
+            l.intensity = intensity;
+            l.color = color;
+            l.shadows = LightShadows.None;
+        }
+
         void SyncRuin()
         {
             EchoRuin r = Host.Ruin;
@@ -471,6 +495,7 @@ namespace Aruun.Game
             SyncPlants();
             SyncStructures();
             SyncRuin();
+            SyncTown();
             SyncPeople(dt);
 
             _saveTimer -= Time.unscaledDeltaTime;

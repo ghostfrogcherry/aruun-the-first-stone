@@ -322,6 +322,7 @@ namespace Aruun.Core.Play
             dir = dir.Normalized;
             if (ReadInscription(p, eye, dir)) return true;
             if (TalkTo(p, eye, dir)) return true;
+            if (UsePortal(p, eye, dir)) return true;
             PlantRec bestPlant = null;
             StructureRec bestStruct = null;
             double best = double.MaxValue;
@@ -828,6 +829,7 @@ namespace Aruun.Core.Play
             foreach (var p in Players.Values)
             {
                 if (!p.Alive) continue;
+                if (Village != null && Village.InLibrary(p.Pos)) continue;
                 foreach (var def in CreatureDefs.Values)
                 {
                     if (total >= MaxCreatures) return;

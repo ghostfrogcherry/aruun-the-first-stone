@@ -74,8 +74,8 @@ namespace Aruun.Core.Worldgen
                 }
             }
             ApplyTrees(chunk);
-            if (Village != null) Village.Stamp(chunk, _blocks);
             if (Field.Map != null) ApplyMarkers(chunk);
+            if (Village != null) Village.Stamp(chunk, _blocks);
             if (Ruin != null) Ruin.Stamp(chunk);
             return chunk;
         }

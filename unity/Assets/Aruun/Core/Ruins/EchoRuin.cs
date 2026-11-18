@@ -89,10 +89,12 @@ namespace Aruun.Core.Ruins
         {
             public int X0, Y0, Z0, X1, Y1, Z1;
             public ushort Block;
+            /// <summary>Weathering: some of the box becomes this instead (moss), 0 for none.</summary>
+            public ushort Wear;
         }
 
         readonly List<Box> _boxes = new List<Box>();
-        readonly ushort _air, _stone, _paving, _lamp, _inscribed, _seal, _heart, _deep;
+        readonly ushort _air, _stone, _paving, _lamp, _inscribed, _seal, _heart, _deep, _moss, _rune;
 
         /// <summary>The arch, at ground level, in world voxels.</summary>
         public readonly int Ox, Oz, Ground;
@@ -134,6 +136,8 @@ namespace Aruun.Core.Ruins
             _seal = blocks.Id("echo_seal");
             _heart = blocks.Id("echo_heart");
             _deep = blocks.Id("deep_stone");
+            _moss = blocks.Has("mossy_stone") ? blocks.Id("mossy_stone") : _stone;
+            _rune = blocks.Has("rune_stone") ? blocks.Id("rune_stone") : _inscribed;
             Ox = ox;
             Oz = oz;
             Ground = Math.Max(field.HeightAt(ox, oz), HeightField.SeaLevel + 1);
@@ -150,14 +154,14 @@ namespace Aruun.Core.Ruins
         int WZ(int v) { return Oz - v; }
         Vec3 ToM(double u, double y, double v) { return new Vec3((Ox + u + 0.5) / WorldConfig.VoxelsPerMeter, y / (double)WorldConfig.VoxelsPerMeter, (Oz - v + 0.5) / WorldConfig.VoxelsPerMeter); }
 
-        void Put(int u0, int y0, int v0, int u1, int y1, int v1, ushort block)
+        void Put(int u0, int y0, int v0, int u1, int y1, int v1, ushort block, ushort wear = 0)
         {
             var b = new Box
             {
                 X0 = WX(Math.Min(u0, u1)), X1 = WX(Math.Max(u0, u1)),
                 Y0 = Math.Min(y0, y1), Y1 = Math.Max(y0, y1),
                 Z0 = WZ(Math.Max(v0, v1)), Z1 = WZ(Math.Min(v0, v1)),
-                Block = block,
+                Block = block, Wear = wear,
             };
             _boxes.Add(b);
             _minX = Math.Min(_minX, b.X0); _maxX = Math.Max(_maxX, b.X1);
@@ -179,6 +183,16 @@ namespace Aruun.Core.Ruins
                 X0 = WX(Math.Min(u0, u1)), X1 = WX(Math.Max(u0, u1)), Y0 = y0, Y1 = y1,
                 Z0 = WZ(Math.Max(v0, v1)), Z1 = WZ(Math.Min(v0, v1)),
             });
+        }
+
+        /// <summary>A one-voxel band of glowing runes in both long walls of a hall, broken every few voxels.</summary>
+        void RuneBand(int u0, int u1, int v0, int v1, int y)
+        {
+            for (int v = v0 + 2; v <= v1 - 3; v += 6)
+            {
+                Put(u0 - 1, y, v, u0 - 1, y, v + 3, _rune);
+                Put(u1 + 1, y, v, u1 + 1, y, v + 3, _rune);
+            }
         }
 
         void Lamp(int u, int y, int v)
@@ -234,14 +248,38 @@ namespace Aruun.Core.Ruins
             insides.Add(new[] { -6, g + 1, -2, 5, g + 14, -1 });
             insides.Add(new[] { -6, floorY, v + 8, 5, floorY + 13, v + 9 });
 
-            foreach (var b in shells) Put(b[0], b[1], b[2], b[3], b[4], b[5], _stone);
+            foreach (var b in shells) Put(b[0], b[1], b[2], b[3], b[4], b[5], _stone, _moss);
             foreach (var b in floors) Put(b[0], b[1], b[2], b[3], b[4], b[5], _paving);
             foreach (var b in insides) Put(b[0], b[1], b[2], b[3], b[4], b[5], _air);
 
+            // Bands of glowing runes along the long walls of the three halls, as on the
+            // architecture board's ancient ruins: the builders' words running round the stone.
+            RuneBand(-24, 23, stairEnd, 127, f + 3);
+            RuneBand(-24, 23, 132, 163, f + 3);
+            RuneBand(-24, 23, 164, 195, f + 19);
+            RuneBand(-36, 35, 200, 279, c + 3);
+            RuneBand(-36, 35, 200, 279, c + 22);
+
+            // Broken colonnade either side of the way in, mossy and half fallen.
+            int[][] cols = { new[] { -20, -10, 22 }, new[] { 18, -10, 13 }, new[] { -20, -26, 9 }, new[] { 18, -26, 18 }, new[] { -20, -42, 5 }, new[] { 18, -42, 7 } };
+            foreach (var col in cols)
+            {
+                int u = col[0], vv = col[1], h = col[2];
+                int y0 = Math.Max(field.HeightAt(WX(u), WZ(vv)), HeightField.SeaLevel);
+                Put(u - 1, y0 - 4, vv - 1, u + 2, y0, vv + 2, _stone, _moss);
+                Put(u, y0 + 1, vv, u + 1, y0 + h, vv + 1, _stone, _moss);
+                Put(u, y0 + 4, vv, u + 1, y0 + 4, vv + 1, _rune);
+                if (h > 15) Put(u - 1, y0 + h + 1, vv - 1, u + 2, y0 + h + 2, vv + 2, _stone, _moss);
+                else Put(u + 2, y0 + 1, vv - 2, u + 4, y0 + 2, vv + 1, _moss); // a fallen drum beside it
+            }
+
             // The arch over the porch: two pillars and a lintel, standing up out of the ground.
-            Put(-10, g + 1, 0, -7, g + 20, 3, _stone);
-            Put(6, g + 1, 0, 9, g + 20, 3, _stone);
-            Put(-10, g + 17, 0, 9, g + 20, 3, _stone);
+            Put(-10, g + 1, 0, -7, g + 20, 3, _stone, _moss);
+            Put(6, g + 1, 0, 9, g + 20, 3, _stone, _moss);
+            Put(-10, g + 17, 0, 9, g + 20, 3, _stone, _moss);
+            Put(-6, g + 18, 0, 5, g + 18, 0, _rune);
+            Put(-10, g + 12, 0, -10, g + 13, 3, _rune);
+            Put(9, g + 12, 0, 9, g + 13, 3, _rune);
             Carve(-7, g + 6, 1, -7, g + 7, 2, "ruin_arch", "word_push");
             Lamp(-10, g + 21, 1);
             Lamp(8, g + 21, 1);
@@ -349,7 +387,7 @@ namespace Aruun.Core.Ruins
                 for (int y = y0; y <= y1; y++)
                     for (int z = z0; z <= z1; z++)
                         for (int x = x0; x <= x1; x++)
-                            chunk.Set(x - ox, y - oy, z - oz, b.Block);
+                            chunk.Set(x - ox, y - oy, z - oz, b.Wear != 0 && Town.Blueprint.Hash(x, y, z) % 5 == 0 ? b.Wear : b.Block);
             }
         }
     }

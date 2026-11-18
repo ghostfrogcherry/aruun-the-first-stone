@@ -113,6 +113,30 @@
           "choices": []
         }
       ]
+    },
+    {
+      "id": "archivist",
+      "name": "Archivist Ilen (placeholder)",
+      "role": "Keeper of the college library",
+      "model": "lyceum_warden",
+      "spot": "archivist",
+      "wander_m": 3,
+      "talk": [
+        {
+          "when": {"flag": "world_remembers"},
+          "say": "The shelves have been whispering since the heart woke. Words I copied as dead shapes are pulling at the page. Whatever you did down there, the college felt it.",
+          "choices": [
+            {"text": "What are these rune circles?", "reply": "Each ring is one word, carved the way the builders carved it. Read them in the ruins and they will start to mean something to you."}
+          ]
+        },
+        {
+          "say": "Quietly, please. This is the Grand College library. Everything we know of the builders' words is on these shelves, and most of it we cannot read.",
+          "choices": [
+            {"text": "What are these rune circles?", "reply": "Each ring is one word, carved the way the builders carved it. Read them in the ruins and they will start to mean something to you."},
+            {"text": "Can you teach me the words?", "reply": "Nobody teaches them. You read them where they were carved, in two different places, and then you try them. The elder at the Confluence will tell you where to start."}
+          ]
+        }
+      ]
     }
   ]
 }

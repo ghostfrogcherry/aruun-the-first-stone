@@ -169,6 +169,7 @@ namespace Aruun.Game
                 Bar(new Rect(x, y - 2 - 14, 240, 12), (float)(debt / 100), new Color(0.35f, 0.75f, 0.75f), "");
             if (Speaking) DrawSpeak(h, me, w, by);
             DrawNames(h, me);
+            DrawDoors(h, me);
             if (me.Talk != null) DrawTalk(me.Talk, w, by);
             if (JournalOpen) DrawJournal(h, me, w, ht);
 
@@ -196,6 +197,20 @@ namespace Aruun.Game
                 GUI.color = new Color(1, 1, 1, 0.7f);
                 GUI.Label(new Rect(sp.x - 100, y - 4, 200, 18), r.Def.Role, _tinyCentre);
                 GUI.color = Color.white;
+            }
+        }
+
+        /// <summary>A hint over doors that lead somewhere else (the college, the library's way out).</summary>
+        void DrawDoors(Host h, PlayerRec me)
+        {
+            Camera cam = Camera.main;
+            if (cam == null || h.Village == null || me.Talk != null) return;
+            foreach (var g in h.Village.Portals)
+            {
+                if (Vec3.Distance(g.At, me.Pos) > 8) continue;
+                Vector3 sp = cam.WorldToScreenPoint(PlaySession.ToUnity(g.At) + Vector3.up * 2.4f);
+                if (sp.z <= 0) continue;
+                GUI.Label(new Rect(sp.x - 150, Screen.height - sp.y - 10, 300, 20), "E: " + (g.Name == "the way out" ? "go out" : "enter " + g.Name), _centre);
             }
         }
 

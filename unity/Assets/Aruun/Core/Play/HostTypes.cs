@@ -34,6 +34,8 @@ namespace Aruun.Core.Play
         public double RespawnIn;
         /// <summary>Set when the player woke up again; the Game layer moves the body there and clears it.</summary>
         public Vec3? RespawnAt;
+        /// <summary>The way to face after going through a door (radians, 0 = north), or null.</summary>
+        public double? ArriveYaw;
         /// <summary>A push from a creature (m/s) the Game layer adds to the body, then clears.</summary>
         public Vec3? Shove;
         /// <summary>The flags the last character tick ran with, for the HUD.</summary>
@@ -99,6 +101,8 @@ namespace Aruun.Core.Play
         public double Yaw;
         public double Wait;
         public bool Walking;
+        /// <summary>Lives indoors (the library), on a floor rather than the ground.</summary>
+        public bool Indoors;
         /// <summary>The player talking to them, or 0.</summary>
         public int TalkingTo;
     }

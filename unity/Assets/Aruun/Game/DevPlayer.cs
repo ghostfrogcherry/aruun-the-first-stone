@@ -240,6 +240,7 @@ namespace Aruun.Game
                     _body = new Body { X = at.x, Y = at.y, Z = at.z };
                     SettleOnGround();
                     me.RespawnAt = null;
+                    if (me.ArriveYaw.HasValue) { _yaw = (float)(me.ArriveYaw.Value * Mathf.Rad2Deg); _pitch = 0f; me.ArriveYaw = null; }
                 }
                 if (me.Shove.HasValue && !_fly)
                 {

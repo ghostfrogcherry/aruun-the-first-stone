@@ -36,8 +36,10 @@ namespace Aruun.Core.Play
             {
                 Vec3 spot;
                 if (!Village.Spots.TryGetValue(d.Spot, out spot)) continue;
-                spot = new Vec3(spot.X, GroundHeight(spot.X, spot.Z), spot.Z);
-                People.Add(new PersonRec { Id = _nextPerson++, Def = d, Pos = spot, Home = spot, Goal = spot, Yaw = Math.PI, Wait = 2 + _rng.NextDouble() * 3 });
+                // A spot with a height is indoors (the library): stand on the floor below it.
+                bool indoors = spot.Y > 0;
+                spot = new Vec3(spot.X, indoors ? FloorBelow(spot.X, spot.Y + 1, spot.Z) : GroundHeight(spot.X, spot.Z), spot.Z);
+                People.Add(new PersonRec { Id = _nextPerson++, Def = d, Indoors = indoors, Pos = spot, Home = spot, Goal = spot, Yaw = Math.PI, Wait = 2 + _rng.NextDouble() * 3 });
             }
         }
 
@@ -92,13 +94,67 @@ namespace Aruun.Core.Play
                     continue;
                 }
                 Vec3 step = to / len * Math.Min(len, PersonWalkMps * dt);
-                r.Pos = new Vec3(r.Pos.X + step.X, 0, r.Pos.Z + step.Z);
-                r.Pos = new Vec3(r.Pos.X, GroundHeight(r.Pos.X, r.Pos.Z), r.Pos.Z);
+                Vec3 next = new Vec3(r.Pos.X + step.X, r.Pos.Y, r.Pos.Z + step.Z);
+                if (r.Indoors)
+                {
+                    // Indoors there is furniture: walk round it (pick another goal) rather than over it.
+                    if (Blocked(next)) { r.Walking = false; r.Wait = 1 + _rng.NextDouble() * 2; continue; }
+                    r.Pos = new Vec3(next.X, FloorBelow(next.X, next.Y + 0.3, next.Z), next.Z);
+                }
+                else r.Pos = new Vec3(next.X, GroundHeight(next.X, next.Z), next.Z);
                 r.Yaw = Brains.YawTo(to);
             }
         }
 
         // ===================================================================== talking
+
+        /// <summary>The top of the first solid block at or below a height (metres), searching 4 m down.</summary>
+        public double FloorBelow(double x, double y, double z)
+        {
+            int vx = (int)Math.Floor(x * M), vz = (int)Math.Floor(z * M), top = (int)Math.Floor(y * M);
+            for (int vy = top; vy > top - 16; vy--)
+                if (World.Blocks.Get(World.Get(vx, vy, vz)).Collision) return (vy + 1) / M;
+            return y;
+        }
+
+        /// <summary>Is there something solid from knee to head height at a person's feet?</summary>
+        bool Blocked(Vec3 feet)
+        {
+            int vx = (int)Math.Floor(feet.X * M), vz = (int)Math.Floor(feet.Z * M), vy = (int)Math.Floor(feet.Y * M);
+            for (int dy = 2; dy <= 7; dy++)
+                if (World.Blocks.Get(World.Get(vx, vy + dy, vz)).Collision) return true;
+            return false;
+        }
+
+        /// <summary>How close you must be to a door to go through it, in metres.</summary>
+        public const double PortalReachM = 3.5;
+
+        /// <summary>Goes through a door (the college's, the library's way out) you are looking at.</summary>
+        bool UsePortal(PlayerRec p, Vec3 eye, Vec3 dir)
+        {
+            if (Village == null) return false;
+            foreach (var g in Village.Portals)
+            {
+                Vec3 to = g.At + new Vec3(0, 1.5, 0) - eye;
+                double along = Vec3.Dot(to, dir);
+                if (along < 0 || along > PortalReachM + 1) continue;
+                if ((to - dir * along).Length > 1.8) continue;
+                Enter(p, g);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>Moves a player through a door.</summary>
+        public void Enter(PlayerRec p, Portal g)
+        {
+            if (p.Talk != null) EndTalk(p.Id);
+            p.Pos = g.To;
+            p.RespawnAt = g.To;
+            p.ArriveYaw = g.ToYaw;
+            Say(p.Id, g.Message);
+            Fx("portal", p.Id, 0, 0, g.To);
+        }
 
         bool TalkTo(PlayerRec p, Vec3 eye, Vec3 dir)
         {
