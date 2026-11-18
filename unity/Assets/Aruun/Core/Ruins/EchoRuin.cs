@@ -65,7 +65,10 @@ namespace Aruun.Core.Ruins
     ///   antechamber           (Vuh again, and Ahm, "Rise"; a sealed gate answers Vuh)
     ///   hall of the step      (Ahm again; a carved socket raises a stair up a 4 m ledge)
     ///   sentinel's court      (Sem, "Hither", on two pillars; the Echo Sentinel; the heart
-    ///                          answers Sem once the sentinel falls, and opens the way out)
+    ///                          answers Sem once the sentinel falls, and opens the way out;
+    ///                          the old builders' inscription table by the east wall, with
+    ///                          Ulun, "Ring", cut into its face. Ulun is also on the hall of
+    ///                          the step's east wall, so a careful reader can guess it.)
     ///   stair up              (back to the surface beyond the court)
     ///
     /// It is part of world generation: pure and thread safe, the same for the same seed, and
@@ -94,7 +97,7 @@ namespace Aruun.Core.Ruins
         }
 
         readonly List<Box> _boxes = new List<Box>();
-        readonly ushort _air, _stone, _paving, _lamp, _inscribed, _seal, _heart, _deep, _moss, _rune;
+        readonly ushort _air, _stone, _paving, _lamp, _inscribed, _seal, _heart, _deep, _moss, _rune, _table;
 
         /// <summary>The arch, at ground level, in world voxels.</summary>
         public readonly int Ox, Oz, Ground;
@@ -114,6 +117,8 @@ namespace Aruun.Core.Ruins
         public Vec3 SentinelHomeM { get { return ToM(0, CourtY, 236); } }
         public Vec3 CourtM { get { return ToM(0, CourtY, 240); } }
         public Vec3 HeartM { get { return ToM(0, CourtY + 26, 279); } }
+        /// <summary>The top of the old builders' inscription table, by the court's east wall.</summary>
+        public Vec3 TableM { get { return ToM(28.5, CourtY + 4, 238.5); } }
         public Vec3 ExitM { get; private set; }
 
         /// <summary>The ruin for this map, or null when the map has no spawn place to put it by.</summary>
@@ -136,6 +141,7 @@ namespace Aruun.Core.Ruins
             _seal = blocks.Id("echo_seal");
             _heart = blocks.Id("echo_heart");
             _deep = blocks.Id("deep_stone");
+            _table = blocks.Has("inscription_table") ? blocks.Id("inscription_table") : _stone;
             _moss = blocks.Has("mossy_stone") ? blocks.Id("mossy_stone") : _stone;
             _rune = blocks.Has("rune_stone") ? blocks.Id("rune_stone") : _inscribed;
             Ox = ox;
@@ -303,6 +309,7 @@ namespace Aruun.Core.Ruins
             Put(-24, f, 164, 23, f + 15, 195, _stone);
             Put(-24, f - 1, 164, 23, f - 1, 195, _deep);
             Carve(-25, f + 6, 150, -25, f + 7, 151, "ruin_step_hall", "word_rise");
+            Carve(24, f + 6, 150, 24, f + 7, 151, "ruin_step_hall_east", "word_sonic");
             Put(-1, f + 4, 163, 0, f + 5, 163, _inscribed);
             Lamp(-25, f + 12, 140); Lamp(23, f + 12, 140); Lamp(-25, f + 26, 180); Lamp(23, f + 26, 180);
             var stair = new RuinMechanism
@@ -325,6 +332,11 @@ namespace Aruun.Core.Ruins
             Carve(-17, c + 6, 219, -17, c + 7, 220, "ruin_court_west", "word_pull");
             Carve(16, c + 6, 259, 16, c + 7, 260, "ruin_court_east", "word_pull");
             Lamp(-37, c + 14, 210); Lamp(35, c + 14, 210); Lamp(-37, c + 14, 270); Lamp(35, c + 14, 270);
+            // The inscription table: a stone block 1.5 x 1 m with a worktop of old-builder metal,
+            // and Ulun cut into the face you walk up to.
+            Put(26, c, 237, 31, c + 2, 240, _stone);
+            Put(26, c + 3, 237, 31, c + 3, 240, _table);
+            Carve(26, c + 1, 238, 26, c + 2, 239, "ruin_table", "word_sonic");
             Put(-2, c + 24, 280, 1, c + 27, 281, _heart);
             Put(-6, c, 281, 5, c + 13, 282, _seal);
             var heart = new RuinMechanism

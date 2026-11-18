@@ -506,6 +506,16 @@
       "hardness": 4,
       "tool": "pick",
       "health": 32
+    },
+    {
+      "id": 49,
+      "key": "inscription_table",
+      "name": "Inscription table",
+      "solid": true,
+      "color": "#4a4440",
+      "hardness": 99,
+      "tool": "pick",
+      "health": 999
     }
   ],
   "placeable": [

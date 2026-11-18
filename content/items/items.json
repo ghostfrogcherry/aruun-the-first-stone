@@ -1,5 +1,5 @@
 {
-  "_comment": "Items. Every diggable block is also an item automatically (kind 'block', same key as the block), so only non-block items are listed here. Names marked (placeholder) are provisional and not canon. Distances are in metres, times in seconds. tool_class: which blocks a tool breaks besides 'hand' blocks ('axe' for wood, 'pick' for stone). dig_speed: block health worn off per second when the tool fits the block.",
+  "_comment": "Items. Every diggable block is also an item automatically (kind 'block', same key as the block), so only non-block items are listed here. Names marked (placeholder) are provisional and not canon. Distances are in metres, times in seconds. tool_class: which blocks a tool breaks besides 'hand' blocks ('axe' for wood, 'pick' for stone). dig_speed: block health worn off per second when the tool fits the block. inscribe: how many Avarra words the item can carry (slots) and what kind of thing it is to the words (class); see content/language/inscriptions.json.",
   "block_stack": 999,
   "unarmed": {"damage": 5, "reach_m": 1.6, "arc_deg": 80, "stamina": 6, "cooldown_s": 0.45, "poise": 6, "knockback": 2.0, "guard": 0.35, "dig_power": 1, "tool_class": "hand", "dig_speed": 2},
   "items": [
@@ -31,13 +31,13 @@
     {"key": "grinleaf_seed",   "name": "Grinleaf seed (placeholder)", "kind": "seed", "stack": 60, "color": "#56703a", "plant": "grinleaf"},
     {"key": "reed_shoot",      "name": "Vermillion reed shoot",       "kind": "seed", "stack": 60, "color": "#d05a3f", "plant": "vermillion_reed"},
 
-    {"key": "flint_pick",      "name": "Flint pick",   "kind": "tool",   "stack": 1, "color": "#6a6f76", "durability": 260,
+    {"key": "flint_pick",      "name": "Flint pick",   "kind": "tool",   "stack": 1, "color": "#6a6f76", "durability": 260, "inscribe": {"slots": 1, "class": "pick"},
       "dig_power": 3, "tool_class": "pick", "dig_speed": 6, "damage": 9, "reach_m": 1.9, "arc_deg": 70, "stamina": 9, "cooldown_s": 0.6, "poise": 10, "knockback": 2.5, "guard": 0.4},
-    {"key": "flint_axe",       "name": "Flint axe",    "kind": "tool", "stack": 1, "color": "#74787e", "durability": 220,
+    {"key": "flint_axe",       "name": "Flint axe",    "kind": "tool", "stack": 1, "color": "#74787e", "durability": 220, "inscribe": {"slots": 1, "class": "axe"},
       "dig_power": 2, "tool_class": "axe", "dig_speed": 6, "damage": 17, "reach_m": 1.9, "arc_deg": 100, "stamina": 11, "cooldown_s": 0.65, "poise": 18, "knockback": 3.5, "guard": 0.5},
-    {"key": "reed_spear",      "name": "Reed spear",   "kind": "weapon", "stack": 1, "color": "#c9553a", "durability": 180,
+    {"key": "reed_spear",      "name": "Reed spear",   "kind": "weapon", "stack": 1, "color": "#c9553a", "durability": 180, "inscribe": {"slots": 1, "class": "weapon"},
       "dig_power": 1, "tool_class": "hand", "dig_speed": 2, "damage": 13, "reach_m": 2.9, "arc_deg": 40, "stamina": 9, "cooldown_s": 0.55, "poise": 12, "knockback": 3.0, "guard": 0.45},
-    {"key": "fallhammer",      "name": "Fallhammer",   "kind": "weapon", "stack": 1, "color": "#5d4a7a", "durability": 400,
+    {"key": "fallhammer",      "name": "Fallhammer",   "kind": "weapon", "stack": 1, "color": "#5d4a7a", "durability": 400, "inscribe": {"slots": 2, "class": "hammer"},
       "dig_power": 1, "tool_class": "hand", "dig_speed": 3, "damage": 30, "reach_m": 2.3, "arc_deg": 90, "stamina": 20, "cooldown_s": 1.05, "poise": 40, "knockback": 6.0, "guard": 0.6,
       "slam": {"radius": 2.4, "power": 3}},
 

@@ -57,14 +57,31 @@ for w in lex.get("words", []):
     if wid in word_ids:
         err(f"lexicon: duplicate word id '{wid}'")
     word_ids.add(wid)
-    if w.get("effect") not in effects:
+    if w.get("speakable", True) and w.get("effect") not in effects:
         err(f"lexicon: word '{wid}' uses unknown effect '{w.get('effect')}'")
+    glyph = w.get("glyph", [])
+    if len(glyph) != 5 or any(not re.fullmatch(r"[#.]{5}", row) for row in glyph):
+        err(f"lexicon: word '{wid}' needs a glyph of 5 rows of 5 '#' or '.'")
     spoken = w.get("display", "").split(" ")[0].lower()
     if spoken in CANON_NAMES:
         err(f"lexicon: word '{wid}' display '{spoken}' collides with an Aruun canon name")
     block = w.get("params", {}).get("block")
     if block and block not in keys:
         err(f"lexicon: word '{wid}' places unknown block '{block}'")
+ins = load(CONTENT / "language/inscriptions.json")
+items_doc = load(CONTENT / "items/items.json")
+item_classes = {i.get("inscribe", {}).get("class") for i in items_doc.get("items", []) if i.get("inscribe")}
+INSCRIPTION_TYPES = {"passive", "activated", "conditional", "compositional"}
+for rule in ins.get("words", []) + ins.get("compositions", []):
+    rid = rule.get("word") or rule.get("id")
+    for wid in rule.get("words", [rule.get("word")]):
+        if wid not in word_ids:
+            err(f"inscriptions: '{rid}' uses unknown word '{wid}'")
+    if rule.get("type") not in INSCRIPTION_TYPES:
+        err(f"inscriptions: '{rid}' has unknown type '{rule.get('type')}'")
+    for cls in rule.get("fits", []):
+        if cls not in item_classes:
+            err(f"inscriptions: '{rid}' fits '{cls}', which no item is")
 for b in blocks.get("blocks", []):
     if b.get("inscription") and b["inscription"] not in word_ids:
         err(f"blocks: '{b['key']}' inscribes unknown word '{b['inscription']}'")
