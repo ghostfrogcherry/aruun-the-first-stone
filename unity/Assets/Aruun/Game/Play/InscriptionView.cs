@@ -92,7 +92,7 @@ namespace Aruun.Game
             }
         }
 
-        static Mesh Bit(Color c) { return GlyphMesh(new[] { "#" }, 1f, 1f, c); }
+        internal static Mesh Bit(Color c) { return GlyphMesh(new[] { "#" }, 1f, 1f, c); }
 
         /// <summary>A carved glyph that can light up cell by cell.</summary>
         sealed class GlyphPlate

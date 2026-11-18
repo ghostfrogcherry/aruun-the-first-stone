@@ -24,6 +24,8 @@ namespace Aruun.Game
         public static float DigFraction;
         /// <summary>Set by the player: what the crosshair is on ("Flint nodule", "Redstrider"), or "".</summary>
         public static string LookingAt = "";
+        /// <summary>What shape building is doing, shown above the hotbar ("" when not building a shape).</summary>
+        public static string ShapeLine = "";
 
         /// <summary>The quest journal (L) is open.</summary>
         public static bool JournalOpen;
@@ -171,6 +173,11 @@ namespace Aruun.Game
             var heldStack = c.Inv[c.Selected];
             if (heldStack.HasValue && heldStack.Value.Inscribed) held += "  ·  " + WordNames(h, heldStack.Value.WordList);
             GUI.Label(new Rect(w / 2 - 150, by - 22, 300, 22), held, _centre);
+            if (ShapeLine.Length > 0)
+            {
+                Box(new Rect(w / 2 - 260, by - 48, 520, 22), new Color(0, 0, 0, 0.45f));
+                GUI.Label(new Rect(w / 2 - 260, by - 48, 520, 22), ShapeLine, _centre);
+            }
 
             // Crosshair: what you look at and how far a dig has got.
             if (!BagOpen)

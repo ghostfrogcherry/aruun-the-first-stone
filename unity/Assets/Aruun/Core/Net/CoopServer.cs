@@ -166,6 +166,7 @@ namespace Aruun.Core.Net
                 case "choose": _host.Choose(id, Wire.I(a[0])); break;
                 case "endtalk": _host.EndTalk(id); break;
                 case "skill": _host.LearnSkill(id, a[0]); break;
+                case "build": _host.BuildShape(id, (Building.Shape)Wire.I(a[0]), Wire.I(a[1]), Wire.I(a[2]), Wire.I(a[3]), Wire.I(a[4]), Wire.I(a[5]), Wire.I(a[6])); break;
                 case "speak": _host.Speak(id, a.Skip(6).ToList(), Wire.V(a, 0), Wire.V(a, 3)); break;
             }
         }
