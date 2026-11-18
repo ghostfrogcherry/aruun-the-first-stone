@@ -3,8 +3,9 @@ using UnityEngine;
 namespace Aruun.Game
 {
     /// <summary>
-    /// The first screen: continue the last world, or start one from a seed (a number or any
-    /// word). Drawn with Unity's immediate GUI so it needs no scene or prefab.
+    /// The first screen: continue the last world, start one from a seed (a number or any word),
+    /// host it for friends, or join a friend's world. Drawn with Unity's immediate GUI so it
+    /// needs no scene or prefab.
     /// </summary>
     public sealed class TitleScreen : MonoBehaviour
     {
@@ -15,10 +16,14 @@ namespace Aruun.Game
         GUIStyle _title, _sub, _button, _field, _small;
         bool _hasLast;
         int _lastSeed;
+        string _name = "", _address = "", _error;
 
-        public void Init(LaunchOptions options)
+        public void Init(LaunchOptions options, string error = null)
         {
             _options = options;
+            _error = error;
+            _name = Coop.Name;
+            _address = PlayerPrefs.GetString("aruun.lastJoin", options.JoinAddress ?? "");
             _art = MapScreen.LoadArt();
             _hasLast = PlayerPrefs.HasKey(LastSeedKey);
             _lastSeed = PlayerPrefs.GetInt(LastSeedKey, options.Seed);
@@ -51,25 +56,46 @@ namespace Aruun.Game
                 GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
                 GUI.color = Color.white;
             }
-            float cx = Screen.width / 2f, y = Screen.height * 0.2f;
+            float cx = Screen.width / 2f, y = Mathf.Max(8f, Mathf.Min(Screen.height * 0.15f, Screen.height - 720f));
             GUI.Label(new Rect(0, y, Screen.width, 90), "ARUUN", _title);
             GUI.Label(new Rect(0, y + 84, Screen.width, 34), "The First Stone", _sub);
-            y += 170;
+            y += 150;
             const float w = 340;
+            GUI.Label(new Rect(cx - w / 2, y, w, 22), "Your name (shown to friends in co-op)", _small);
+            y += 22;
+            _name = GUI.TextField(new Rect(cx - w / 2, y, w, 36), _name, 20, _field);
+            y += 48;
+            Coop.Hosting = GUI.Toggle(new Rect(cx - w / 2, y, w, 26), Coop.Hosting,
+                "  Open to friends (co-op host, port " + Coop.Port + ")");
+            y += 34;
             if (_hasLast)
             {
                 if (GUI.Button(new Rect(cx - w / 2, y, w, 48), "Continue  (seed " + _lastSeed + ")", _button)) Begin(_lastSeed);
-                y += 64;
+                y += 60;
             }
             GUI.Label(new Rect(cx - w / 2, y, w, 22), "Seed: a number or any word. Empty picks one.", _small);
             y += 24;
             GUI.SetNextControlName("seed");
-            _seedText = GUI.TextField(new Rect(cx - w / 2, y, w, 44), _seedText, 40, _field);
-            y += 56;
+            _seedText = GUI.TextField(new Rect(cx - w / 2, y, w, 40), _seedText, 40, _field);
+            y += 50;
             Event e = Event.current;
-            bool enter = e.type == EventType.KeyDown && (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter);
+            bool enter = e.type == EventType.KeyDown && (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter)
+                         && GUI.GetNameOfFocusedControl() != "join";
             if (GUI.Button(new Rect(cx - w / 2, y, w, 48), "New world", _button) || enter) Begin(SeedFromText());
             y += 64;
+            GUI.Label(new Rect(cx - w / 2, y, w, 22), "Join a friend: their address (and :port if not " + Coop.Port + ")", _small);
+            y += 24;
+            GUI.SetNextControlName("join");
+            _address = GUI.TextField(new Rect(cx - w / 2, y, w * 0.68f, 40), _address, 60, _field);
+            if (GUI.Button(new Rect(cx - w / 2 + w * 0.7f, y, w * 0.3f, 40), "Join", _button)) Join();
+            y += 50;
+            if (!string.IsNullOrEmpty(_error))
+            {
+                var err = new GUIStyle(_small) { wordWrap = true };
+                err.normal.textColor = new Color(1f, 0.6f, 0.5f);
+                GUI.Label(new Rect(cx - w / 2 - 60, y, w + 120, 40), _error, err);
+                y += 44;
+            }
             if (GUI.Button(new Rect(cx - w / 2, y, w, 40), "Quit", _button)) Application.Quit();
             GUI.Label(new Rect(0, Screen.height - 34, Screen.width, 24),
                 "In the world: F1 shows every dev key. They always work, no menu needed.", _small);
@@ -84,8 +110,22 @@ namespace Aruun.Game
             return LaunchOptions.StableHash(t);
         }
 
+        void Join()
+        {
+            Coop.SaveName(_name);
+            PlayerPrefs.SetString("aruun.lastJoin", _address.Trim());
+            PlayerPrefs.Save();
+            _error = Coop.Connect(_address, false);
+            if (_error != null) return;
+            Coop.Hosting = false;
+            _options.Seed = Coop.Welcome.Seed;
+            Destroy(gameObject);
+            Bootstrap.StartWorld(_options);
+        }
+
         void Begin(int seed)
         {
+            Coop.SaveName(_name);
             PlayerPrefs.SetInt(LastSeedKey, seed);
             PlayerPrefs.Save();
             _options.Seed = seed;

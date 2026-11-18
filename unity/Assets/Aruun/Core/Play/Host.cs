@@ -7,6 +7,7 @@ using Aruun.Core.Edits;
 using Aruun.Core.Farming;
 using Aruun.Core.Items;
 using Aruun.Core.Mining;
+using Aruun.Core.Net;
 using Aruun.Core.Physics;
 using Aruun.Core.Survival;
 using Aruun.Core.Voxels;
@@ -117,6 +118,7 @@ namespace Aruun.Core.Play
         {
             PlayerRec p;
             if (!Players.TryGetValue(id, out p)) return;
+            if (Link != null) Link.Send("pose", Wire.Join(feet, facing, dt, p.C.Selected));
             if (dt > 0)
             {
                 double moved = (feet - p.Pos).FlatLength / dt;
@@ -149,6 +151,7 @@ namespace Aruun.Core.Play
         /// </summary>
         public DigTick Dig(int id, int x, int y, int z, double dt)
         {
+            if (Link != null) { Link.Send("dig", Wire.Join(x, y, z, dt)); return new DigTick { Fraction = RemoteDig }; }
             PlayerRec p;
             if (!Players.TryGetValue(id, out p) || !p.Alive) return new DigTick { Refused = true };
             BlockDef block = World.Blocks.Get(World.Get(x, y, z));
@@ -165,7 +168,7 @@ namespace Aruun.Core.Play
             return new DigTick { Broken = true, Fraction = 1 };
         }
 
-        public void StopDigging(int id) { _dig.Stop(id); }
+        public void StopDigging(int id) { if (Link != null) Link.Send("stopdig", ""); else _dig.Stop(id); }
 
         void GiveDrops(PlayerRec p, EditResult result)
         {
@@ -196,6 +199,7 @@ namespace Aruun.Core.Play
         /// </summary>
         public bool UseHeld(int id, bool hasGround, int gx, int gy, int gz, int px, int py, int pz)
         {
+            if (Link != null) { Link.Send("use", Wire.Join(hasGround, gx, gy, gz, px, py, pz)); return true; }
             PlayerRec p;
             if (!Players.TryGetValue(id, out p) || !p.Alive) return false;
             string key = p.C.HeldKey;
@@ -317,6 +321,7 @@ namespace Aruun.Core.Play
         /// </summary>
         public bool Interact(int id, Vec3 eye, Vec3 dir)
         {
+            if (Link != null) { Link.Send("interact", Wire.Join(eye, dir)); return true; }
             PlayerRec p;
             if (!Players.TryGetValue(id, out p) || !p.Alive) return false;
             dir = dir.Normalized;
@@ -462,6 +467,7 @@ namespace Aruun.Core.Play
 
         public string Craft(int id, string recipeId)
         {
+            if (Link != null) { Link.Send("craft", Wire.Clean(recipeId)); return ""; }
             PlayerRec p;
             if (!Players.TryGetValue(id, out p) || !p.Alive) return "no player";
             Recipe r = Items.Recipe(recipeId);
@@ -478,6 +484,7 @@ namespace Aruun.Core.Play
         /// <summary>Starts a swing with what the player holds. It lands after the wind-up.</summary>
         public bool Attack(int id, bool heavy)
         {
+            if (Link != null) { Link.Send("attack", Wire.Join(heavy)); return true; }
             PlayerRec p;
             if (!Players.TryGetValue(id, out p) || !p.Alive) return false;
             if (Time < p.NextAttack || p.Stagger > 0) return false;
@@ -504,6 +511,7 @@ namespace Aruun.Core.Play
 
         public void SetGuard(int id, bool on)
         {
+            if (Link != null) { Link.Send("guard", Wire.Join(on)); return; }
             PlayerRec p;
             if (Players.TryGetValue(id, out p)) p.Guard = on && p.Alive && p.C.Stamina > 1 && p.Stagger <= 0;
         }
@@ -511,6 +519,7 @@ namespace Aruun.Core.Play
         /// <summary>A quick sidestep with a moment of not being hit. Returns false when out of stamina.</summary>
         public bool Dodge(int id)
         {
+            if (Link != null) { Link.Send("dodge", ""); return true; }
             PlayerRec p;
             if (!Players.TryGetValue(id, out p) || !p.Alive) return false;
             if (!p.C.Spend(Rules.Num("vitals", "dodge_cost", 18))) return false;
@@ -581,6 +590,7 @@ namespace Aruun.Core.Play
         /// <summary>The Game layer reports a landing at `speed` m/s.</summary>
         public void ReportFall(int id, double speed)
         {
+            if (Link != null) { Link.Send("fall", Wire.Join(speed)); return; }
             PlayerRec p;
             if (!Players.TryGetValue(id, out p)) return;
             double debt;
@@ -595,6 +605,8 @@ namespace Aruun.Core.Play
         public void Tick(double dt)
         {
             Time += dt;
+            // A co-op client only mirrors: the host runs the world and streams it here.
+            if (Link != null) return;
             RunSwings();
             _creatureAcc += dt;
             int steps = 0;

@@ -7,6 +7,7 @@ using Aruun.Core.Edits;
 using Aruun.Core.Farming;
 using Aruun.Core.Items;
 using Aruun.Core.Language;
+using Aruun.Core.Net;
 using Aruun.Core.People;
 using Aruun.Core.Play;
 using Aruun.Core.Ruins;
@@ -19,14 +20,17 @@ namespace Aruun.Game
     /// <summary>
     /// Runs the game's rules (Core.Play.Host) inside Unity: loads the content, ticks the host,
     /// hands its world edits to the view and the journal, keeps the character saved, and draws
-    /// the creatures, plants and structures it holds. The local player is player 1.
+    /// the creatures, plants and structures it holds. The local player is player 1, or the id
+    /// the host gave when joining a friend's world (see Coop): then the Host here is a mirror
+    /// of the friend's, and hosting streams this one to friends.
     ///
     /// Launch flags: --survival (survival-only mode, the hardcore ruleset), --ruleset=id,
     /// --new-character (start a fresh castaway), --no-creatures.
     /// </summary>
     public sealed class PlaySession : MonoBehaviour
     {
-        public const int LocalId = 1;
+        /// <summary>This machine's player: 1, or the id a friend's host gave us.</summary>
+        public static int LocalId { get; private set; } = 1;
         public static PlaySession Instance { get; private set; }
 
         public Host Host { get; private set; }
@@ -49,6 +53,25 @@ namespace Aruun.Game
         readonly Dictionary<int, string> _plantModel = new Dictionary<int, string>();
         readonly Dictionary<int, GameObject> _structures = new Dictionary<int, GameObject>();
         Transform _entityRoot;
+        CoopServer _server;
+        CoopClient _client;
+        bool _lostSaid;
+        readonly Dictionary<int, CreatureView> _others = new Dictionary<int, CreatureView>();
+
+        /// <summary>Hosting: how many friends are in. Joining: -1.</summary>
+        public int Friends { get { return _server != null ? _server.GuestCount : -1; } }
+        public bool Hosting { get { return _server != null; } }
+        public bool Joined { get { return _client != null; } }
+        public int HostPort { get { return _server != null ? _server.Port : 0; } }
+
+        /// <summary>The name over another player's head.</summary>
+        public string NameOf(int id)
+        {
+            string n;
+            if (_client != null && _client.Names.TryGetValue(id, out n)) return n;
+            if (_server != null) return _server.NameOf(id);
+            return "";
+        }
 
         sealed class CreatureView
         {
@@ -87,9 +110,18 @@ namespace Aruun.Game
 
             string dir = Path.Combine(Application.persistentDataPath, "worlds", (SurvivalOnly ? "survival-" : "dev-") + seed);
             Directory.CreateDirectory(dir);
-            _charPath = Path.Combine(dir, "character.txt");
+            _client = Coop.Joining ? Coop.Client : null;
+            LocalId = _client != null ? Coop.Welcome.Id : 1;
+            // In a friend's world we bring our travelling character; the world is theirs.
+            _charPath = _client != null ? Coop.CharacterPath : Path.Combine(dir, "character.txt");
             _worldPath = Path.Combine(dir, "world.txt");
-            if (!_smoke && File.Exists(_worldPath))
+            if (_client != null)
+            {
+                Host.SpawnCreatures = false;
+                foreach (EditOp op in Coop.Welcome.Edits) Host.ApplyRemote(op);
+                spawnFeet = ToUnity(Coop.Welcome.Spawn);
+            }
+            else if (!_smoke && File.Exists(_worldPath))
                 foreach (string line in File.ReadAllLines(_worldPath))
                     if (line.StartsWith("flag ", StringComparison.Ordinal)) Host.WorldFlags.Add(line.Substring(5).Trim());
             var c = new CharacterState(items, rules);
@@ -99,8 +131,9 @@ namespace Aruun.Game
                 try { c.FromText(File.ReadAllText(_charPath)); }
                 catch (Exception e) { Debug.LogWarning("Could not read the character (" + e.Message + "), starting fresh"); fresh = true; }
             }
-            Host.Join(LocalId, c, ToVec(spawnFeet), fresh);
-            Say(fresh ? "You wake on Aruun with little more than the clothes you came in. Something old hums to the south. (Tab: bag and crafting)" : "Welcome back.");
+            PlayerRec joined = Host.Join(LocalId, c, ToVec(spawnFeet), fresh && _client == null);
+            if (_client != null) joined.RespawnAt = ToVec(spawnFeet);
+            if (_client == null) Say(fresh ? "You wake on Aruun with little more than the clothes you came in. Something old hums to the south. (Tab: bag and crafting)" : "Welcome back.");
 
             try
             {
@@ -111,6 +144,12 @@ namespace Aruun.Game
 
             _entityRoot = new GameObject("Entities").transform;
             RegisterDevKeys();
+            if (_client != null)
+            {
+                _client.Attach(Host, Coop.Welcome);
+                Say("You joined the world at " + Coop.JoinedAddress + " as " + Coop.Name + ".");
+            }
+            else if (Coop.Hosting && !_smoke) StartHosting(seed);
             if (_smoke)
             {
                 Debug.Log("[smoke] scheduled; nothing from this run is saved");
@@ -282,7 +321,6 @@ namespace Aruun.Game
         bool _ruinLit;
         float _ruinCheck;
 
-        /// <summary>Lights the ruin's lamps (once) and the heart's glow until it falls.</summary>
         sealed class ResonancePulse { public Light Light; public float Life, Max, Peak; }
         readonly List<ResonancePulse> _pulses = new List<ResonancePulse>();
 
@@ -334,6 +372,7 @@ namespace Aruun.Game
             l.shadows = LightShadows.None;
         }
 
+        /// <summary>Lights the ruin's lamps (once) and the heart's glow until it falls.</summary>
         void SyncRuin()
         {
             EchoRuin r = Host.Ruin;
@@ -467,6 +506,95 @@ namespace Aruun.Game
             Say("Killed " + n + " creatures");
         }
 
+        /// <summary>Opens this world to friends: they get its seed and every edit so far, then a live stream.</summary>
+        void StartHosting(int seed)
+        {
+            var lines = new List<string>();
+            try
+            {
+                var player = GetComponent<DevPlayer>();
+                if (player != null) player.FlushJournal();
+                string journal = Path.Combine(Application.persistentDataPath, "worlds", "dev-" + seed, "journal.txt");
+                if (File.Exists(journal))
+                {
+                    int s, gen, skipped;
+                    using (var reader = new StreamReader(new FileStream(journal, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                        foreach (EditOp op in Aruun.Core.Edits.Journal.Read(reader, out s, out gen, out skipped)) lines.Add(op.ToLine());
+                }
+            }
+            catch (Exception e) { Debug.LogWarning("Could not read the journal for co-op: " + e.Message); }
+            try
+            {
+                _server = new CoopServer(Host, seed, lines) { HostName = Coop.Name };
+                _server.Start(Coop.Port);
+                Say("Open to friends on port " + _server.Port + ". Your address: " + LocalAddresses() + ".");
+            }
+            catch (Exception e)
+            {
+                _server = null;
+                Say("Could not open the world to friends (" + e.Message + ").");
+                Debug.LogWarning("Co-op host failed: " + e);
+            }
+        }
+
+        static string LocalAddresses()
+        {
+            var found = new List<string>();
+            try
+            {
+                foreach (var a in System.Net.Dns.GetHostAddresses(System.Net.Dns.GetHostName()))
+                    if (a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && !System.Net.IPAddress.IsLoopback(a)) found.Add(a.ToString());
+            }
+            catch { }
+            return found.Count > 0 ? string.Join(" or ", found.ToArray()) : "see your network settings";
+        }
+
+        /// <summary>Draws the other players, with the castaway model.</summary>
+        void SyncOthers(float dt)
+        {
+            var present = new HashSet<int>();
+            foreach (PlayerRec p in Host.Players.Values)
+            {
+                if (p.Id == LocalId) continue;
+                present.Add(p.Id);
+                CreatureView v;
+                if (!_others.TryGetValue(p.Id, out v))
+                {
+                    v = new CreatureView();
+                    if (ModelLibrary.Has("human_castaway"))
+                    {
+                        v.Go = ModelLibrary.Instantiate("human_castaway");
+                        v.Rig = v.Go.GetComponent<VoxelRig>();
+                    }
+                    else
+                    {
+                        v.Go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+                        Destroy(v.Go.GetComponent<Collider>());
+                        v.Go.transform.localScale = new Vector3(0.6f, 0.875f, 0.6f);
+                    }
+                    v.Go.name = "Player " + p.Id;
+                    v.Go.transform.SetParent(_entityRoot, false);
+                    v.Go.transform.position = ToUnity(p.Pos);
+                    _others[p.Id] = v;
+                }
+                Transform t = v.Go.transform;
+                Vector3 target = ToUnity(p.Pos) + (v.Rig != null ? Vector3.zero : Vector3.up * 0.875f);
+                float moving = (target - t.position).magnitude / Mathf.Max(dt, 0.001f);
+                t.position = Vector3.Lerp(t.position, target, Mathf.Clamp01(dt * 14f));
+                Vector3 f = new Vector3((float)p.Facing.X, 0f, (float)p.Facing.Z);
+                if (f.sqrMagnitude > 0.01f) t.rotation = Quaternion.Slerp(t.rotation, Quaternion.LookRotation(f), Mathf.Clamp01(dt * 10f));
+                v.Go.SetActive(p.Alive);
+                if (v.Rig != null)
+                {
+                    string clip = moving > 0.6f ? "walk" : "idle";
+                    if (clip != v.Rig.CurrentClip && v.Rig.HasClip(clip)) v.Rig.Play(clip);
+                }
+            }
+            var gone = new List<int>();
+            foreach (var kv in _others) if (!present.Contains(kv.Key)) gone.Add(kv.Key);
+            foreach (int id in gone) { Destroy(_others[id].Go); _others.Remove(id); }
+        }
+
         public static Vec3 ToVec(Vector3 v) { return new Vec3(v.x, v.y, v.z); }
         public static Vector3 ToUnity(Vec3 v) { return new Vector3((float)v.X, (float)v.Y, (float)v.Z); }
 
@@ -484,6 +612,7 @@ namespace Aruun.Game
             try
             {
                 File.WriteAllText(_charPath, me.C.ToText());
+                if (_client != null) return;   // the world and its flags are the host's to keep
                 var flags = new List<string>();
                 foreach (string f in Host.WorldFlags) flags.Add("flag " + f);
                 File.WriteAllLines(_worldPath, flags.ToArray());
@@ -498,13 +627,30 @@ namespace Aruun.Game
             PlayerRec me = Me;
             if (me != null) me.God = DevTools.God;
             SyncClock();
+            if (_server != null) _server.Pump(dt);
             Host.Tick(dt);
+            if (_server != null)
+            {
+                _server.AfterTick(dt);
+                string line;
+                while (_server.Log.TryDequeue(out line)) Debug.Log("[co-op] " + line);
+            }
+            if (_client != null)
+            {
+                _client.Pump(dt);
+                if (_client.Lost != null && !_lostSaid)
+                {
+                    _lostSaid = true;
+                    Save();
+                    Say(_client.Lost + " Your character is saved; go back to the title (Esc, then quit) to play on.");
+                }
+            }
 
-            // World edits: redraw the chunks and journal them.
+            // World edits: redraw the chunks and journal them (a joined world is the host's to keep).
             foreach (HostEdit e in Host.Edits)
             {
                 View.MarkDirty(e.Result.Dirty);
-                if (Journal != null && !_smoke) Journal(e.Op);
+                if (Journal != null && !_smoke && _client == null) Journal(e.Op);
             }
             Host.Edits.Clear();
             foreach (var m in Host.Messages) if (m.Key == LocalId) Say(m.Value);
@@ -529,6 +675,7 @@ namespace Aruun.Game
             SyncTown();
             FadePulses(Time.unscaledDeltaTime);
             SyncPeople(dt);
+            SyncOthers(dt);
 
             _saveTimer -= Time.unscaledDeltaTime;
             if (_saveTimer <= 0) { _saveTimer = 30f; Save(); }
@@ -690,6 +837,12 @@ namespace Aruun.Game
         }
 
         void OnApplicationQuit() { Save(); }
-        void OnDestroy() { Save(); if (Instance == this) Instance = null; }
+        void OnDestroy()
+        {
+            Save();
+            if (_server != null) _server.Dispose();
+            if (_client != null) _client.Dispose();
+            if (Instance == this) Instance = null;
+        }
     }
 }

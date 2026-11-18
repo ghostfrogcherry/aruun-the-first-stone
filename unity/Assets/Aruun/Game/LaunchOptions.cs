@@ -11,7 +11,9 @@ namespace Aruun.Game
     ///   --pos=x,y,z,yaw,pitch   start the camera here (metres and degrees), flying
     ///   --fly            start flying instead of walking
     ///   --play           skip the title screen (also skipped by --seed, --shot, --pos, --gallery)
-    /// More arrive with their features (--host, --join, --world).
+    ///   --host[=port]    open this world to friends (co-op, default port 27461)
+    ///   --join=address[:port]   join a friend's world instead (skips the title screen)
+    ///   --name=Name      your name in co-op
     /// </summary>
     public sealed class LaunchOptions
     {
@@ -25,6 +27,8 @@ namespace Aruun.Game
         public float Hour = -1f;
         /// <summary>Go straight into the world instead of showing the title screen.</summary>
         public bool SkipTitle;
+        /// <summary>--join=address[:port]: join a friend's world instead of opening one.</summary>
+        public string JoinAddress;
 
         public static LaunchOptions FromCommandLine()
         {
@@ -35,6 +39,11 @@ namespace Aruun.Game
                 if (arg.StartsWith("--seed=") || arg.StartsWith("--shot=") || arg.StartsWith("--pos=") || arg == "--play" ||
                     arg.StartsWith("--gallery")) o.SkipTitle = true;
                 if (arg == "--fly") o.Fly = true;
+                // Co-op: host this world for friends, or join a friend's.
+                if (arg == "--host") Coop.Hosting = true;
+                else if (arg.StartsWith("--host=") && TryInt(arg.Substring(7), out v)) { Coop.Hosting = true; Coop.Port = v; }
+                if (arg.StartsWith("--join=")) { o.JoinAddress = arg.Substring(7); o.SkipTitle = true; }
+                if (arg.StartsWith("--name=")) Coop.Name = arg.Substring(7);
                 float hour;
                 if (arg.StartsWith("--time=") && float.TryParse(arg.Substring(7), NumberStyles.Float, CultureInfo.InvariantCulture, out hour))
                     o.Hour = Math.Max(0f, Math.Min(hour, 23.99f));

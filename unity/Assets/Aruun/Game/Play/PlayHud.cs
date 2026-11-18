@@ -147,9 +147,12 @@ namespace Aruun.Game
             string clock = "Day " + h.Day + "   " + hour.ToString("00") + ":" + minute.ToString("00") + (h.IsNight ? "   night" : "");
             string where = me.Flags.Contains("sheltered") ? "sheltered" : "in the open";
             if (me.Flags.Contains("near_heat")) where += ", by a fire";
-            Box(new Rect(w - 266, 10, 256, 44), new Color(0, 0, 0, 0.45f));
+            string coop = s.Hosting ? "Co-op host, port " + s.HostPort + ": " + s.Friends + (s.Friends == 1 ? " friend" : " friends")
+                        : s.Joined ? "Co-op: in a friend's world" : "";
+            Box(new Rect(w - 266, 10, 256, coop.Length > 0 ? 62 : 44), new Color(0, 0, 0, 0.45f));
             GUI.Label(new Rect(w - 258, 12, 250, 22), clock);
             GUI.Label(new Rect(w - 258, 30, 250, 22), (s.SurvivalOnly ? "Survival   " : "") + where);
+            if (coop.Length > 0) GUI.Label(new Rect(w - 258, 48, 250, 22), coop);
 
             // Hotbar, bottom centre.
             float slot = 54, bx = w / 2 - slot * 4.5f, by = ht - slot - 12;
@@ -188,6 +191,15 @@ namespace Aruun.Game
         {
             Camera cam = Camera.main;
             if (cam == null) return;
+            PlaySession s = PlaySession.Instance;
+            foreach (PlayerRec p in h.Players.Values)
+            {
+                if (p.Id == me.Id || !p.Alive || s == null || Vec3.Distance(p.Pos, me.Pos) > 60) continue;
+                Vector3 sp = cam.WorldToScreenPoint(PlaySession.ToUnity(p.Pos) + Vector3.up * 2.3f);
+                if (sp.z <= 0) continue;
+                string n = s.NameOf(p.Id);
+                GUI.Label(new Rect(sp.x - 100, Screen.height - sp.y - 20, 200, 20), n.Length > 0 ? n : "Player " + p.Id, _centre);
+            }
             foreach (PersonRec r in h.People)
             {
                 if (Vec3.Distance(r.Pos, me.Pos) > 14) continue;
