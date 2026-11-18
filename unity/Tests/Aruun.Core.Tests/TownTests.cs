@@ -91,8 +91,8 @@ namespace Aruun.Core.Tests
             foreach (var b in h.Village.Buildings) if (b.Key == "wall_tower") towers++;
             Assert.That(towers, Is.GreaterThanOrEqualTo(6));
             // Lamps are real lights in the game: enough to light the streets, few enough to stay fast.
-            int lights = h.Village.Lamps.Count + h.Village.BlueLamps.Count;
-            TestContext.Out.WriteLine("town lights: " + h.Village.Lamps.Count + " warm, " + h.Village.BlueLamps.Count + " blue");
+            int lights = h.Village.Lamps.Count + h.Village.CrystalLights.Count;
+            TestContext.Out.WriteLine("town lights: " + h.Village.Lamps.Count + " warm, " + h.Village.CrystalLights.Count + " crystal");
             Assert.That(lights, Is.InRange(10, 120));
         }
 
@@ -155,7 +155,7 @@ namespace Aruun.Core.Tests
             Assert.That(c.Choices[c.Choices.Count - 1], Is.EqualTo("Goodbye."));
             // Ask about the builders first: a reply, no quest.
             c = h.Choose(1, 1);
-            Assert.That(c.Say, Does.Contain("before the Vaari"));
+            Assert.That(c.Say, Does.Contain("Nobody knows"));
             Assert.That(p.C.Quests.Has("main_remember"), Is.False);
             c = h.Choose(1, 0);
             Assert.That(p.C.Quests.IsActive("main_remember"), Is.True);
@@ -175,7 +175,7 @@ namespace Aruun.Core.Tests
             c = h.Choose(1, 0);
             Assert.That(p.C.Quests.IsDone("main_remember"), Is.True);
             Assert.That(p.C.Inv.Count("bronze_fitting"), Is.EqualTo(bronze + 2));
-            Assert.That(c.Say, Does.Contain("starting again"));
+            Assert.That(c.Say, Does.Contain("Nobody does"));
         }
 
         [Test]

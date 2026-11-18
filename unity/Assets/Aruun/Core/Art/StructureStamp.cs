@@ -28,6 +28,11 @@ namespace Aruun.Core.Art
                 uint rgb = (uint)(b.R << 16 | b.G << 8 | b.B);
                 if (b.Solid && !byColour.ContainsKey(rgb)) byColour[rgb] = b.Id;
             }
+            for (int i = 1; i < blocks.Count; i++)
+            {
+                var b = blocks.Get(i);
+                if (b.Solid && b.Paint >= 0 && !byColour.ContainsKey((uint)b.Paint)) byColour[(uint)b.Paint] = b.Id;
+            }
             var stamp = new StructureStamp();
             var lookup = new int[256];
             for (int i = 1; i < 256; i++)

@@ -4,7 +4,7 @@
     {
       "id": "elder",
       "name": "Elder Teshwa (placeholder)",
-      "role": "Keeper of the Confluence stone",
+      "role": "Elder of the Confluence",
       "model": "vaari_river_villager",
       "spot": "elder",
       "wander_m": 2.5,
@@ -21,8 +21,8 @@
           "say": "A stranger, with sky-dust still on you. Sit, if you like. Since you fell, the old stone to the south has been humming. The builders left a shrine there, buried. Nobody here can read their words any more.",
           "choices": [
             {"text": "I'll go and see what's humming.", "do": {"start": "main_remember"}, "reply": "Follow the paved road south. Read what is carved before you speak; the old words answer only those who listen first."},
-            {"text": "Who were the builders?", "reply": "The ones who were here before the Vaari, when the world spoke back. Their words still move stone. We only remember the shapes."},
-            {"text": "Where am I?", "reply": "The Teshari Confluence, where the rivers meet. Rest here whenever you need; the stone keeps the night off."}
+            {"text": "Who were the builders?", "reply": "Nobody knows. Whoever they were, they were here long before any of us, and their words still move stone."},
+            {"text": "Where am I?", "reply": "The Teshari Confluence. Rest here whenever you need; the walls keep the night off."}
           ]
         },
         {
@@ -36,12 +36,12 @@
           "when": {"quest": "main_remember", "stage": "return"},
           "say": "The hum has stopped. You went all the way down, didn't you?",
           "choices": [
-            {"text": "The heart fell. It said: the world remembers.", "do": {"advance": "main_remember"}, "reply": "Then it is starting again. Keep these; the bronze is builder-made. Other stones will be listening now, further out. Go carefully."}
+            {"text": "The heart fell. It said: the world remembers.", "do": {"advance": "main_remember"}, "reply": "I don't know what that means. Nobody does. But the hum has stopped, and you came back. Keep these, for the road."}
           ]
         },
         {
           "when": {"quest": "main_remember", "state": "done"},
-          "say": "Since the heart fell, the river runs a little louder. You did that. The village is yours as much as ours.",
+          "say": "The old stone to the south is quiet now. You did that. The village is yours as much as ours.",
           "choices": []
         }
       ]
@@ -124,15 +124,15 @@
       "talk": [
         {
           "when": {"flag": "world_remembers"},
-          "say": "The shelves have been whispering since the heart woke. Words I copied as dead shapes are pulling at the page. Whatever you did down there, the college felt it.",
+          "say": "You went down to the heart, didn't you? Tell me everything you saw. Every carving, every word. I will write it down.",
           "choices": [
-            {"text": "What are these rune circles?", "reply": "Each ring is one word, carved the way the builders carved it. Read them in the ruins and they will start to mean something to you."}
+            {"text": "What are these carved circles?", "reply": "Each ring is one word, copied as the builders carved it. Read the same words in the ruins and they will start to mean something to you."}
           ]
         },
         {
           "say": "Quietly, please. This is the Grand College library. Everything we know of the builders' words is on these shelves, and most of it we cannot read.",
           "choices": [
-            {"text": "What are these rune circles?", "reply": "Each ring is one word, carved the way the builders carved it. Read them in the ruins and they will start to mean something to you."},
+            {"text": "What are these carved circles?", "reply": "Each ring is one word, copied as the builders carved it. Read the same words in the ruins and they will start to mean something to you."},
             {"text": "Can you teach me the words?", "reply": "Nobody teaches them. You read them where they were carved, in two different places, and then you try them. The elder at the Confluence will tell you where to start."}
           ]
         }

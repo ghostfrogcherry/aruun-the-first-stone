@@ -283,6 +283,32 @@ namespace Aruun.Game
         float _ruinCheck;
 
         /// <summary>Lights the ruin's lamps (once) and the heart's glow until it falls.</summary>
+        sealed class ResonancePulse { public Light Light; public float Life, Max, Peak; }
+        readonly List<ResonancePulse> _pulses = new List<ResonancePulse>();
+
+        void Pulse(Vec3 at, float seconds, float peak)
+        {
+            var l = new GameObject("resonance").AddComponent<Light>();
+            l.transform.position = ToUnity(at);
+            l.type = LightType.Point;
+            l.range = 5f;
+            l.color = new Color(0.384f, 0.722f, 0.694f); // Resonance #62B8B1
+            l.intensity = peak;
+            l.shadows = LightShadows.None;
+            _pulses.Add(new ResonancePulse { Light = l, Life = seconds, Max = seconds, Peak = peak });
+        }
+
+        void FadePulses(float dt)
+        {
+            for (int i = _pulses.Count - 1; i >= 0; i--)
+            {
+                var p = _pulses[i];
+                p.Life -= dt;
+                if (p.Life <= 0 || p.Light == null) { if (p.Light != null) Destroy(p.Light.gameObject); _pulses.RemoveAt(i); continue; }
+                p.Light.intensity = p.Peak * Mathf.Clamp01(p.Life / p.Max * 1.5f);
+            }
+        }
+
         bool _townLit;
 
         /// <summary>Lights the town's lamp posts (warm) and the college's crystals and rune lamps (blue), once.</summary>
@@ -292,7 +318,7 @@ namespace Aruun.Game
             _townLit = true;
             var root = new GameObject("Town lights").transform;
             foreach (Vec3 at in Host.Village.Lamps) TownLight(root, at, new Color(1f, 0.8f, 0.55f), 9f, 1.3f);
-            foreach (Vec3 at in Host.Village.BlueLamps) TownLight(root, at, new Color(0.45f, 0.7f, 1f), 12f, 1.8f);
+            foreach (Vec3 at in Host.Village.CrystalLights) TownLight(root, at, new Color(0.384f, 0.722f, 0.694f), 8f, 0.9f);
         }
 
         static void TownLight(Transform root, Vec3 at, Color color, float range, float intensity)
@@ -488,6 +514,10 @@ namespace Aruun.Game
                 if (ev.Player == LocalId) MyEvents.Add(ev);
                 CreatureView cv;
                 if (ev.Creature != 0 && _creatures.TryGetValue(ev.Creature, out cv) && ev.Kind == "hit") cv.Punch = 0.18f;
+                // Carved words are dark stone; they light in Resonance only while active (read,
+                // spoken to, answering), then fade. (Visual guide: lit only when active.)
+                if (ev.Kind == "read" || ev.Kind == "glow") Pulse(ev.At, 2.5f, 1.4f);
+                else if (ev.Kind == "answer") Pulse(ev.At, 5f, 2.4f);
             }
             Host.Events.Clear();
 
@@ -496,6 +526,7 @@ namespace Aruun.Game
             SyncStructures();
             SyncRuin();
             SyncTown();
+            FadePulses(Time.unscaledDeltaTime);
             SyncPeople(dt);
 
             _saveTimer -= Time.unscaledDeltaTime;

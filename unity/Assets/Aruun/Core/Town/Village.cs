@@ -54,9 +54,10 @@ namespace Aruun.Core.Town
         /// <summary>Named spots (where people live), in metres. Y = 0 means "on the ground there".</summary>
         public readonly Dictionary<string, Vec3> Spots = new Dictionary<string, Vec3>();
         public readonly List<Portal> Portals = new List<Portal>();
-        /// <summary>Warm lamps and blue lamps, in metres, for the Game layer to light.</summary>
+        /// <summary>Warm lamps, in metres, for the Game layer to light.</summary>
         public readonly List<Vec3> Lamps = new List<Vec3>();
-        public readonly List<Vec3> BlueLamps = new List<Vec3>();
+        /// <summary>Resonance crystals (the fountain, the spire, the library dais): a faint teal light each.</summary>
+        public readonly List<Vec3> CrystalLights = new List<Vec3>();
 
         readonly HeightField _field;
         readonly Blueprint _bp;
@@ -118,10 +119,11 @@ namespace Aruun.Core.Town
             _bp.Box(x0, floor + 1, z0, x1, floor + height, z1, _air);
         }
 
-        void Lamp(int x, int y, int z, bool blue = false)
+        /// <summary>A warm lamp. Amber light means people live here (visual guide); every lamp in town is warm.</summary>
+        void Lamp(int x, int y, int z, bool indoors = false)
         {
-            _bp.Box(x, y, z, x + 1, y + 1, z + 1, B(blue ? "lamp_blue" : "lamp_glow"));
-            (blue ? BlueLamps : Lamps).Add(M(x + 1, z + 1, y + 1) + new Vec3(-0.125, 0, -0.125));
+            _bp.Box(x, y, z, x + 1, y + 1, z + 1, B("lamp_glow"));
+            Lamps.Add(M(x + 1, z + 1, y + 1) + new Vec3(-0.125, 0, -0.125));
         }
 
         // ------------------------------------------------------------------ the plaza
@@ -141,7 +143,7 @@ namespace Aruun.Core.Town
             _bp.Box(-1, g + 9, -1, 0, g + 18, 0, B("crystal_blue"));
             _bp.Box(-2, g + 11, -1, 1, g + 15, 0, B("crystal_blue"));
             _bp.Box(-1, g + 11, -2, 0, g + 15, 1, B("crystal_blue"));
-            BlueLamps.Add(M(0, 0, g + 14));
+            CrystalLights.Add(M(0, 0, g + 14));
         }
 
         void PlazaLamps()
@@ -361,7 +363,7 @@ namespace Aruun.Core.Town
             _collegeFloor = f;
             int t = f + 12;
             _terrace = t;
-            ushort brick = B("stone_brick"), stone = B("college_stone"), gold = B("gold_trim"), banner = B("banner_blue"), roof = B("roof_blue"), roofD = B("roof_blue_dark"), glow = B("lamp_blue");
+            ushort brick = B("stone_brick"), stone = B("college_stone"), gold = B("gold_trim"), banner = B("banner_blue"), roof = B("roof_blue"), roofD = B("roof_blue_dark"), glow = B("window_glow");
             // The terrace and the grand stair up to it from the north road.
             _bp.Box(-84, f - 12, cz - 52, 83, t, cz + 64, B("cobble"), _moss);
             _bp.Box(-84, t + 1, cz - 52, 83, t + 150, cz + 64, _air);
@@ -421,7 +423,7 @@ namespace Aruun.Core.Town
             Tower(hx1 - 9, hz1 - 9, hx1 + 10, hz1 + 10, t, 104, roof);
             int spire = Tower(-12, cz + 8, 11, cz + 31, t, 132, roofD);
             _bp.Box(-1, spire, cz + 19, 0, spire + 16, cz + 20, B("crystal_blue"));
-            BlueLamps.Add(M(0, cz + 20, spire + 10));
+            CrystalLights.Add(M(0, cz + 20, spire + 10));
 
             Buildings.Add(new VillageBuilding { Key = "college", X = 0, Z = cz, Floor = t, MinX = -84, MaxX = 83, MinZ = cz - 52, MaxZ = cz + 64, Height = spire + 16 - t });
             Portals.Add(new Portal
@@ -440,9 +442,9 @@ namespace Aruun.Core.Town
             int cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
             for (int y = t + 20; y < t + h - 12; y += 18)
             {
-                _bp.Box(cx - 1, y, z0, cx, y + 8, z0, B("lamp_blue"));
-                _bp.Box(x0, y, cz - 1, x0, y + 8, cz, B("lamp_blue"));
-                _bp.Box(x1, y, cz - 1, x1, y + 8, cz, B("lamp_blue"));
+                _bp.Box(cx - 1, y, z0, cx, y + 8, z0, B("window_glow"));
+                _bp.Box(x0, y, cz - 1, x0, y + 8, cz, B("window_glow"));
+                _bp.Box(x1, y, cz - 1, x1, y + 8, cz, B("window_glow"));
             }
             return _bp.Pyramid(x0, z0, x1, z1, t + h + 1, roof, gold, 1, 3);
         }
@@ -526,14 +528,14 @@ namespace Aruun.Core.Town
             _bp.Disc(0, y + 2, cz, 4, 0, brick, 2);
             _bp.Disc(0, y + 4, cz, 3, 0, B("crystal_blue"), 18);
             _bp.Disc(0, y + 22, cz, 4, 0, gold);
-            BlueLamps.Add(M(0, cz, y + 14));
+            CrystalLights.Add(M(0, cz, y + 14));
             // Reading tables with lamps along the aisle.
             for (int z = z0 + 20; z < z1 - 10; z += 28)
                 if (Math.Abs(z - cz) > 14)
                     foreach (int x in new[] { -12, 6 })
                     {
                         _bp.Box(x, y, z, x + 5, y + 3, z + 2, timber);
-                        _bp.Box(x + 1, y + 4, z + 1, x + 1, y + 4, z + 1, B("lamp_blue"));
+                        _bp.Box(x + 1, y + 4, z + 1, x + 1, y + 4, z + 1, B("lamp_glow"));
                         _bp.Box(x + 3, y + 4, z, x + 4, y + 4, z + 2, shelf);
                     }
             // The way out.
