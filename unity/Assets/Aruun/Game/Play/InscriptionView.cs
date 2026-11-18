@@ -25,7 +25,7 @@ namespace Aruun.Game
     public sealed class InscriptionView : MonoBehaviour
     {
         /// <summary>A quiet carved glyph (darker than the Deep Teal stone it is cut into) and active ancient language (Resonance).</summary>
-        public static readonly Color Carved = new Color32(0x16, 0x2C, 0x31, 255);   // Deep Teal, cut deeper: the grooves of a quiet glyph
+        public static readonly Color Carved = new Color32(0x06, 0x0C, 0x0E, 255);   // the grooves of a quiet glyph: near black against the Deep Teal stone
         public static readonly Color Active = new Color32(0x62, 0xB8, 0xB1, 255);
 
         // ================================================================ glyph meshes
@@ -272,7 +272,7 @@ namespace Aruun.Game
                 const float cell = 0.018f;
                 var plate = GlyphPlate.Make(w.Glyph, cell, _held, "glyph " + w.Id);
                 plate.Root.localRotation = Quaternion.Inverse(_held.localRotation);
-                plate.Root.localPosition = new Vector3(-0.15f + i * 0.13f, 0.02f, -0.03f);
+                plate.Root.localPosition = new Vector3(-0.02f + i * 0.12f, 0.17f, -0.06f);   // up on the handle, in view
                 var inlay = new GameObject("inlay");
                 inlay.transform.SetParent(plate.Root, false);
                 inlay.transform.localPosition = new Vector3(0, 0, cell * 0.45f);
