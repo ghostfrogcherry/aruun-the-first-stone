@@ -1,5 +1,6 @@
 using Aruun.Core.Content;
 using Aruun.Core.Ruins;
+using Aruun.Core.Town;
 using Aruun.Core.Voxels;
 
 namespace Aruun.Core.Worldgen
@@ -13,6 +14,11 @@ namespace Aruun.Core.Worldgen
         public readonly HeightField Field;
         /// <summary>The echo ruin south of the spawn place (null without a map).</summary>
         public readonly EchoRuin Ruin;
+        /// <summary>
+        /// The village at the spawn place (null for none). Its buildings come from content files,
+        /// so the game sets it right after making the world, before any chunk is generated.
+        /// </summary>
+        public Village Village;
         readonly BlockRegistry _blocks;
         readonly ushort _air, _tallGrass, _bark, _leaves, _crimsonLeaves, _water, _redSoil, _rustRock, _deepStone;
         readonly ushort _ice, _marker, _lamp;
@@ -69,6 +75,7 @@ namespace Aruun.Core.Worldgen
             }
             ApplyTrees(chunk);
             if (Field.Map != null) ApplyMarkers(chunk);
+            if (Village != null) Village.Stamp(chunk, _blocks);
             if (Ruin != null) Ruin.Stamp(chunk);
             return chunk;
         }
@@ -113,6 +120,7 @@ namespace Aruun.Core.Worldgen
                 {
                     TreeSpot t = Field.TreeInCell(cx, cz);
                     if (!t.Exists) continue;
+                    if (Village != null && Village.NoTree(t.X, t.Z, t.Radius)) continue;
                     int top = t.Base + t.Trunk, r = t.Radius;
                     if (t.Base > oy + n || top + r < oy) continue;
                     ushort leaf = t.Crimson ? _crimsonLeaves : _leaves;

@@ -328,8 +328,8 @@ namespace Aruun.Core.Play
             }
         }
 
-        /// <summary>What this player should do next for "The World Remembers".</summary>
-        public Objective ObjectiveFor(int id)
+        /// <summary>What this player should do next in the echo ruin itself.</summary>
+        Objective RuinObjective(int id)
         {
             var o = new Objective { Title = "The World Remembers" };
             PlayerRec p;
@@ -350,7 +350,7 @@ namespace Aruun.Core.Play
                 if (k.Of(gate.Word) < Familiarity.Guessed)
                 {
                     RuinInscription next = NextUnread(k, gate.Word);
-                    bool far = Vec3.Distance(p.Pos, Ruin.EntranceM) > 20 && !Ruin.Inside(p.Pos);
+                    bool far = Vec3.Distance(p.Pos, Ruin.EntranceM) > 10 && !Ruin.Inside(p.Pos);
                     o.Text = far ? "Find the echo ruin, south of the Confluence." : "Read the carved words (E) in the ruin.";
                     o.Target = far ? Ruin.EntranceM : (next != null ? next.Point() : Ruin.GateM);
                     return o;

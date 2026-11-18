@@ -26,6 +26,8 @@ namespace Aruun.Game
         public int ViewChunks = 16;          // horizontal radius in chunks (8 m each)
         /// <summary>Chunks kept around the viewer's own height, for building in the air or digging down.</summary>
         public int ViewChunksDown = 2, ViewChunksUp = 2;
+        /// <summary>How far out (chunks) the band around the viewer reaches when they are far above the ground.</summary>
+        public int AloftChunks = 5;
         public int MeshesPerFrame = 6;
 
         public int ShownChunks { get { return _shown.Count; } }
@@ -47,6 +49,18 @@ namespace Aruun.Game
         readonly List<Vector3> _positions = new List<Vector3>(), _normals = new List<Vector3>();
         readonly List<Color32> _colors = new List<Color32>();
         Material _opaque, _transparent;
+        // Lamps per chunk (world metres, w = voxel count), and the nearest ones handed to the shader.
+        readonly Dictionary<ChunkCoord, Vector4[]> _lights = new Dictionary<ChunkCoord, Vector4[]>();
+        readonly List<Vector4> _near = new List<Vector4>();
+        readonly Vector4[] _lampArray = new Vector4[MaxLamps];
+        public const int MaxLamps = 16;
+        /// <summary>How far a lamp's light reaches, in metres.</summary>
+        public float LampRadius = 10f;
+        static readonly int LampsId = Shader.PropertyToID("_AruunLamps");
+        static readonly int LampCountId = Shader.PropertyToID("_AruunLampCount");
+        /// <summary>Lamps lighting the scene now (for the stats overlay).</summary>
+        public int LitLamps { get; private set; }
+        public int KnownLamps { get { int n = 0; foreach (var l in _lights.Values) n += l.Length; return n; } }
         ChunkCoord _lastCentre = new ChunkCoord(int.MinValue, 0, 0);
         int _inFlight, _maxInFlight;
         BlockRegistry _blocks;
@@ -80,7 +94,7 @@ namespace Aruun.Game
                 Destroy(pair.Value);
                 World.Unload(pair.Key);
             }
-            _shown.Clear(); _version.Clear(); _requested.Clear(); _empty.Clear(); _wanted.Clear();
+            _shown.Clear(); _version.Clear(); _requested.Clear(); _empty.Clear(); _wanted.Clear(); _lights.Clear();
             _lastCentre = new ChunkCoord(int.MinValue, 0, 0);
         }
 
@@ -133,12 +147,67 @@ namespace Aruun.Game
                 Show(b);
                 _pool.Add(b);
             }
+            UpdateLamps();
+        }
+
+        /// <summary>
+        /// Hands the lamps nearest the camera to the voxel shader, which adds their warm light
+        /// per pixel. No extra passes, so many lamps cost little; they cast no shadows.
+        /// </summary>
+        void UpdateLamps()
+        {
+            Camera cam = Camera.main;
+            Vector3 eye = cam != null ? cam.transform.position : Viewer.position;
+            float reach = 64f, reach2 = reach * reach;
+            _near.Clear();
+            foreach (var arr in _lights.Values)
+                foreach (Vector4 l in arr)
+                {
+                    float dx = l.x - eye.x, dy = l.y - eye.y, dz = l.z - eye.z;
+                    if (dx * dx + dy * dy + dz * dz < reach2) _near.Add(l);
+                }
+            if (_near.Count > MaxLamps)
+                _near.Sort((a, b) => Dist2(a, eye).CompareTo(Dist2(b, eye)));
+            int n = Mathf.Min(_near.Count, MaxLamps);
+            for (int i = 0; i < MaxLamps; i++)
+            {
+                if (i < n)
+                {
+                    Vector4 l = _near[i];
+                    // Bigger clusters (a lamp column) reach a little farther.
+                    _lampArray[i] = new Vector4(l.x, l.y, l.z, LampRadius * Mathf.Min(1.6f, 0.9f + 0.1f * l.w));
+                }
+                else _lampArray[i] = Vector4.zero;
+            }
+            Shader.SetGlobalVectorArray(LampsId, _lampArray);
+            Shader.SetGlobalFloat(LampCountId, n);
+            LitLamps = n;
+        }
+
+        static float Dist2(Vector4 l, Vector3 p)
+        {
+            float dx = l.x - p.x, dy = l.y - p.y, dz = l.z - p.z;
+            return dx * dx + dy * dy + dz * dz;
+        }
+
+        void SetLights(ChunkCoord c, MeshData m)
+        {
+            if (m == null || m.Lights.Count == 0) { _lights.Remove(c); return; }
+            var arr = new Vector4[m.Lights.Count / 4];
+            float s = WorldConfig.VoxelSize;
+            for (int i = 0; i < arr.Length; i++)
+                arr[i] = new Vector4((c.OriginX + m.Lights[i * 4]) * s, (c.OriginY + m.Lights[i * 4 + 1]) * s,
+                                     (c.OriginZ + m.Lights[i * 4 + 2]) * s, m.Lights[i * 4 + 3]);
+            _lights[c] = arr;
         }
 
         void PlanAround(ChunkCoord centre)
         {
             _wanted.Clear();
             _columns.Clear();
+            int clo, chi;
+            TerrainSpan(centre.X, centre.Z, out clo, out chi);
+            bool aloft = centre.Y > chi + 4;
             for (int dz = -ViewChunks - 2; dz <= ViewChunks + 2; dz++)
                 for (int dx = -ViewChunks - 2; dx <= ViewChunks + 2; dx++)
                 {
@@ -148,7 +217,9 @@ namespace Aruun.Game
                     TerrainSpan(cx, cz, out lo, out hi);
                     // The terrain's own span everywhere, so the ground shows from any height;
                     // near the viewer also a band around their height, for building in the air.
-                    if (dx * dx + dz * dz <= 4)
+                    // Far above the ground (the college library is a hall in the sky) the band
+                    // reaches out to the edge of view, so the whole hall shows.
+                    if (dx * dx + dz * dz <= 4 || (aloft && dx * dx + dz * dz <= AloftChunks * AloftChunks))
                     {
                         lo = Math.Min(lo, centre.Y - ViewChunksDown);
                         hi = Math.Max(hi, centre.Y + ViewChunksUp);
@@ -175,6 +246,7 @@ namespace Aruun.Game
                 _shown.Remove(c);
                 _version.Remove(c);
                 _requested.Remove(c);
+                _lights.Remove(c);
                 World.Unload(c);
             }
             _empty.RemoveWhere(c => !InRange(c, centre, 2));
@@ -261,6 +333,7 @@ namespace Aruun.Game
             int latest;
             if (!_version.TryGetValue(b.Coord, out latest) || latest != b.Version) return; // a newer build is on its way
             _requested.Remove(b.Coord);
+            SetLights(b.Coord, b.Mesh);
             GameObject go;
             _shown.TryGetValue(b.Coord, out go);
             if (b.Mesh.IsEmpty)

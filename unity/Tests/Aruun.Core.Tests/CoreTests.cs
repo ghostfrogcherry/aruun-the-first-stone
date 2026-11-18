@@ -205,6 +205,29 @@ namespace Aruun.Core.Tests
         }
 
         [Test]
+        public void LampsGlowAndBecomeLights()
+        {
+            BlockRegistry blocks = TestContent.Blocks();
+            ushort lamp = blocks.Id("lamp_glow");
+            ushort[] p = Empty();
+            // A lamp post's head of two lamp voxels, and a lone lamp far away in the chunk.
+            p[GreedyMesher.PaddedIndex(5, 10, 5)] = lamp;
+            p[GreedyMesher.PaddedIndex(5, 11, 5)] = lamp;
+            p[GreedyMesher.PaddedIndex(25, 3, 20)] = lamp;
+            p[GreedyMesher.PaddedIndex(12, 3, 12)] = blocks.Id("rust_rock");
+            var mesh = new MeshData();
+            new GreedyMesher(blocks).Build(p, mesh);
+            Assert.That(mesh.Lights.Count, Is.EqualTo(8), "two lights: the post head and the lone lamp");
+            int head = mesh.Lights[3] == 2f ? 0 : 4;
+            Assert.That(mesh.Lights[head + 3], Is.EqualTo(2f), "the post head's two voxels merge");
+            Assert.That(mesh.Lights[head + 1], Is.EqualTo(10f).Within(1e-4), "centre between the two voxels (padded y 10, 11 = local 9.5, 10.5)");
+            int glowing = 0, plain = 0;
+            for (int i = 3; i < mesh.Colors.Count; i += 4) { if (mesh.Colors[i] == 0) glowing++; else plain++; }
+            Assert.That(glowing, Is.EqualTo(2 * 24), "every lamp face is marked to glow (the stacked pair merges into one box)");
+            Assert.That(plain, Is.EqualTo(24), "the rock is not");
+        }
+
+        [Test]
         public void AFlatSlabMergesIntoSixQuads()
         {
             BlockRegistry blocks = TestContent.Blocks();

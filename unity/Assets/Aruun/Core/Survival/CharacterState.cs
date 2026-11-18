@@ -6,6 +6,7 @@ using Aruun.Core.Language;
 using Aruun.Core.Content;
 using Aruun.Core.Items;
 using Aruun.Core.Mining;
+using Aruun.Core.People;
 
 namespace Aruun.Core.Survival
 {
@@ -29,6 +30,8 @@ namespace Aruun.Core.Survival
         public List<string> Words = new List<string>();
         /// <summary>What this character has seen, guessed and knows of Avarra. Words above mirrors its known words.</summary>
         public WordKnowledge Lang = new WordKnowledge();
+        /// <summary>Where this character is in each quest.</summary>
+        public QuestLog Quests = new QuestLog();
         /// <summary>Inscription compositions this character has found by cutting their words together (ids from inscriptions.json).</summary>
         public HashSet<string> Combos = new HashSet<string>();
         /// <summary>Home Tether position in voxels, if one is set.</summary>
@@ -63,6 +66,7 @@ namespace Aruun.Core.Survival
             Inv = new Inventory(_items);
             foreach (var kv in _rules.StartingItems) Inv.Add(kv.Key, kv.Value);
             Lang = new WordKnowledge();
+            Quests = new QuestLog();
             foreach (var w in _rules.StartingWords) Learn(w);
             Dead = false;
             Downed = 0;
@@ -202,6 +206,7 @@ namespace Aruun.Core.Survival
             foreach (var kv in Buffs) sb.Append("buff ").Append(kv.Key).Append(' ').Append(kv.Value.ToString("R", c)).Append('\n');
             sb.Append("selected ").Append(Selected).Append('\n');
             foreach (var w in Words) sb.Append("word ").Append(w).Append('\n');
+            foreach (var kv in Quests.All) sb.Append("quest ").Append(kv.Key).Append(' ').Append(kv.Value).Append('\n');
             foreach (var kv in Lang.Places) foreach (var place in kv.Value) sb.Append("seen ").Append(kv.Key).Append(' ').Append(place).Append('\n');
             foreach (var combo in Combos) sb.Append("combo ").Append(combo).Append('\n');
             if (Tether != null) sb.AppendFormat(c, "tether {0} {1} {2}\n", Tether[0], Tether[1], Tether[2]);
@@ -218,6 +223,7 @@ namespace Aruun.Core.Survival
             Buffs.Clear();
             Words.Clear();
             Lang = new WordKnowledge();
+            Quests = new QuestLog();
             Combos.Clear();
             var seen = new List<string[]>();
             Tether = null;
@@ -252,6 +258,10 @@ namespace Aruun.Core.Survival
                         break;
                     case "word": if (!Words.Contains(rest)) Words.Add(rest); break;
                     case "seen": if (p.Length == 2) seen.Add(p); break;
+                    case "quest":
+                        int qs;
+                        if (p.Length == 2 && int.TryParse(p[1], out qs)) Quests.Set(p[0], qs);
+                        break;
                     case "combo": Combos.Add(rest); break;
                     case "tether":
                         int x, y, z;
