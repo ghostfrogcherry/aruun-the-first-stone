@@ -242,6 +242,8 @@ namespace Aruun.Game
             int pts = me.C.SkillPoints;
             foreach (string id in new[] { "sense_of_down", "heavy_hand", "wide_fall" })
                 note("m4 learn " + id + ": '" + Host.LearnSkill(LocalId, id) + "'");
+            yield return null;   // the new modifiers apply on the next tick
+            yield return null;
             note("m4 skills: " + me.C.SkillPoints + " left of " + pts + ", debt_cost_mult " + me.C.Mods["debt_cost_mult"].ToString("0.00"));
 
             // A heavy Fallhammer blow beside a redstrider that is outside the swing's arc.
@@ -252,8 +254,8 @@ namespace Aruun.Game
             double hp = c.Hp;
             me.C.Stamina = me.C.StaminaMax;
             note("m4 slam: attack " + Host.Attack(LocalId, true));
-            for (int i = 0; i < 20; i++) { c.Pos = new Vec3(spot.X, c.Pos.Y, spot.Z); yield return null; }
-            yield return new WaitForSecondsRealtime(0.6f);
+            // Hold it in place until the blow lands; a redstrider would rather run.
+            for (float t0 = Time.realtimeSinceStartup; Time.realtimeSinceStartup - t0 < 1.2f;) { c.Pos = new Vec3(spot.X, c.Pos.Y, spot.Z); yield return null; }
             note("m4 slam: redstrider hp " + hp.ToString("0") + " -> " + c.Hp.ToString("0") + " (" + c.State + ")");
 
             // The steading: plant a Tether on the plinth, then mend the east wall with a shape.
@@ -272,11 +274,19 @@ namespace Aruun.Game
             int x1 = Aruun.Core.Town.Village.SteadingX + 11, z0 = Aruun.Core.Town.Village.SteadingZ - 8, z1 = Aruun.Core.Town.Village.SteadingZ + 9;
             int fy = gy - 1;   // the plinth stands one course above the yard floor
             me.Pos = new Vec3((x1 - 6) / 4.0, (fy + 1) / 4.0, (z0 + z1) / 8.0);
+            me.RespawnAt = me.Pos;
             string why = Host.BuildShape(LocalId, Aruun.Core.Building.Shape.Wall, x1, fy + 1, z0 + 1, x1, fy + 10, z1 - 1);
             note("m4 build east wall: '" + why + "', stone_brick left " + me.C.Inv.Count("stone_brick"));
             // Stand in the yard looking at the mended cottage, for the screenshot.
-            me.Pos = plinth + new Vec3(-3, -0.5, -4);
-            me.ArriveYaw = Math.Atan2(Aruun.Core.Town.Village.SteadingX / 4.0 - me.Pos.X, Aruun.Core.Town.Village.SteadingZ / 4.0 - me.Pos.Z);
+            // Midday, bag closed, standing in the yard south-west of the plinth, looking at plinth and cottage.
+            PlayHud.SetBag(false);
+            double tod = Host.TimeOfDay;
+            Host.Time += ((0.5 - tod) % 1 + 1) % 1 * Host.Rules.DayLength;
+            Vec3 stand = plinth + new Vec3(-2.5, -0.5, -4.5);
+            me.Pos = stand;
+            me.RespawnAt = stand;   // the player's body follows a respawn point, not a bare position
+            Vec3 lookAt = new Vec3(Aruun.Core.Town.Village.SteadingX / 4.0, plinth.Y, (Aruun.Core.Town.Village.SteadingZ - 4) / 4.0);
+            me.ArriveYaw = Math.Atan2(lookAt.X - stand.X, lookAt.Z - stand.Z);
         }
 
         /// <summary>Talks to the elder and takes the first answer, as a player would.</summary>
