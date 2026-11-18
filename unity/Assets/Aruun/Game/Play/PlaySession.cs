@@ -218,6 +218,7 @@ namespace Aruun.Game
             SmokeElder(note, "before the ruin");
             yield return SmokeRuin(note);
             yield return SmokeInscription(note);
+            yield return SmokeInscriptionMore(note);
             yield return new WaitForSecondsRealtime(1f);
             SmokeElder(note, "after the ruin");
             note("end: hp " + me.C.Hp.ToString("0") + ", day " + Host.Day + " " + (Host.TimeOfDay * 24).ToString("0.0") + "h, creatures " + Host.Creatures.Count + ", plants " + Host.PlantsInWorld.Count + ", structures " + Host.Structures.Count);
@@ -326,6 +327,52 @@ namespace Aruun.Game
             for (; ticks < 200 && !t.Broken && !t.Refused; ticks++) { t = Host.Dig(LocalId, x + 3, y + 3, z, 0.05); Host.Time += 0.05; yield return null; }
             note("resonant dig: broken " + t.Broken + " in " + (ticks * 0.05).ToString("0.00") + " s, rust rock in bag " + before + " -> " + me.C.Inv.Count("rust_rock"));
             yield return new WaitForSecondsRealtime(2f);
+        }
+
+        /// <summary>The rest of the slice in play: Ulun + Vuh on the hammer (shockwave), Tahr and Oshen alone,
+        /// then Tahr + Oshen together on the hammer, mending a worn hammer by itself.</summary>
+        System.Collections.IEnumerator SmokeInscriptionMore(Action<string> note)
+        {
+            PlayerRec me = Me;
+            EchoRuin r = Host.Ruin;
+            if (r == null || Host.Inscriptions == null) yield break;
+            foreach (string w in new[] { "word_push", "word_fortify", "word_reclaim" }) me.C.Learn(w);
+            foreach (string k in new[] { "fallhammer", "flint_axe", "reed_spear" }) if (me.C.Inv.Count(k) == 0) me.C.Inv.Add(k, 1);
+            me.C.Inv.Add("word_fragment", 2);
+            Vec3 feet = new Vec3(r.TableM.X - 1.6, r.CourtM.Y, r.TableM.Z);
+            me.Pos = feet;
+            Vec3 eye = me.Pos + new Vec3(0, 1.6, 0);
+            Host.Interact(LocalId, eye, r.TableM - new Vec3(0, 0.1, 0) - eye);
+            Func<string, int> slotOf = key => { for (int i = 0; i < 32; i++) if (me.C.Inv.KeyAt(i) == key) return i; return -1; };
+            int hammer = slotOf("fallhammer"), axe = slotOf("flint_axe"), spear = slotOf("reed_spear");
+            Func<int, string> active = i => string.Join(", ", Host.InscriptionOf(me, i).Active.ConvertAll(x => x.Id).ToArray());
+            note("hammer: Ulun '" + Host.Inscribe(LocalId, hammer, "word_sonic") + "', Vuh '" + Host.Inscribe(LocalId, hammer, "word_push") + "', active [" + active(hammer) + "], fragments left " + me.C.Inv.Count("word_fragment"));
+            note("axe: Tahr '" + Host.Inscribe(LocalId, axe, "word_fortify") + "', active [" + active(axe) + "]; spear: Oshen '" + Host.Inscribe(LocalId, spear, "word_reclaim") + "', active [" + active(spear) + "]");
+            PlayHud.SetBag(false);
+            // A creature in front of the hammer, then the shockwave.
+            me.C.Selected = hammer;
+            Creature target = null;
+            foreach (string key in new[] { "redstrider", "skitter" }) if (target == null && Host.CreatureDefs.ContainsKey(key)) target = Host.SpawnCreature(key, new Vec3(feet.X - 3, Host.GroundHeight(feet.X - 3, feet.Z) + 0.05, feet.Z), 9100);
+            if (target == null) foreach (var k in Host.CreatureDefs.Keys) { target = Host.SpawnCreature(k, new Vec3(feet.X - 3, Host.GroundHeight(feet.X - 3, feet.Z) + 0.05, feet.Z), 9100); break; }
+            yield return new WaitForSecondsRealtime(1f);
+            me.C.Stamina = me.C.StaminaMax;
+            double hpBefore = target != null ? target.Hp : 0;
+            Vec3 tBefore = target != null ? target.Pos : default;
+            note("shockwave: used " + Host.UseHeld(LocalId, false, 0, 0, 0, 0, 0, 0) + ", stamina " + me.C.Stamina.ToString("0") + "/" + me.C.StaminaMax.ToString("0") + (target != null ? ", " + target.Def.Key + " hp " + hpBefore.ToString("0.0") + " -> " + target.Hp.ToString("0.0") : ", no creature"));
+            yield return new WaitForSecondsRealtime(0.8f);
+            if (target != null) note("shockwave: creature moved " + (target.Pos - tBefore).Length.ToString("0.0") + " m");
+            yield return new WaitForSecondsRealtime(1.5f);
+            // Grind both words off, cut Tahr + Oshen, wear the hammer and let it mend by itself.
+            me.Pos = feet;
+            eye = me.Pos + new Vec3(0, 1.6, 0);
+            Host.Interact(LocalId, eye, r.TableM - new Vec3(0, 0.1, 0) - eye);
+            Host.Erase(LocalId, hammer); Host.Erase(LocalId, hammer);
+            note("hammer: Tahr '" + Host.Inscribe(LocalId, hammer, "word_fortify") + "', Oshen '" + Host.Inscribe(LocalId, hammer, "word_reclaim") + "', active [" + active(hammer) + "], self-mending found " + me.C.Combos.Contains("self_mending"));
+            PlayHud.SetBag(false);
+            me.C.Inv.Wear(hammer, 5);
+            int worn = me.C.Inv[hammer].Value.Durability;
+            yield return new WaitForSecondsRealtime(12f);
+            note("self-mending: hammer durability " + worn + " -> " + me.C.Inv[hammer].Value.Durability + " after 12 s (6 a minute expected)");
         }
 
         readonly Dictionary<int, CreatureView> _people = new Dictionary<int, CreatureView>();
