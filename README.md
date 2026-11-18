@@ -20,6 +20,7 @@ everything engine-neutral (content, art, tools, design docs) carries on unchange
 | `tools/art/` | Python tools that build and import `.vox` art and the palette. |
 | `tools/content_validator/` | Checks the content files. |
 | `docs/art/` | Art guide for contributors (no code needed). |
+| `docs/WORLD_BIBLE.md` | The canon: what Aruun is, what is decided and what is still open. Read before adding content. |
 | `docs/design/` | Game design: mobs, behaviours. |
 | `docs/decisions/` | Architecture decisions (ADRs). |
 
