@@ -5,6 +5,7 @@ using Aruun.Core.Combat;
 using Aruun.Core.Creatures;
 using Aruun.Core.Edits;
 using Aruun.Core.Farming;
+using Aruun.Core.Inscription;
 using Aruun.Core.Items;
 using Aruun.Core.Language;
 using Aruun.Core.Play;
@@ -82,6 +83,12 @@ namespace Aruun.Game
             Host.SpawnPoint = ToVec(spawnFeet);
             try { Host.Lexicon = Lexicon.FromJson(GameContent.ReadText("language", "lexicon.json")); }
             catch (Exception e) { Debug.LogError("Could not load the Avarra words: " + e.Message); }
+            try
+            {
+                Host.Inscriptions = InscriptionRules.FromJson(GameContent.ReadText("language", "inscriptions.json"));
+                foreach (string problem in Host.Inscriptions.Validate(Host.Lexicon, items)) Debug.LogWarning("inscriptions.json: " + problem);
+            }
+            catch (Exception e) { Debug.LogError("Could not load the inscription rules: " + e.Message); }
             Host.SpawnCreatures = Array.IndexOf(args, "--no-creatures") < 0 && DevInput.Enabled;
 
             string dir = Path.Combine(Application.persistentDataPath, "worlds", (SurvivalOnly ? "survival-" : "dev-") + seed);
@@ -102,6 +109,7 @@ namespace Aruun.Game
             Say(fresh ? "You wake on Aruun with little more than the clothes you came in. Something old hums to the south. (Tab: bag and crafting)" : "Welcome back.");
 
             _entityRoot = new GameObject("Entities").transform;
+            gameObject.AddComponent<InscriptionView>();
             RegisterDevKeys();
             if (_smoke)
             {
@@ -158,6 +166,7 @@ namespace Aruun.Game
             }
             note("fight redstrider: state " + c.State + " after " + swings + " swings, raw_meat " + me.C.Inv.Count("raw_meat") + ", hide " + me.C.Inv.Count("hide"));
             yield return SmokeRuin(note);
+            yield return SmokeInscription(note);
             note("end: hp " + me.C.Hp.ToString("0") + ", day " + Host.Day + " " + (Host.TimeOfDay * 24).ToString("0.0") + "h, creatures " + Host.Creatures.Count + ", plants " + Host.PlantsInWorld.Count + ", structures " + Host.Structures.Count);
             File.WriteAllLines(Path.Combine(Application.persistentDataPath, "smoke.txt"), lines.ToArray());
         }
@@ -212,6 +221,43 @@ namespace Aruun.Game
             me.RespawnAt = r.ExitM;
             yield return new WaitForSecondsRealtime(2f);
             note("ruin exit objective: " + Host.ObjectiveFor(LocalId).Text + " (done " + Host.ObjectiveFor(LocalId).Done + ")");
+        }
+
+        /// <summary>The inscription slice: find Ulun, cut it into a pick at the table, make it ring, mine with it.</summary>
+        System.Collections.IEnumerator SmokeInscription(Action<string> note)
+        {
+            PlayerRec me = Me;
+            EchoRuin r = Host.Ruin;
+            if (r == null || Host.Inscriptions == null) { note("inscription: no ruin or no rules"); yield break; }
+            Host.Read(me, r.Inscriptions.Find(i => i.Place == "ruin_step_hall_east"));
+            Host.Read(me, r.Inscriptions.Find(i => i.Place == "ruin_table"));
+            note("inscription: Ulun is " + me.C.Lang.Of("word_sonic"));
+            Vec3 feet = new Vec3(r.TableM.X - 1.6, r.CourtM.Y, r.TableM.Z);
+            me.Pos = feet;
+            me.RespawnAt = feet;
+            yield return new WaitForSecondsRealtime(1.5f);
+            Vec3 eye = me.Pos + new Vec3(0, 1.6, 0);
+            note("inscription table: opened " + Host.Interact(LocalId, eye, r.TableM - new Vec3(0, 0.1, 0) - eye) + ", at table " + Host.AtTable(LocalId));
+            int pick = -1;
+            for (int i = 0; i < 32; i++) if (me.C.Inv.KeyAt(i) == "flint_pick") pick = i;
+            if (pick < 0) { note("inscription: no pick in the bag"); yield break; }
+            me.C.Selected = pick;
+            note("inscribe Ulun on the pick: '" + Host.Inscribe(LocalId, pick, "word_sonic") + "' (empty means it worked), words " + me.C.Inv[pick].Value.Words + ", Ulun known " + me.C.Lang.Knows("word_sonic"));
+            yield return new WaitForSecondsRealtime(1.5f);
+            PlayHud.SetBag(false);
+            me.C.Stamina = me.C.StaminaMax;
+            note("ring the pick: " + Host.UseHeld(LocalId, false, 0, 0, 0, 0, 0, 0) + ", resonating " + Host.Resonating(me));
+            // A rock to mine, in the court in front of the table.
+            int x = (int)Math.Floor((feet.X - 3) * 4), y = (int)Math.Floor(feet.Y * 4), z = (int)Math.Floor(feet.Z * 4);
+            ushort rock = Host.World.Blocks.Id("rust_rock");
+            View.MarkDirty(Host.World.Apply(Core.Edits.EditOp.Box(x - 3, y, z - 3, x + 3, y + 6, z + 3, rock)).Dirty);
+            yield return new WaitForSecondsRealtime(0.5f);
+            int before = me.C.Inv.Count("rust_rock");
+            DigTick t = default;
+            int ticks = 0;
+            for (; ticks < 200 && !t.Broken && !t.Refused; ticks++) { t = Host.Dig(LocalId, x + 3, y + 3, z, 0.05); Host.Time += 0.05; yield return null; }
+            note("resonant dig: broken " + t.Broken + " in " + (ticks * 0.05).ToString("0.00") + " s, rust rock in bag " + before + " -> " + me.C.Inv.Count("rust_rock"));
+            yield return new WaitForSecondsRealtime(2f);
         }
 
         Light _heartLight;
@@ -272,6 +318,15 @@ namespace Aruun.Game
             });
             DevTools.Register(KeyCode.Y, "Go to the echo ruin's arch", () => GoToRuin(false));
             DevTools.Register(KeyCode.Y, "Go into the sentinel's court", () => GoToRuin(true), true);
+            DevTools.Register(KeyCode.I, "Go to the inscription table in the echo ruin", () =>
+            {
+                PlayerRec me = Me;
+                if (me == null || Host.Ruin == null) { Say("This world has no echo ruin"); return; }
+                Vec3 at = new Vec3(Host.Ruin.TableM.X - 1.6, Host.Ruin.CourtM.Y, Host.Ruin.TableM.Z);
+                me.Pos = at;
+                me.RespawnAt = at;
+                Say("The inscription table. Look at its worktop and press E.");
+            });
             DevTools.Register(KeyCode.U, "Know every Avarra word", () =>
             {
                 PlayerRec me = Me;
@@ -396,6 +451,7 @@ namespace Aruun.Game
             foreach (HostEvent ev in Host.Events)
             {
                 if (ev.Player == LocalId) MyEvents.Add(ev);
+                if (ev.Player == LocalId && ev.Kind == "table") { PlayHud.CloseSpeak(); PlayHud.SetBag(true, true); }
                 CreatureView cv;
                 if (ev.Creature != 0 && _creatures.TryGetValue(ev.Creature, out cv) && ev.Kind == "hit") cv.Punch = 0.18f;
             }

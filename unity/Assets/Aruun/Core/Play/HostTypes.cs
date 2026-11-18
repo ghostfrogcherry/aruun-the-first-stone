@@ -29,6 +29,14 @@ namespace Aruun.Core.Play
         /// <summary>World time of the last hit given or taken, for the "fighting" flag.</summary>
         public double CombatAt = -999;
         public double RespawnIn;
+        /// <summary>The inscription table the player opened (voxel), or null.</summary>
+        public int[] TableAt;
+        /// <summary>World time until which the held item rings (resonant mining).</summary>
+        public double ResonantUntil;
+        /// <summary>World time before which an activated inscription cannot be used again.</summary>
+        public double NextInscription;
+        /// <summary>Partial durability mended so far, per bag slot (Oshen).</summary>
+        internal readonly Dictionary<int, double> MendAcc = new Dictionary<int, double>();
         /// <summary>Set when the player woke up again; the Game layer moves the body there and clears it.</summary>
         public Vec3? RespawnAt;
         /// <summary>A push from a creature (m/s) the Game layer adds to the body, then clears.</summary>
@@ -70,7 +78,7 @@ namespace Aruun.Core.Play
     /// <summary>Something for the Game layer to show: a hit, a swing, a death, a word of feedback.</summary>
     public struct HostEvent
     {
-        /// <summary>swing, hit, hurt, blocked, guard_break, evade, die, creature_die, wake, glow, slam, windup, strike, harvest, craft, eat, place.</summary>
+        /// <summary>swing, hit, hurt, blocked, guard_break, evade, die, creature_die, wake, glow, slam, windup, strike, harvest, craft, eat, place; and for inscriptions table, inscribe, erase, resonate_on, resonate, resonate_off, shockwave.</summary>
         public string Kind;
         /// <summary>The player it concerns, or 0.</summary>
         public int Player;
@@ -78,6 +86,8 @@ namespace Aruun.Core.Play
         public int Creature;
         public double Value;
         public Vec3 At;
+        /// <summary>The block it concerns (resonate: the stone that shattered), or 0.</summary>
+        public ushort Block;
     }
 
     /// <summary>A world edit the host made (digging, a slam, planting): the Game layer journals it and redraws the chunks.</summary>

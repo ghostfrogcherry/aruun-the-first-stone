@@ -151,8 +151,9 @@ namespace Aruun.Core.Play
         {
             PlayerRec p;
             if (!Players.TryGetValue(id, out p) || !p.Alive) return new DigTick { Refused = true };
-            BlockDef block = World.Blocks.Get(World.Get(x, y, z));
-            ToolDef tool = p.C.HeldTool;
+            ushort blockId = World.Get(x, y, z);
+            BlockDef block = World.Blocks.Get(blockId);
+            ToolDef tool = DiggingTool(p);
             var r = _dig.Hit(id, x, y, z, block, tool, dt, Time);
             if (r.Outcome == DigProgress.Outcome.Refused) return new DigTick { Refused = true, Message = r.Message };
             if (r.Outcome == DigProgress.Outcome.Working) return new DigTick { Fraction = r.Fraction };
@@ -160,8 +161,9 @@ namespace Aruun.Core.Play
             ToolClass cls = tool.Class == ToolClass.Hand ? ToolClass.Hand : tool.Class;
             EditOp op = EditOp.Sphere(x, y, z, BiteRadius10, 0, tool.Power).WithTool(cls);
             EditResult result = Apply(op);
+            if (Resonating(p)) Shatter(p, x, y, z, blockId, tool, result);
             GiveDrops(p, result);
-            if (Rules.Durability && p.C.Inv.Wear(p.C.Selected)) Say(id, "Your " + tool.Name.ToLowerInvariant() + " breaks");
+            WearHeld(p);
             return new DigTick { Broken = true, Fraction = 1 };
         }
 
@@ -213,6 +215,9 @@ namespace Aruun.Core.Play
                 case "block":
                     if (!hasGround) return false;
                     return PlaceBlock(p, def, px, py, pz);
+                case "tool":
+                case "weapon":
+                    return ActivateHeld(p);
                 case "seed":
                 case "structure":
                     if (!hasGround) { Say(id, "Look at the ground where it should go"); return false; }
@@ -321,6 +326,7 @@ namespace Aruun.Core.Play
             if (!Players.TryGetValue(id, out p) || !p.Alive) return false;
             dir = dir.Normalized;
             if (ReadInscription(p, eye, dir)) return true;
+            if (OpenTable(p, eye, dir)) return true;
             PlantRec bestPlant = null;
             StructureRec bestStruct = null;
             double best = double.MaxValue;
@@ -538,7 +544,7 @@ namespace Aruun.Core.Play
                 if (hitAny)
                 {
                     p.CombatAt = Time;
-                    if (Rules.Durability && p.C.Inv.Wear(p.C.Selected)) Say(p.Id, "Your weapon breaks");
+                    WearHeld(p);
                 }
             }
         }
@@ -640,6 +646,7 @@ namespace Aruun.Core.Play
             else if (p.Speed < 2 && (flags.Contains("near_heat") || flags.Contains("at_tether"))) flags.Add("resting");
             if (p.Guard && p.C.Stamina <= 0.5) p.Guard = false;
             p.Flags = flags;
+            TickInscriptions(p, dt);
             if (p.God)
             {
                 p.C.Hp = p.C.HpMax;

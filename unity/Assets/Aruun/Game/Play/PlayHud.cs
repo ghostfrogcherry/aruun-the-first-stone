@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Aruun.Core.Combat;
+using Aruun.Core.Inscription;
 using Aruun.Core.Items;
 using Aruun.Core.Language;
 using Aruun.Core.Play;
@@ -55,9 +56,13 @@ namespace Aruun.Game
         float _hurtFlash;
         GUIStyle _small, _centre, _title, _tiny;
 
-        public static void SetBag(bool open)
+        /// <summary>The bag was opened at an inscription table: the inscription panel replaces crafting.</summary>
+        public static bool TableMode { get; private set; }
+
+        public static void SetBag(bool open, bool table = false)
         {
             BagOpen = open;
+            TableMode = open && table;
             Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = open;
         }
@@ -148,6 +153,8 @@ namespace Aruun.Game
             float slot = 54, bx = w / 2 - slot * 4.5f, by = ht - slot - 12;
             for (int i = 0; i < 9; i++) DrawSlot(new Rect(bx + i * slot, by, slot - 4, slot - 4), h.Items, c.Inv, i, i == c.Selected, (i + 1).ToString());
             string held = c.HeldKey.Length > 0 && h.Items.Has(c.HeldKey) ? h.Items.Get(c.HeldKey).Name : "Bare hands";
+            var heldStack = c.Inv[c.Selected];
+            if (heldStack.HasValue && heldStack.Value.Inscribed) held += "  ·  " + WordNames(h, heldStack.Value.WordList);
             GUI.Label(new Rect(w / 2 - 150, by - 22, 300, 22), held, _centre);
 
             // Crosshair: what you look at and how far a dig has got.
@@ -155,6 +162,12 @@ namespace Aruun.Game
             {
                 if (LookingAt.Length > 0) GUI.Label(new Rect(w / 2 - 150, ht / 2 + 14, 300, 20), LookingAt, _centre);
                 if (DigFraction > 0) Bar(new Rect(w / 2 - 40, ht / 2 + 34, 80, 10), DigFraction, new Color(0.9f, 0.9f, 0.9f), "");
+                if (h.Resonating(me))
+                {
+                    float left = (float)(me.ResonantUntil - h.Time);
+                    Bar(new Rect(w / 2 - 60, ht / 2 + 50, 120, 8), left / 10f, InscriptionView.Active, "");
+                    GUI.Label(new Rect(w / 2 - 150, ht / 2 + 58, 300, 20), "ringing  " + Mathf.CeilToInt(left) + " s", _centre);
+                }
             }
 
             DrawObjective(h, me, w);
@@ -222,6 +235,8 @@ namespace Aruun.Game
                 string meaning = f == Familiarity.Known ? h.WordMeaning(words[i])
                     : f == Familiarity.Guessed ? h.WordMeaning(words[i]) + "?  (try it)"
                     : "?  (seen once: find it again)";
+                WordDef wd = h.Lexicon.Word(words[i]);
+                if (wd != null && !wd.Speakable && f >= Familiarity.Guessed) meaning += "  (cut into things, not spoken)";
                 GUI.color = f == Familiarity.Seen ? new Color(1, 1, 1, 0.55f) : Color.white;
                 GUI.Label(new Rect(px + 10, ly, pw - 20, lineH), (i + 1) + "   " + h.WordName(words[i]) + "   " + meaning, _small);
                 GUI.color = Color.white;
@@ -247,6 +262,15 @@ namespace Aruun.Game
                 Box(new Rect(inner.x + 8, inner.y + 5, inner.width - 16, inner.height - 20), col);
                 GUI.Label(new Rect(inner.x - 4, inner.y + inner.height - 15, inner.width + 8, 14), Short(def.Name), _tiny);
                 if (st.Value.Count > 1) GUI.Label(new Rect(inner.x + 2, inner.y, inner.width, 18), st.Value.Count.ToString(), _small);
+                if (st.Value.Inscribed)
+                {
+                    // The words cut into it, as their glyphs: dark when quiet, lit while working.
+                    PlaySession s = PlaySession.Instance;
+                    bool lit = s != null && s.Me != null && i == s.Me.C.Selected && s.Host.Resonating(s.Me);
+                    string[] words = st.Value.WordList;
+                    for (int k = 0; k < words.Length; k++)
+                        DrawGlyph(new Rect(inner.x + inner.width - 13 - k * 13, inner.y + 2, 11, 11), GlyphOf(s != null ? s.Host : null, words[k]), lit ? InscriptionView.Active : InscriptionView.Carved);
+                }
             }
             if (label.Length > 0) GUI.Label(new Rect(r.x + r.width - 12, r.y, 12, 16), label, _small);
         }
@@ -285,8 +309,9 @@ namespace Aruun.Game
                     GUI.Label(new Rect(bx + 12, by + bagH - 26, bagW, 22), Describe(h.Items.Get(inv[i].Value.Key)), _small);
             }
 
-            // Crafting, to the right of the bag.
             float rx = bx + bagW + 8, rw = 372;
+            if (TableMode && h.AtTable(PlaySession.LocalId)) { DrawTable(h, me, new Rect(rx, by, rw, 440)); return; }
+            // Crafting, to the right of the bag.
             Box(new Rect(rx, by, rw, 440), new Color(0.05f, 0.05f, 0.07f, 0.9f));
             GUI.Label(new Rect(rx + 12, by + 8, 300, 24), "Crafting", _title);
             var stations = h.StationsNear(me.Pos);
@@ -311,6 +336,111 @@ namespace Aruun.Game
                 ry += 48;
             }
             GUI.EndScrollView();
+        }
+
+        // ================================================================ inscriptions
+
+        static string[] GlyphOf(Host h, string word)
+        {
+            WordDef w = h != null && h.Lexicon != null ? h.Lexicon.Word(word) : null;
+            return w != null ? w.Glyph : new string[0];
+        }
+
+        /// <summary>A glyph drawn from its cells: the same shape as on the ruin walls and the item.</summary>
+        static void DrawGlyph(Rect r, string[] rows, Color c)
+        {
+            if (rows.Length == 0) return;
+            float cell = Mathf.Min(r.width, r.height) / rows.Length;
+            Box(new Rect(r.x - 1, r.y - 1, cell * rows.Length + 2, cell * rows.Length + 2), new Color(0.08f, 0.08f, 0.09f, 0.85f));
+            for (int y = 0; y < rows.Length; y++)
+                for (int x = 0; x < rows[y].Length; x++)
+                    if (rows[y][x] == '#') Box(new Rect(r.x + x * cell, r.y + y * cell, cell * 0.86f, cell * 0.86f), c);
+        }
+
+        static string WordNames(Host h, string[] words)
+        {
+            var names = new List<string>();
+            foreach (string w in words) names.Add(h.WordName(w));
+            return string.Join(" ", names.ToArray());
+        }
+
+        static string TypeName(InscriptionType t)
+        {
+            switch (t)
+            {
+                case InscriptionType.Passive: return "always on";
+                case InscriptionType.Activated: return "right click";
+                case InscriptionType.Conditional: return "by itself, when it can";
+                default: return "waits for another word";
+            }
+        }
+
+        /// <summary>
+        /// The inscription table: pick an item in the bag, then cut a word into it or grind the
+        /// last one off. The host checks everything; this only asks.
+        /// </summary>
+        void DrawTable(Host h, PlayerRec me, Rect area)
+        {
+            Box(area, new Color(0.05f, 0.06f, 0.07f, 0.92f));
+            float x = area.x + 12, y = area.y + 8, w = area.width - 24;
+            GUI.Label(new Rect(x, y, w, 24), "Inscription table", _title);
+            y += 28;
+            int slot = _picked >= 0 ? _picked : me.C.Selected;
+            var st = me.C.Inv[slot];
+            ItemDef def = st.HasValue && h.Items.Has(st.Value.Key) ? h.Items.Get(st.Value.Key) : null;
+            string cls;
+            int slots = Inscriber.Slots(def, out cls);
+            if (def == null || slots == 0)
+            {
+                GUI.Label(new Rect(x, y, w, 40), (def == null ? "Click an item in the bag to work on it." : def.Name + " cannot carry words.") + " Picks, axes, hammers and spears can.", _small);
+                return;
+            }
+            string[] words = st.Value.WordList;
+            GUI.Label(new Rect(x, y, w, 22), def.Name + "   (" + words.Length + " of " + slots + " words)");
+            y += 22;
+            for (int i = 0; i < slots; i++)
+            {
+                Rect g = new Rect(x + i * 40, y, 32, 32);
+                if (i < words.Length) DrawGlyph(g, GlyphOf(h, words[i]), InscriptionView.Carved);
+                else Box(g, new Color(0.15f, 0.15f, 0.17f, 0.9f));
+            }
+            y += 38;
+            Resolved res = h.InscriptionOf(me, slot);
+            foreach (InscriptionRule r in res.Active)
+            {
+                string name = r.IsComposition ? r.Name : h.WordName(r.Id);
+                GUI.Label(new Rect(x, y, w, 36), name + " (" + TypeName(r.Type) + "): " + r.Text, _small);
+                y += 34;
+            }
+            foreach (string waiting in res.Waiting)
+            {
+                GUI.Label(new Rect(x, y, w, 20), h.WordName(waiting) + ": waits for another word.", _small);
+                y += 20;
+            }
+            if (words.Length > 0 && GUI.Button(new Rect(x, y, 170, 24), "Grind off " + h.WordName(words[words.Length - 1]))) h.Erase(PlaySession.LocalId, slot);
+            y += 32;
+
+            GUI.Label(new Rect(x, y, w, 20), "Words you could cut", _title);
+            y += 24;
+            bool any = false;
+            if (h.Lexicon != null && h.Inscriptions != null)
+                foreach (WordDef word in h.Lexicon.Words)
+                {
+                    Familiarity f = me.C.Lang.Of(word.Id);
+                    if (f < Familiarity.Guessed || !h.Inscriptions.Knows(word.Id)) continue;
+                    any = true;
+                    string why = h.CanInscribe(PlaySession.LocalId, slot, word.Id);
+                    DrawGlyph(new Rect(x, y + 2, 24, 24), word.Glyph, InscriptionView.Carved);
+                    string meaning = f == Familiarity.Known ? "\"" + word.Meaning + "\"" : "\"" + word.Meaning + "\"?";
+                    GUI.Label(new Rect(x + 32, y, w - 120, 20), h.WordName(word.Id) + "  " + meaning);
+                    GUI.Label(new Rect(x + 32, y + 16, w - 120, 20), why.Length > 0 ? why : (f == Familiarity.Guessed ? "try it: if it takes, you will know it" : ""), _small);
+                    GUI.enabled = why.Length == 0;
+                    if (GUI.Button(new Rect(x + w - 80, y + 2, 80, 26), "Cut")) h.Inscribe(PlaySession.LocalId, slot, word.Id);
+                    GUI.enabled = true;
+                    y += 40;
+                    if (y > area.yMax - 40) break;
+                }
+            if (!any) GUI.Label(new Rect(x, y, w, 40), "You know no word that takes to things yet. Read the carvings (E) until a meaning comes to you.", _small);
         }
 
         static string Describe(ItemDef def)

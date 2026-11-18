@@ -106,6 +106,7 @@ namespace Aruun.Core.Play
                 Familiarity f = k.Of(w);
                 if (f == Familiarity.Unseen) { Say(id, "You have never seen that word."); return false; }
                 if (f == Familiarity.Seen) { Say(id, "You have seen " + WordName(w) + " only once. Find it written in a second place before you try it."); return false; }
+                if (!def.Speakable) { Say(id, WordName(w) + " is not a word for the voice. It is cut into things: try it at an inscription table."); return false; }
                 if (def.Role == WordRole.Action && action == null) action = def;
             }
             if (action == null) { Say(id, "A phrase needs a word that does something."); return false; }
@@ -337,6 +338,7 @@ namespace Aruun.Core.Play
             RuinMechanism gate = Ruin.Mechanism("gate"), stair = Ruin.Mechanism("stair"), heart = Ruin.Mechanism("heart");
             if (EchoRuin.Done(World, heart) || WorldFlags.Contains(EchoRuin.FlagRemembered))
             {
+                if (InscriptionObjective(p, ref o)) return o;
                 bool out_ = Vec3.Distance(p.Pos, Ruin.ExitM) < 8 || (!Ruin.Inside(p.Pos) && Vec3.Distance(p.Pos, Ruin.CourtM) > 40);
                 o.Done = out_;
                 o.Text = out_ ? "The world remembers. Explore, and use your words." : "Climb the stair behind the heart, back to the light.";

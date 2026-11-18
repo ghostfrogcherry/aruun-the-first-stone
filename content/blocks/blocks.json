@@ -365,6 +365,16 @@
       "emissive": true,
       "tool": "pick",
       "health": 999
+    },
+    {
+      "id": 35,
+      "key": "inscription_table",
+      "name": "Inscription table",
+      "solid": true,
+      "color": "#315e68",
+      "hardness": 99,
+      "tool": "pick",
+      "health": 999
     }
   ],
   "placeable": [

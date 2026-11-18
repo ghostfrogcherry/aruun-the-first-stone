@@ -33,6 +33,13 @@ namespace Aruun.Core.Language
         /// <summary>For a modifier: how much it multiplies the action's strength and its debt.</summary>
         public double Scale = 1.0;
         public double DebtScale = 1.0;
+        /// <summary>
+        /// The word's symbol: rows of '#' (cut) and '.' (bare stone). The same glyph is carved in
+        /// the ruins and cut into inscribed equipment, so the language looks the same everywhere.
+        /// </summary>
+        public string[] Glyph = new string[0];
+        /// <summary>False for words that are only cut into things (inscriptions), never spoken.</summary>
+        public bool Speakable = true;
 
         public double Num(string key, double fallback = 0) { return MiniJson.Num(Params, key, fallback); }
         public string Str(string key, string fallback = "") { return MiniJson.Str(Params, key, fallback); }
@@ -54,6 +61,8 @@ namespace Aruun.Core.Language
     {
         /// <summary>Effects the interpreter knows how to run. A word naming any other effect is a content error.</summary>
         public static readonly string[] Handlers = { "raise_column", "force_push", "force_pull", "force_weigh" };
+        /// <summary>Glyphs are this many cells square.</summary>
+        public const int GlyphSize = 5;
 
         readonly Dictionary<string, WordDef> _words = new Dictionary<string, WordDef>();
         readonly Dictionary<string, EffectDef> _effects = new Dictionary<string, EffectDef>();
@@ -90,7 +99,11 @@ namespace Aruun.Core.Language
                     Debt = MiniJson.Num(o, "debt"),
                     Scale = MiniJson.Num(o, "scale", 1.0),
                     DebtScale = MiniJson.Num(o, "debt_scale", 1.0),
+                    Speakable = MiniJson.Bool(o, "speakable", true),
                 };
+                var rows = new List<string>();
+                foreach (var g in MiniJson.List(o, "glyph")) if (g is string) rows.Add((string)g);
+                w.Glyph = rows.ToArray();
                 object p;
                 if (o.TryGetValue("params", out p) && p is Dictionary<string, object>) w.Params = (Dictionary<string, object>)p;
                 string role = MiniJson.Str(o, "role", "action");
@@ -110,8 +123,20 @@ namespace Aruun.Core.Language
             var problems = new List<string>();
             foreach (EffectDef e in _effects.Values)
                 if (Array.IndexOf(Handlers, e.Id) < 0) problems.Add("effect '" + e.Id + "' has no handler");
+            var glyphs = new Dictionary<string, string>();
             foreach (WordDef w in _words.Values)
             {
+                if (w.Glyph.Length == 0) { }   // a word without a glyph yet (tests, drafts); the shipped lexicon test asks for one
+                else if (w.Glyph.Length != GlyphSize) problems.Add("word '" + w.Id + "': its glyph needs " + GlyphSize + " rows");
+                else
+                {
+                    foreach (string row in w.Glyph)
+                        if (row.Length != GlyphSize || row.Replace("#", "").Replace(".", "").Length > 0) problems.Add("word '" + w.Id + "': glyph rows are " + GlyphSize + " of '#' or '.'");
+                    string key = string.Join("/", w.Glyph), other;
+                    if (glyphs.TryGetValue(key, out other)) problems.Add("words '" + other + "' and '" + w.Id + "' share a glyph");
+                    else glyphs[key] = w.Id;
+                }
+                if (!w.Speakable) continue;
                 if (w.Role == WordRole.Modifier)
                 {
                     if (w.Scale <= 0 || w.Scale > 4) problems.Add("modifier '" + w.Id + "': scale must be above 0 and at most 4");
