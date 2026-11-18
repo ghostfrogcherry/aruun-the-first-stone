@@ -87,8 +87,8 @@ namespace Aruun.Game
                 int start = v.Count;
                 v.Add(fc - ha - hb); v.Add(fc + ha - hb); v.Add(fc + ha + hb); v.Add(fc - ha + hb);
                 for (int i = 0; i < 4; i++) { n.Add(f); col.Add(color); }
-                tri.Add(start); tri.Add(start + 2); tri.Add(start + 1);
-                tri.Add(start); tri.Add(start + 3); tri.Add(start + 2);
+                tri.Add(start); tri.Add(start + 1); tri.Add(start + 2);   // clockwise from outside: Unity's front faces
+                tri.Add(start); tri.Add(start + 2); tri.Add(start + 3);
             }
         }
 
