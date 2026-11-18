@@ -441,7 +441,7 @@
       "key": "rune_stone",
       "name": "Carved channel stone",
       "solid": true,
-      "color": "#315e68",
+      "color": "#2e5862",
       "hardness": 50,
       "tool": "pick",
       "health": 999
@@ -451,7 +451,7 @@
       "key": "crystal_blue",
       "name": "Resonance crystal",
       "solid": true,
-      "color": "#62b8b1",
+      "color": "#6cc2bb",
       "hardness": 50,
       "emissive": true,
       "tool": "pick",

@@ -147,6 +147,8 @@ for mid, m in models.items():
                     err(f"models: '{mid}' clip '{clip}' moves unknown part '{ch.get('part')}'")
 
 block_hex = {b["color"].lower() for b in blocks.get("blocks", []) if b.get("solid") and b.get("color")}
+# A block may name an older "paint" colour that still means it in .vox art.
+block_hex |= {b["paint"].lower() for b in blocks.get("blocks", []) if b.get("solid") and b.get("paint")}
 solid_colors = [b["color"].lower() for b in blocks.get("blocks", []) if b.get("solid") and b.get("color")]
 if len(set(solid_colors)) != len(solid_colors):
     err("blocks: two blocks share a colour, so .vox structures cannot tell them apart")
