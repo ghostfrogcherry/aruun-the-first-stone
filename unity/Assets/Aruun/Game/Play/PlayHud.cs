@@ -180,7 +180,7 @@ namespace Aruun.Game
                 }
             }
 
-            DrawObjective(h, me, w);
+            DrawObjective(h, me, w, s.Hosting || s.Joined ? 78 : 60);   // below the clock box, which grows a line in co-op
             double debt;
             if (c.Cond.TryGetValue("gravity_debt", out debt) && debt > 0.5)
                 Bar(new Rect(x, y + 48, 240, 8), (float)(debt / 100), new Color(0.35f, 0.75f, 0.75f), "");   // under stamina, clear of the condition chips
@@ -288,7 +288,7 @@ namespace Aruun.Game
         }
 
         /// <summary>The quest line, top right under the clock: what to do and which way it is.</summary>
-        void DrawObjective(Host h, PlayerRec me, float w)
+        void DrawObjective(Host h, PlayerRec me, float w, float top)
         {
             // Survival-only has no story to follow: the ruin is still there to find.
             if (PlaySession.Instance != null && PlaySession.Instance.SurvivalOnly) return;
@@ -304,10 +304,10 @@ namespace Aruun.Game
                 else if (to.Y > 3) where += ", above";
             }
             float bw = 300;
-            Box(new Rect(w - bw - 10, 60, bw, where.Length > 0 ? 82 : 64), new Color(0, 0, 0, 0.45f));
-            GUI.Label(new Rect(w - bw - 2, 62, bw - 12, 22), o.Title, _title);
-            GUI.Label(new Rect(w - bw - 2, 84, bw - 12, 40), o.Text, _small);
-            if (where.Length > 0) GUI.Label(new Rect(w - bw - 2, 120, bw - 12, 20), where, _small);
+            Box(new Rect(w - bw - 10, top, bw, where.Length > 0 ? 82 : 64), new Color(0, 0, 0, 0.45f));
+            GUI.Label(new Rect(w - bw - 2, top + 2, bw - 12, 22), o.Title, _title);
+            GUI.Label(new Rect(w - bw - 2, top + 24, bw - 12, 40), o.Text, _small);
+            if (where.Length > 0) GUI.Label(new Rect(w - bw - 2, top + 60, bw - 12, 20), where, _small);
         }
 
         /// <summary>Where a direction lies relative to where you look: ahead, left, behind-right...</summary>
