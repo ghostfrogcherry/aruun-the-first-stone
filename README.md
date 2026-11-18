@@ -21,6 +21,8 @@ everything engine-neutral (content, art, tools, design docs) carries on unchange
 | `tools/content_validator/` | Checks the content files. |
 | `docs/art/` | Art guide for contributors (no code needed). |
 | `docs/WORLD_BIBLE.md` | The canon: what Aruun is, what is decided and what is still open. Read before adding content. |
+| `docs/GAME_DESIGN.md` | How the game plays: the core loop, combat, Occlusions, the five acts, and the roadmap. |
+| `docs/STORY.md` | The story: who the player is, the prologue, and the central mysteries. |
 | `docs/design/` | Game design: mobs, behaviours. |
 | `docs/decisions/` | Architecture decisions (ADRs). |
 

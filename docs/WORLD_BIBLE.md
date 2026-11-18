@@ -6,6 +6,9 @@ This is the one reference for what Aruun *is*. Before adding a place, word, crea
 building or system, check it against this file. If something here is wrong, fix this file
 first, then the content.
 
+How the game *plays* (the core loop, combat, Occlusion phases, the five acts, the roadmap)
+lives in [GAME_DESIGN.md](GAME_DESIGN.md).
+
 ## How to read this
 
 Every statement carries one tag:
@@ -157,6 +160,13 @@ These are Bruh's rules from 2026-11-16 and 2026-11-17.
 
 **[CANON]** Player premise: a human from Earth, stranded on Aruun when an Occlusion broke. The
 demo opens with the player waking inside the First Stone circle as the breach closes.
+
+**[CANON]** Origin (Bruh, 2026-11-18): the player is an ordinary cybersecurity worker on Earth
+who, vibe-coding a pattern-finding app with an AI assistant, got outputs that were Avarra and
+were caught in a local failure of the Great Occlusion. The First Stone's carved channels lit as
+the breach closed. Whether the program caused the breach, found a weakness, or was answered
+from the other side is the central mystery and stays **[OPEN]** on purpose. Full prologue,
+narrative rules and open choices: [STORY.md](STORY.md).
 
 **[OPEN]** Who or what are the enemies that come with Occlusions? Earth things, things from
 between, or Aruun creatures driven mad by the gravity change?
@@ -756,8 +766,9 @@ chat and this file gets updated.
    them, or should Claude propose some? Is Dohm ("Heavy") canon?
 5. **The old builders:** any of the eight questions in section 6 you already have answers to.
 6. **Occlusion enemies and the first two bosses.**
-7. **Sky colour** (pink like the concept art, or blue) and the big planet in the Occlusion
-   image.
+7. **Sky colour**: answered 2026-11-18. Bruh's concept boards are the visual target, so the
+   sky is pink/orange/violet (see [GAME_DESIGN.md](GAME_DESIGN.md) §2). Still open: what the big
+   red planet in the sky is.
 8. **Humans in Teshbal**, Elduun Marshes' region, the *Keth* and *Ily-* name families,
    Earth names vs Vaari titles in game text.
 
@@ -779,4 +790,4 @@ chat and this file gets updated.
 | Tether | Avarra-inscribed homestead stone | PROPOSED |
 | Grand College | The great castle-college | CANON, link to Lyceum OPEN |
 | Vaari | The main sapient people | CANON |
-| Castaway | The player: an Earth human stranded by an Occlusion | CANON |
+| Castaway | The player: an Earth human (a cybersecurity worker) stranded by an Occlusion; see STORY.md | CANON |
