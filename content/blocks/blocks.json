@@ -72,9 +72,9 @@
       "key": "inscribed_stone",
       "name": "Inscribed stone",
       "solid": true,
-      "color": "#3fb8a8",
+      "color": "#315e68",
+      "paint": "#3fb8a8",
       "hardness": 99,
-      "emissive": true,
       "inscription": "word_rise",
       "tool": "pick",
       "health": 999
@@ -349,9 +349,8 @@
       "key": "echo_seal",
       "name": "Echo seal",
       "solid": true,
-      "color": "#4f8c8a",
+      "color": "#2b4f57",
       "hardness": 50,
-      "emissive": true,
       "tool": "pick",
       "health": 999
     },
@@ -360,11 +359,153 @@
       "key": "echo_heart",
       "name": "Echo heart",
       "solid": true,
-      "color": "#7ff0dc",
+      "color": "#62b8b1",
       "hardness": 50,
       "emissive": true,
       "tool": "pick",
       "health": 999
+    },
+    {
+      "id": 35,
+      "key": "roof_blue",
+      "name": "Blue slate tiles",
+      "solid": true,
+      "color": "#3e5f74",
+      "hardness": 2,
+      "tool": "pick",
+      "health": 8
+    },
+    {
+      "id": 36,
+      "key": "roof_blue_dark",
+      "name": "Dark slate tiles",
+      "solid": true,
+      "color": "#2c4656",
+      "hardness": 2,
+      "tool": "pick",
+      "health": 8
+    },
+    {
+      "id": 37,
+      "key": "gold_trim",
+      "name": "Gold trim",
+      "solid": true,
+      "color": "#d6a640",
+      "hardness": 3,
+      "tool": "pick",
+      "health": 14
+    },
+    {
+      "id": 38,
+      "key": "cobble",
+      "name": "Cobblestone",
+      "solid": true,
+      "color": "#8b857b",
+      "hardness": 3,
+      "tool": "pick",
+      "health": 16
+    },
+    {
+      "id": 39,
+      "key": "stone_brick",
+      "name": "Stone brick",
+      "solid": true,
+      "color": "#a29a8c",
+      "hardness": 3,
+      "tool": "pick",
+      "health": 18
+    },
+    {
+      "id": 40,
+      "key": "dark_timber",
+      "name": "Dark timber",
+      "solid": true,
+      "color": "#4b3322",
+      "hardness": 1,
+      "tool": "axe",
+      "health": 10
+    },
+    {
+      "id": 41,
+      "key": "window_glow",
+      "name": "Lit window",
+      "solid": true,
+      "color": "#ffcf73",
+      "hardness": 1,
+      "emissive": true,
+      "tool": "hand",
+      "health": 3
+    },
+    {
+      "id": 42,
+      "key": "rune_stone",
+      "name": "Carved channel stone",
+      "solid": true,
+      "color": "#2e5862",
+      "hardness": 50,
+      "tool": "pick",
+      "health": 999
+    },
+    {
+      "id": 43,
+      "key": "crystal_blue",
+      "name": "Resonance crystal",
+      "solid": true,
+      "color": "#6cc2bb",
+      "hardness": 50,
+      "emissive": true,
+      "tool": "pick",
+      "health": 999
+    },
+    {
+      "id": 44,
+      "key": "banner_blue",
+      "name": "Blue banner",
+      "solid": true,
+      "color": "#2f4f7a",
+      "hardness": 0,
+      "tool": "hand",
+      "health": 2
+    },
+    {
+      "id": 45,
+      "key": "bookshelf",
+      "name": "Bookshelf",
+      "solid": true,
+      "color": "#6e4a2c",
+      "hardness": 1,
+      "tool": "axe",
+      "health": 8
+    },
+    {
+      "id": 46,
+      "key": "college_stone",
+      "name": "College stone",
+      "solid": true,
+      "color": "#9a8c7a",
+      "hardness": 4,
+      "tool": "pick",
+      "health": 34
+    },
+    {
+      "id": 47,
+      "key": "college_door",
+      "name": "Great door",
+      "solid": true,
+      "color": "#5b4630",
+      "hardness": 50,
+      "tool": "pick",
+      "health": 999
+    },
+    {
+      "id": 48,
+      "key": "mossy_stone",
+      "name": "Mossy stone",
+      "solid": true,
+      "color": "#6f7a5a",
+      "hardness": 4,
+      "tool": "pick",
+      "health": 32
     }
   ],
   "placeable": [

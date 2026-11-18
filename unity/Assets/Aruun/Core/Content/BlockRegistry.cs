@@ -26,6 +26,11 @@ namespace Aruun.Core.Content
         /// <summary>How much digging one bite takes. A fitting tool wears off its dig speed per second.</summary>
         public double Health;
         public byte R, G, B, A = 255;
+        /// <summary>
+        /// Another colour that means this block in .vox files ("paint" in blocks.json), so art
+        /// painted with an older palette entry keeps working after the block's colour changes. -1 for none.
+        /// </summary>
+        public int Paint = -1;
 
         public bool IsCube { get { return Id != 0 && Shape == "cube"; } }
         /// <summary>Hides the faces of neighbours behind it.</summary>
@@ -96,6 +101,8 @@ namespace Aruun.Core.Content
                 b.G = byte.Parse(hex.Substring(3, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
                 b.B = byte.Parse(hex.Substring(5, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
                 b.A = (byte)Math.Round(MiniJson.Num(o, "alpha", 1.0) * 255.0);
+                string paint = MiniJson.Str(o, "paint");
+                if (paint.Length == 7 && paint[0] == '#') b.Paint = int.Parse(paint.Substring(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
                 defs[id] = b;
             }
             for (int i = 0; i < defs.Length; i++)

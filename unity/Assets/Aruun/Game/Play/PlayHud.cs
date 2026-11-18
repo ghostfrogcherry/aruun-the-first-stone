@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Aruun.Core.Combat;
 using Aruun.Core.Items;
 using Aruun.Core.Language;
+using Aruun.Core.People;
 using Aruun.Core.Play;
 using Aruun.Core.Survival;
 using UnityEngine;
@@ -21,6 +22,9 @@ namespace Aruun.Game
         public static float DigFraction;
         /// <summary>Set by the player: what the crosshair is on ("Flint nodule", "Redstrider"), or "".</summary>
         public static string LookingAt = "";
+
+        /// <summary>The quest journal (L) is open.</summary>
+        public static bool JournalOpen;
 
         /// <summary>The speak panel (X) is open and number keys pick words.</summary>
         public static bool Speaking { get; private set; }
@@ -53,7 +57,7 @@ namespace Aruun.Game
         int _picked = -1;
         Vector2 _recipeScroll;
         float _hurtFlash;
-        GUIStyle _small, _centre, _title, _tiny;
+        GUIStyle _small, _centre, _title, _tiny, _tinyCentre, _bold;
 
         public static void SetBag(bool open)
         {
@@ -76,6 +80,8 @@ namespace Aruun.Game
             _small = new GUIStyle(GUI.skin.label) { fontSize = 12, wordWrap = true };
             _centre = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 12 };
             _title = new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold };
+            _tinyCentre = new GUIStyle(GUI.skin.label) { fontSize = 10, alignment = TextAnchor.MiddleCenter };
+            _bold = new GUIStyle(GUI.skin.label) { fontSize = 13, fontStyle = FontStyle.Bold };
             _tiny = new GUIStyle(GUI.skin.label) { fontSize = 10, alignment = TextAnchor.LowerCenter, clipping = TextClipping.Overflow, padding = new RectOffset(0, 0, 0, 1) };
         }
 
@@ -162,6 +168,10 @@ namespace Aruun.Game
             if (c.Cond.TryGetValue("gravity_debt", out debt) && debt > 0.5)
                 Bar(new Rect(x, y - 2 - 14, 240, 12), (float)(debt / 100), new Color(0.35f, 0.75f, 0.75f), "");
             if (Speaking) DrawSpeak(h, me, w, by);
+            DrawNames(h, me);
+            DrawDoors(h, me);
+            if (me.Talk != null) DrawTalk(me.Talk, w, by);
+            if (JournalOpen) DrawJournal(h, me, w, ht);
 
             if (c.Dead)
             {
@@ -170,6 +180,85 @@ namespace Aruun.Game
             }
 
             if (BagOpen) DrawBag(s, me);
+        }
+
+        /// <summary>Names over the heads of people nearby.</summary>
+        void DrawNames(Host h, PlayerRec me)
+        {
+            Camera cam = Camera.main;
+            if (cam == null) return;
+            foreach (PersonRec r in h.People)
+            {
+                if (Vec3.Distance(r.Pos, me.Pos) > 14) continue;
+                Vector3 sp = cam.WorldToScreenPoint(PlaySession.ToUnity(r.Pos) + Vector3.up * 2.5f);
+                if (sp.z <= 0) continue;
+                float y = Screen.height - sp.y;
+                GUI.Label(new Rect(sp.x - 100, y - 20, 200, 20), r.Def.ShortName, _centre);
+                GUI.color = new Color(1, 1, 1, 0.7f);
+                GUI.Label(new Rect(sp.x - 100, y - 4, 200, 18), r.Def.Role, _tinyCentre);
+                GUI.color = Color.white;
+            }
+        }
+
+        /// <summary>A hint over doors that lead somewhere else (the college, the library's way out).</summary>
+        void DrawDoors(Host h, PlayerRec me)
+        {
+            Camera cam = Camera.main;
+            if (cam == null || h.Village == null || me.Talk != null) return;
+            foreach (var g in h.Village.Portals)
+            {
+                if (Vec3.Distance(g.At, me.Pos) > 8) continue;
+                Vector3 sp = cam.WorldToScreenPoint(PlaySession.ToUnity(g.At) + Vector3.up * 2.4f);
+                if (sp.z <= 0) continue;
+                GUI.Label(new Rect(sp.x - 150, Screen.height - sp.y - 10, 300, 20), "E: " + (g.Name == "the way out" ? "go out" : "enter " + g.Name), _centre);
+            }
+        }
+
+        /// <summary>The conversation box: what they say, and numbered answers.</summary>
+        void DrawTalk(Conversation c, float w, float hotbarY)
+        {
+            float pw = Mathf.Min(620, w - 40), lineH = 22;
+            float textH = _small.CalcHeight(new GUIContent(c.Say), pw - 24) + 8;
+            float ph = 40 + textH + c.Choices.Count * lineH + 8;
+            float px = w / 2 - pw / 2, py = hotbarY - 30 - ph;
+            Box(new Rect(px, py, pw, ph), new Color(0.06f, 0.05f, 0.03f, 0.88f));
+            GUI.Label(new Rect(px + 12, py + 6, pw - 24, 24), c.Name, _title);
+            GUI.Label(new Rect(px + 12, py + 32, pw - 24, textH), c.Say, _small);
+            float ly = py + 36 + textH;
+            for (int i = 0; i < c.Choices.Count && i < 9; i++)
+            {
+                GUI.Label(new Rect(px + 20, ly, pw - 32, lineH), (i + 1) + "   " + c.Choices[i], _small);
+                ly += lineH;
+            }
+        }
+
+        /// <summary>The quest journal: every quest you have, where you are in it, and what is done.</summary>
+        void DrawJournal(Host h, PlayerRec me, float w, float ht)
+        {
+            float pw = 460, px = w / 2 - pw / 2, py = 60, ph = ht - 200;
+            Box(new Rect(px, py, pw, ph), new Color(0.05f, 0.04f, 0.03f, 0.9f));
+            GUI.Label(new Rect(px + 14, py + 8, pw - 28, 24), "Journal   (L closes)", _title);
+            float y = py + 40;
+            bool any = false;
+            foreach (bool done in new[] { false, true })
+                foreach (QuestDef q in h.Quests.Values)
+                {
+                    if (done ? !me.C.Quests.IsDone(q.Id) : !me.C.Quests.IsActive(q.Id)) continue;
+                    any = true;
+                    GUI.color = done ? new Color(1, 1, 1, 0.5f) : Color.white;
+                    GUI.Label(new Rect(px + 14, y, pw - 28, 22), (q.Main ? "★ " : "") + q.Title + (done ? "   (done)" : ""), _bold);
+                    y += 22;
+                    if (!done)
+                    {
+                        StageDef s = h.CurrentStage(me, q.Id);
+                        string text = s != null ? s.Text : "";
+                        float th = _small.CalcHeight(new GUIContent(text), pw - 40);
+                        GUI.Label(new Rect(px + 26, y, pw - 40, th), text, _small);
+                        y += th + 8;
+                    }
+                    GUI.color = Color.white;
+                }
+            if (!any) GUI.Label(new Rect(px + 14, y, pw - 28, 40), "No quests yet. Talk to people in the village (E).", _small);
         }
 
         /// <summary>The quest line, top right under the clock: what to do and which way it is.</summary>

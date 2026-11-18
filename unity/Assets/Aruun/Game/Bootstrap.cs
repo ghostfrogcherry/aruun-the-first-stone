@@ -53,6 +53,12 @@ namespace Aruun.Game
                 Debug.LogError("Could not load the world map, using endless land instead: " + e.Message);
             }
             var world = new VoxelWorld(options.Seed, blocks, map);
+            // The village at the Confluence is part of the world; set it before any chunk is made.
+            if (map != null)
+            {
+                try { world.Generator.Village = Aruun.Core.Town.Village.Load(GameContent.Root, world.Generator.Field, blocks, world.Generator.Ruin); }
+                catch (System.Exception e) { Debug.LogError("Could not build the village: " + e.Message); }
+            }
             Camera cam = MainCamera();
             float viewMeters = options.ViewMeters;
             cam.nearClipPlane = 0.05f;

@@ -1,0 +1,142 @@
+{
+  "_comment": "The people of the Confluence village. spot names a place in the village layout (Core/Town/Village.cs). talk lines are tried in order and the first whose 'when' holds is said; 'when' can test quest (with state none/active/done, stage, ready) and flag. Each choice can start or advance a quest and has an optional reply. A Goodbye answer is always added. All names are placeholders.",
+  "people": [
+    {
+      "id": "elder",
+      "name": "Elder Teshwa (placeholder)",
+      "role": "Elder of the Confluence",
+      "model": "vaari_river_villager",
+      "spot": "elder",
+      "wander_m": 2.5,
+      "talk": [
+        {
+          "when": {"quest": "main_remember", "state": "none", "flag": "world_remembers"},
+          "say": "You came up out of the ground with the hum gone quiet behind you. You woke the heart already, didn't you? Tell me.",
+          "choices": [
+            {"text": "I woke it. The sentinel is broken.", "do": {"start": "main_remember"}}
+          ]
+        },
+        {
+          "when": {"quest": "main_remember", "state": "none"},
+          "say": "A stranger, with sky-dust still on you. Sit, if you like. Since you fell, the old stone to the south has been humming. The builders left a shrine there, buried. Nobody here can read their words any more.",
+          "choices": [
+            {"text": "I'll go and see what's humming.", "do": {"start": "main_remember"}, "reply": "Follow the paved road south. Read what is carved before you speak; the old words answer only those who listen first."},
+            {"text": "Who were the builders?", "reply": "Nobody knows. Whoever they were, they were here long before any of us, and their words still move stone."},
+            {"text": "Where am I?", "reply": "The Teshari Confluence. Rest here whenever you need; the walls keep the night off."}
+          ]
+        },
+        {
+          "when": {"quest": "main_remember", "stage": "ruin"},
+          "say": "The road south leads to the arch. Read the carvings with care, and when a word comes to you, speak it where the stone can hear.",
+          "choices": [
+            {"text": "How do I speak a word?", "reply": "Say it toward the thing you mean it for. (Press X, pick the word with its number, then Enter.)"}
+          ]
+        },
+        {
+          "when": {"quest": "main_remember", "stage": "return"},
+          "say": "The hum has stopped. You went all the way down, didn't you?",
+          "choices": [
+            {"text": "The heart fell. It said: the world remembers.", "do": {"advance": "main_remember"}, "reply": "I don't know what that means. Nobody does. But the hum has stopped, and you came back. Keep these, for the road."}
+          ]
+        },
+        {
+          "when": {"quest": "main_remember", "state": "done"},
+          "say": "The old stone to the south is quiet now. You did that. The village is yours as much as ours.",
+          "choices": []
+        }
+      ]
+    },
+    {
+      "id": "cook",
+      "name": "Maru (placeholder)",
+      "role": "Cook of the long hearth",
+      "model": "vaari_caravan_villager",
+      "spot": "cook",
+      "wander_m": 3,
+      "talk": [
+        {
+          "when": {"quest": "side_hearth", "state": "none"},
+          "say": "Hungry? Everyone's hungry. The redstriders came close to the village this season, but nobody has had time to hunt. Bring me four cuts of raw meat and I'll make it worth your while.",
+          "choices": [
+            {"text": "I'll hunt for you.", "do": {"start": "side_hearth"}, "reply": "Strike from the side, not the front. And mind the herd: if one runs, they all do."}
+          ]
+        },
+        {
+          "when": {"quest": "side_hearth", "state": "active", "ready": true},
+          "say": "That smell! You've brought it?",
+          "choices": [
+            {"text": "Here's the meat.", "do": {"advance": "side_hearth"}, "reply": "Wonderful. Take some back, cooked properly, and a fire kit for the road."}
+          ]
+        },
+        {
+          "when": {"quest": "side_hearth", "state": "active"},
+          "say": "Four cuts of raw meat, friend. The redstriders graze the grass just outside the village.",
+          "choices": []
+        },
+        {
+          "when": {"quest": "side_hearth", "state": "done"},
+          "say": "The hearth's never been so full. Come by when you're hungry.",
+          "choices": []
+        }
+      ]
+    },
+    {
+      "id": "watcher",
+      "name": "Dael (placeholder)",
+      "role": "Keeper of the watch tower",
+      "model": "lyceum_warden",
+      "spot": "watcher",
+      "wander_m": 2,
+      "talk": [
+        {
+          "when": {"quest": "side_watch", "state": "none"},
+          "say": "Something walks the grass at night: big, quiet, all teeth. I'm out of arrowheads. Eight pieces of flint and I can watch for it properly.",
+          "choices": [
+            {"text": "I'll find you flint.", "do": {"start": "side_watch"}, "reply": "Grey nodules, on rocky ground. You can pick them up by hand."}
+          ]
+        },
+        {
+          "when": {"quest": "side_watch", "state": "active", "ready": true},
+          "say": "Is that flint I hear clacking in your bag?",
+          "choices": [
+            {"text": "Eight pieces, as you asked.", "do": {"advance": "side_watch"}, "reply": "Good stone. Here, a pick of my own making. Rock gives way to it."}
+          ]
+        },
+        {
+          "when": {"quest": "side_watch", "state": "active"},
+          "say": "Eight pieces of flint. Grey nodules on rocky ground.",
+          "choices": []
+        },
+        {
+          "when": {"quest": "side_watch", "state": "done"},
+          "say": "Quiet night so far. If you see eyes in the grass, come back to the fire.",
+          "choices": []
+        }
+      ]
+    },
+    {
+      "id": "archivist",
+      "name": "Archivist Ilen (placeholder)",
+      "role": "Keeper of the college library",
+      "model": "lyceum_warden",
+      "spot": "archivist",
+      "wander_m": 3,
+      "talk": [
+        {
+          "when": {"flag": "world_remembers"},
+          "say": "You went down to the heart, didn't you? Tell me everything you saw. Every carving, every word. I will write it down.",
+          "choices": [
+            {"text": "What are these carved circles?", "reply": "Each ring is one word, copied as the builders carved it. Read the same words in the ruins and they will start to mean something to you."}
+          ]
+        },
+        {
+          "say": "Quietly, please. This is the Grand College library. Everything we know of the builders' words is on these shelves, and most of it we cannot read.",
+          "choices": [
+            {"text": "What are these carved circles?", "reply": "Each ring is one word, copied as the builders carved it. Read the same words in the ruins and they will start to mean something to you."},
+            {"text": "Can you teach me the words?", "reply": "Nobody teaches them. You read them where they were carved, in two different places, and then you try them. The elder at the Confluence will tell you where to start."}
+          ]
+        }
+      ]
+    }
+  ]
+}

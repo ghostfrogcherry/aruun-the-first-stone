@@ -26,6 +26,8 @@ namespace Aruun.Game
         public int ViewChunks = 16;          // horizontal radius in chunks (8 m each)
         /// <summary>Chunks kept around the viewer's own height, for building in the air or digging down.</summary>
         public int ViewChunksDown = 2, ViewChunksUp = 2;
+        /// <summary>How far out (chunks) the band around the viewer reaches when they are far above the ground.</summary>
+        public int AloftChunks = 5;
         public int MeshesPerFrame = 6;
 
         public int ShownChunks { get { return _shown.Count; } }
@@ -139,6 +141,9 @@ namespace Aruun.Game
         {
             _wanted.Clear();
             _columns.Clear();
+            int clo, chi;
+            TerrainSpan(centre.X, centre.Z, out clo, out chi);
+            bool aloft = centre.Y > chi + 4;
             for (int dz = -ViewChunks - 2; dz <= ViewChunks + 2; dz++)
                 for (int dx = -ViewChunks - 2; dx <= ViewChunks + 2; dx++)
                 {
@@ -148,7 +153,9 @@ namespace Aruun.Game
                     TerrainSpan(cx, cz, out lo, out hi);
                     // The terrain's own span everywhere, so the ground shows from any height;
                     // near the viewer also a band around their height, for building in the air.
-                    if (dx * dx + dz * dz <= 4)
+                    // Far above the ground (the college library is a hall in the sky) the band
+                    // reaches out to the edge of view, so the whole hall shows.
+                    if (dx * dx + dz * dz <= 4 || (aloft && dx * dx + dz * dz <= AloftChunks * AloftChunks))
                     {
                         lo = Math.Min(lo, centre.Y - ViewChunksDown);
                         hi = Math.Max(hi, centre.Y + ViewChunksUp);

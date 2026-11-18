@@ -321,6 +321,8 @@ namespace Aruun.Core.Play
             if (!Players.TryGetValue(id, out p) || !p.Alive) return false;
             dir = dir.Normalized;
             if (ReadInscription(p, eye, dir)) return true;
+            if (TalkTo(p, eye, dir)) return true;
+            if (UsePortal(p, eye, dir)) return true;
             PlantRec bestPlant = null;
             StructureRec bestStruct = null;
             double best = double.MaxValue;
@@ -604,6 +606,7 @@ namespace Aruun.Core.Play
             }
             if (steps == 4) _creatureAcc = 0;
             foreach (var p in Players.Values) TickPlayer(p, dt);
+            TickPeople(dt);
             _slowAcc += dt;
             if (_slowAcc >= 0.5)
             {
@@ -654,7 +657,8 @@ namespace Aruun.Core.Play
             var flags = new HashSet<string>();
             flags.Add(IsNight ? "night" : "day");
             int hx = (int)Math.Floor(p.Pos.X * M), hy = (int)Math.Floor((p.Pos.Y + 1.9) * M), hz = (int)Math.Floor(p.Pos.Z * M);
-            bool roof = false;
+            // The college library is a tall hall: its ceiling is further up than any house's.
+            bool roof = Village != null && Village.InLibrary(p.Pos);
             for (int y = 1; y < 40 && !roof; y++) roof = World.Blocks.Get(World.Get(hx, hy + y, hz)).Collision;
             flags.Add(roof ? "sheltered" : "exposed");
             foreach (var s in Structures)
@@ -701,6 +705,7 @@ namespace Aruun.Core.Play
         {
             UpdateWildCells();
             TickRuin();
+            AdvanceQuestFlags();
             // Plants whose ground was dug away fall out of the world.
             PlantsInWorld.RemoveAll(r =>
             {
@@ -825,6 +830,7 @@ namespace Aruun.Core.Play
             foreach (var p in Players.Values)
             {
                 if (!p.Alive) continue;
+                if (Village != null && Village.InLibrary(p.Pos)) continue;
                 foreach (var def in CreatureDefs.Values)
                 {
                     if (total >= MaxCreatures) return;

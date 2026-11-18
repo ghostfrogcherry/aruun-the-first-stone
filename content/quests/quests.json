@@ -1,0 +1,34 @@
+{
+  "_comment": "Quests. Each has stages in order; a stage is finished by talking to someone (an 'advance' choice in content/people/people.json, which takes the stage's needs from the bag) or by a world flag (done_when). target points the HUD: 'person:<id>', 'ruin', or ''. Names are placeholders.",
+  "quests": [
+    {
+      "id": "main_remember",
+      "title": "The World Remembers",
+      "main": true,
+      "giver": "elder",
+      "stages": [
+        {"id": "ruin", "text": "Go into the echo ruin south of the plaza, and wake what sleeps there.", "target": "ruin", "done_when": {"flag": "world_remembers"}},
+        {"id": "return", "text": "Tell Elder Teshwa what happened in the ruin.", "target": "person:elder"}
+      ],
+      "reward": {"items": {"bronze_fitting": 2, "roast_meat": 3}}
+    },
+    {
+      "id": "side_hearth",
+      "title": "Meat for the Hearth",
+      "giver": "cook",
+      "stages": [
+        {"id": "bring", "text": "Bring Maru 4 raw meat. Redstriders graze the grass around the village.", "target": "person:cook", "needs": {"raw_meat": 4}}
+      ],
+      "reward": {"items": {"roast_meat": 4, "campfire_kit": 1}}
+    },
+    {
+      "id": "side_watch",
+      "title": "Flint for the Watch",
+      "giver": "watcher",
+      "stages": [
+        {"id": "bring", "text": "Bring Dael 8 flint. Flint nodules lie on rocky ground; gather them with E.", "target": "person:watcher", "needs": {"flint": 8}}
+      ],
+      "reward": {"items": {"flint_pick": 1, "cord": 4}}
+    }
+  ]
+}
