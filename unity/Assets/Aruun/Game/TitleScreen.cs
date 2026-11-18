@@ -25,8 +25,7 @@ namespace Aruun.Game
             _name = Coop.Name;
             _address = PlayerPrefs.GetString("aruun.lastJoin", options.JoinAddress ?? "");
             _art = MapScreen.LoadArt();
-            _hasLast = PlayerPrefs.HasKey(LastSeedKey);
-            _lastSeed = PlayerPrefs.GetInt(LastSeedKey, options.Seed);
+            _hasLast = LastWorld.TryRead(out _lastSeed);
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             Camera cam = Camera.main;
@@ -49,16 +48,21 @@ namespace Aruun.Game
         void OnGUI()
         {
             Styles();
+            // Laid out for a 1080-pixel-tall screen and scaled to the real one, so the menu is the
+            // same size at 1440p or 4K. IMGUI maps the mouse through GUI.matrix, so clicks still hit.
+            float scale = Mathf.Clamp(Screen.height / 1080f, 0.6f, 4f);
+            GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
+            float sw = Screen.width / scale, sh = Screen.height / scale;
             if (_art != null)
             {
-                GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), _art, ScaleMode.ScaleAndCrop);
+                GUI.DrawTexture(new Rect(0, 0, sw, sh), _art, ScaleMode.ScaleAndCrop);
                 GUI.color = new Color(0f, 0f, 0f, 0.55f);
-                GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
+                GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture);
                 GUI.color = Color.white;
             }
-            float cx = Screen.width / 2f, y = Mathf.Max(8f, Mathf.Min(Screen.height * 0.15f, Screen.height - 720f));
-            GUI.Label(new Rect(0, y, Screen.width, 90), "ARUUN", _title);
-            GUI.Label(new Rect(0, y + 84, Screen.width, 34), "The First Stone", _sub);
+            float cx = sw / 2f, y = Mathf.Max(8f, Mathf.Min(sh * 0.15f, sh - 720f));
+            GUI.Label(new Rect(0, y, sw, 90), "ARUUN", _title);
+            GUI.Label(new Rect(0, y + 84, sw, 34), "The First Stone", _sub);
             y += 150;
             const float w = 340;
             GUI.Label(new Rect(cx - w / 2, y, w, 22), "Your name (shown to friends in co-op)", _small);
@@ -97,7 +101,7 @@ namespace Aruun.Game
                 y += 44;
             }
             if (GUI.Button(new Rect(cx - w / 2, y, w, 40), "Quit", _button)) Application.Quit();
-            GUI.Label(new Rect(0, Screen.height - 34, Screen.width, 24),
+            GUI.Label(new Rect(0, sh - 34, sw, 24),
                 "In the world: F1 shows every dev key. They always work, no menu needed.", _small);
         }
 
@@ -128,6 +132,7 @@ namespace Aruun.Game
             Coop.SaveName(_name);
             PlayerPrefs.SetInt(LastSeedKey, seed);
             PlayerPrefs.Save();
+            LastWorld.Write(seed);
             _options.Seed = seed;
             Destroy(gameObject);
             Bootstrap.StartWorld(_options);

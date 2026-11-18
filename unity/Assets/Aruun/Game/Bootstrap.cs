@@ -18,6 +18,7 @@ namespace Aruun.Game
         {
             if (Object.FindFirstObjectByType<WorldView>() != null) return;
             Coop.ReadName();
+            NativeFullscreen();
             LaunchOptions options = LaunchOptions.FromCommandLine();
             MainCamera();
             if (options.JoinAddress != null)
@@ -39,6 +40,22 @@ namespace Aruun.Game
             StartWorld(options);
         }
 
+        /// <summary>
+        /// Fullscreen always draws at the screen's own resolution. Unity remembers the last window
+        /// size (a 960x600 test run, say) and reuses it for fullscreen; the picture is then
+        /// stretched and, on some desktops, mouse clicks land in the wrong place on menus.
+        /// An explicit -screen-width on the command line still wins.
+        /// </summary>
+        static void NativeFullscreen()
+        {
+            if (!Screen.fullScreen || Application.isEditor) return;
+            if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-screen-width") >= 0) return;
+            int w = Display.main.systemWidth, h = Display.main.systemHeight;
+            if (w <= 0 || h <= 0 || (Screen.width == w && Screen.height == h)) return;
+            Debug.Log("Aruun: fullscreen was " + Screen.width + "x" + Screen.height + ", switching to the screen's " + w + "x" + h);
+            Screen.SetResolution(w, h, FullScreenMode.FullScreenWindow);
+        }
+
         static Camera MainCamera()
         {
             Camera cam = Camera.main;
@@ -54,6 +71,8 @@ namespace Aruun.Game
         /// <summary>Loads the map and the world for options.Seed and drops the player at the spawn place.</summary>
         public static void StartWorld(LaunchOptions options)
         {
+            // Continue on the title screen goes back here (not for screenshot runs or friends' worlds).
+            if (options.ShotPath == null && options.JoinAddress == null && !Coop.Joining) LastWorld.Write(options.Seed);
             BlockRegistry blocks = GameContent.LoadBlocks();
             WorldMap map = null;
             try
