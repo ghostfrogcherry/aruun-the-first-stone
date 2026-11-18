@@ -657,7 +657,8 @@ namespace Aruun.Core.Play
             var flags = new HashSet<string>();
             flags.Add(IsNight ? "night" : "day");
             int hx = (int)Math.Floor(p.Pos.X * M), hy = (int)Math.Floor((p.Pos.Y + 1.9) * M), hz = (int)Math.Floor(p.Pos.Z * M);
-            bool roof = false;
+            // The college library is a tall hall: its ceiling is further up than any house's.
+            bool roof = Village != null && Village.InLibrary(p.Pos);
             for (int y = 1; y < 40 && !roof; y++) roof = World.Blocks.Get(World.Get(hx, hy + y, hz)).Collision;
             flags.Add(roof ? "sheltered" : "exposed");
             foreach (var s in Structures)

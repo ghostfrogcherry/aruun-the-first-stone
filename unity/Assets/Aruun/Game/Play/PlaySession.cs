@@ -311,13 +311,14 @@ namespace Aruun.Game
 
         bool _townLit;
 
-        /// <summary>Lights the town's lamp posts (warm) and the college's crystals and rune lamps (blue), once.</summary>
+        /// <summary>Lights the town's resonance crystals, once.</summary>
         void SyncTown()
         {
             if (_townLit || Host.Village == null) return;
             _townLit = true;
             var root = new GameObject("Town lights").transform;
-            foreach (Vec3 at in Host.Village.Lamps) TownLight(root, at, new Color(1f, 0.8f, 0.55f), 9f, 1.3f);
+            // Lamp blocks (lamp_glow) light themselves through the voxel shader; only the
+            // resonance crystals get a Unity light, a faint teal one.
             foreach (Vec3 at in Host.Village.CrystalLights) TownLight(root, at, new Color(0.384f, 0.722f, 0.694f), 8f, 0.9f);
         }
 

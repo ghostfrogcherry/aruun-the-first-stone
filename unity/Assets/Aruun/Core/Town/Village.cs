@@ -602,6 +602,19 @@ namespace Aruun.Core.Town
             return x * x + z * z <= PlazaRadius * PlazaRadius || PavedRoad(x, z);
         }
 
+        /// <summary>
+        /// Should a tree of this canopy radius, at this column, be left out? Nothing grows inside the
+        /// wall, against it, on the college grounds or over a road.
+        /// </summary>
+        public bool NoTree(int x, int z, int radius)
+        {
+            int keep = WallRadius + WallHalf + radius + 10;
+            if (x * x + z * z <= keep * keep) return true;
+            int m = radius + 10;
+            if (x >= -100 - m && x <= 100 + m && z >= CollegeZ - 90 - m && z <= CollegeZ + 80 + m) return true;
+            return PavedRoad(x, z, radius + 3);
+        }
+
         /// <summary>Is this point (metres) inside a building's footprint?</summary>
         public bool InBuilding(Vec3 p)
         {

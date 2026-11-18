@@ -120,6 +120,7 @@ namespace Aruun.Core.Worldgen
                 {
                     TreeSpot t = Field.TreeInCell(cx, cz);
                     if (!t.Exists) continue;
+                    if (Village != null && Village.NoTree(t.X, t.Z, t.Radius)) continue;
                     int top = t.Base + t.Trunk, r = t.Radius;
                     if (t.Base > oy + n || top + r < oy) continue;
                     ushort leaf = t.Crimson ? _crimsonLeaves : _leaves;

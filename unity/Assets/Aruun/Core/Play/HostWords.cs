@@ -348,7 +348,7 @@ namespace Aruun.Core.Play
                 if (k.Of(gate.Word) < Familiarity.Guessed)
                 {
                     RuinInscription next = NextUnread(k, gate.Word);
-                    bool far = Vec3.Distance(p.Pos, Ruin.EntranceM) > 20 && !Ruin.Inside(p.Pos);
+                    bool far = Vec3.Distance(p.Pos, Ruin.EntranceM) > 10 && !Ruin.Inside(p.Pos);
                     o.Text = far ? "Find the echo ruin, south of the Confluence." : "Read the carved words (E) in the ruin.";
                     o.Target = far ? Ruin.EntranceM : (next != null ? next.Point() : Ruin.GateM);
                     return o;
