@@ -396,6 +396,9 @@ namespace Aruun.Core.Play
                 if (s.Target == "ruin") return RuinObjective(id);
                 return ForStage(main, s);
             }
+            // The main quest is done: the vault's discovery chain leads, then any side quest.
+            var vault = new Objective();
+            if (VaultObjective(p, ref vault)) return vault;
             foreach (var q in Quests.Values)
                 if (log.IsActive(q.Id)) return ForStage(q, CurrentStage(p, q.Id));
             return new Objective { Title = main.Title, Done = true };

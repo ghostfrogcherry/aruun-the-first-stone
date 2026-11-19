@@ -158,15 +158,17 @@ namespace Aruun.Core.Play
             if (!Players.TryGetValue(id, out p) || !p.Alive) return new DigTick { Refused = true };
             ushort blockId = World.Get(x, y, z);
             BlockDef block = World.Blocks.Get(blockId);
-            ToolDef tool = DiggingTool(p);
+            ToolDef tool = DiggingTool(p, block);
             var r = _dig.Hit(id, x, y, z, block, tool, dt, Time);
-            if (r.Outcome == DigProgress.Outcome.Refused) return new DigTick { Refused = true, Message = r.Message };
+            if (r.Outcome == DigProgress.Outcome.Refused)
+                return new DigTick { Refused = true, Message = block.Hint.Length > 0 && !string.IsNullOrEmpty(r.Message) ? r.Message + ". " + block.Hint : r.Message };
             if (r.Outcome == DigProgress.Outcome.Working) return new DigTick { Fraction = r.Fraction };
 
             ToolClass cls = tool.Class == ToolClass.Hand ? ToolClass.Hand : tool.Class;
             EditOp op = EditOp.Sphere(x, y, z, BiteRadius10, 0, tool.Power).WithTool(cls);
             EditResult result = Apply(op);
             if (Resonating(p)) Shatter(p, x, y, z, blockId, tool, result);
+            HarvestQuartz(p, result);
             GiveDrops(p, result);
             WearHeld(p);
             return new DigTick { Broken = true, Fraction = 1 };
@@ -730,6 +732,7 @@ namespace Aruun.Core.Play
         {
             UpdateWildCells();
             TickRuin();
+            TickVault();
             AdvanceQuestFlags();
             // Plants whose ground was dug away fall out of the world.
             PlantsInWorld.RemoveAll(r =>

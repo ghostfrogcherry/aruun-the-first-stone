@@ -1,5 +1,9 @@
 {
-  "_comment": "Inscriptions: Avarra words cut into equipment at an inscription table. A word changes how the item meets the world. Each word on an item works in one of four ways ('type'): passive (always on), activated (right click with the item; costs stamina), conditional (works by itself when its condition holds) or compositional (does nothing alone; it only works as part of a composition). Compositions are fixed pairs of words that together make one effect; they are checked first, in this order, and the words they use do nothing else. 'fits' lists the item classes a rule works on (items.json 'inscribe.class'). 'effect' names code in Core/Inscription that runs it; its numbers can never pass the limits under 'effects'. Word ids are the stable ids from lexicon.json. Mapping from the design brief: SONIC = word_sonic (Ulun), FORCE = word_push (Vuh, already learned in the echo ruin), FORTIFY = word_fortify (Tahr), RECLAIM = word_reclaim (Oshen).",
+  "_comment": "Inscriptions: Avarra words cut into equipment at an inscription table. A word changes how the item meets the world. Each word on an item works in one of four ways ('type'): passive (always on), activated (right click with the item; costs stamina), conditional (works by itself when its condition holds) or compositional (does nothing alone; it only works as part of a composition). Compositions are fixed pairs of words that together make one effect; they are checked first, in this order, and the words they use do nothing else. 'fits' lists the item classes a rule works on (items.json 'inscribe.class'). 'effect' names code in Core/Inscription that runs it; its numbers can never pass the limits under 'effects'. Word ids are the stable ids from lexicon.json. Mapping from the design brief: SONIC = word_sonic (Ulun), FORCE = word_push (Vuh, already learned in the echo ruin), FORTIFY = word_fortify (Tahr), RECLAIM = word_reclaim (Oshen), FRACTURE = word_fracture (Drai). 'tunings' change one item into another at the table, keeping its words and wear: the item must already carry 'needs_word', and the 'in' materials are used up. 'power_bonus' on resonant_mining lets the ringing tool break stone that many tiers harder than it could.",
+  "tunings": [
+    {"from": "flint_pick", "into": "tuned_pick", "needs_word": "word_sonic", "in": {"singing_quartz": 3},
+      "text": "The quartz is set into the pick's channels. It rings at the pitch of the old builders' stone now, and a second channel has opened for another word."}
+  ],
   "slot_costs": [
     {},
     {"word_fragment": 1},
@@ -17,7 +21,9 @@
       "params": {"mend_per_min": 12},
       "text": "When you rest by a fire or a Tether, it slowly mends."},
     {"word": "word_push", "type": "compositional", "fits": ["hammer"], "effect": "",
-      "text": "Alone it does nothing. It waits for a word to push."}
+      "text": "Alone it does nothing. It waits for a word to push."},
+    {"word": "word_fracture", "type": "compositional", "fits": ["pick"], "effect": "",
+      "text": "Alone it does nothing. It waits for a word that rings."}
   ],
   "compositions": [
     {"id": "resonant_strike", "name": "Resonant strike", "words": ["word_sonic", "word_push"], "type": "activated", "fits": ["hammer"], "effect": "shockwave",
@@ -26,10 +32,14 @@
       "text": "Right click: the hammer rings and a shockwave throws back and hurts everything around you."},
     {"id": "self_mending", "name": "Self-mending", "words": ["word_fortify", "word_reclaim"], "type": "conditional", "fits": ["pick", "axe", "hammer", "weapon"], "effect": "reclaim", "when": "always",
       "params": {"mend_per_min": 6},
-      "text": "It mends by itself, all the time."}
+      "text": "It mends by itself, all the time."},
+    {"id": "seam_splitting", "name": "Seam splitting", "words": ["word_sonic", "word_fracture"], "type": "activated", "fits": ["pick"], "effect": "resonant_mining",
+      "stamina": 20, "cooldown_s": 3, "duration_s": 12,
+      "params": {"dig_mult": 3, "vein_max": 64, "vein_radius_m": 2.5, "power_bonus": 1},
+      "text": "Right click: it rings, and stone splits along its seams. It breaks stone one tier harder than the pick could, and whole veins come away at once."}
   ],
   "effects": [
-    {"id": "resonant_mining", "max_dig_mult": 4, "max_vein_max": 64, "max_vein_radius_m": 3, "max_duration_s": 30},
+    {"id": "resonant_mining", "max_dig_mult": 4, "max_vein_max": 64, "max_vein_radius_m": 3, "max_duration_s": 30, "max_power_bonus": 2},
     {"id": "fortify", "min_wear_mult": 0.2},
     {"id": "reclaim", "max_mend_per_min": 60},
     {"id": "shockwave", "max_radius_m": 8, "max_impulse_mps": 20, "max_damage": 40}

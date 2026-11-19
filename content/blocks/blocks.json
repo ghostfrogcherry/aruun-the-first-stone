@@ -516,6 +516,38 @@
       "hardness": 99,
       "tool": "pick",
       "health": 999
+    },
+    {
+      "id": 50,
+      "key": "dressed_stone",
+      "name": "Dressed stone",
+      "solid": true,
+      "color": "#b3a690",
+      "hardness": 6,
+      "tool": "pick",
+      "health": 40,
+      "hint": "The old builders cut it to answer only a ringing tool tuned to it."
+    },
+    {
+      "id": 51,
+      "key": "singing_quartz",
+      "name": "Singing quartz (placeholder)",
+      "solid": true,
+      "color": "#c9b6e4",
+      "hardness": 2,
+      "tool": "pick",
+      "health": 8
+    },
+    {
+      "id": 52,
+      "key": "embersteel_ore",
+      "name": "Embersteel ore (placeholder)",
+      "solid": true,
+      "color": "#a8533a",
+      "hardness": 4,
+      "tool": "pick",
+      "health": 30,
+      "hint": "Flint only scratches it. A pick that splits stone along its seams might take it."
     }
   ],
   "placeable": [

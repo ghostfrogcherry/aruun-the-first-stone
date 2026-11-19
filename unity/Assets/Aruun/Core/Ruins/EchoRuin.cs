@@ -53,6 +53,8 @@ namespace Aruun.Core.Ruins
         public bool DoneSolid;
         /// <summary>A world flag set when it answers ("" for none).</summary>
         public string Sets = "";
+        /// <summary>An item the one who woke it is given ("" for none).</summary>
+        public string Gives = "";
     }
 
     /// <summary>
@@ -76,7 +78,7 @@ namespace Aruun.Core.Ruins
     /// All layout numbers are in voxels (4 per metre). Local axes: u to the right, v forward
     /// (south, world -Z), y up.
     /// </summary>
-    public sealed class EchoRuin
+    public sealed class EchoRuin : RuinSite
     {
         /// <summary>How far south of the spawn place the arch stands, in voxels (90 m).</summary>
         public const int DistanceSouth = 360;
@@ -88,29 +90,12 @@ namespace Aruun.Core.Ruins
         public const string FlagSentinel = "sentinel_down";
         public const string FlagRemembered = "world_remembers";
 
-        struct Box
-        {
-            public int X0, Y0, Z0, X1, Y1, Z1;
-            public ushort Block;
-            /// <summary>Weathering: some of the box becomes this instead (moss), 0 for none.</summary>
-            public ushort Wear;
-        }
-
-        readonly List<Box> _boxes = new List<Box>();
         readonly ushort _air, _stone, _paving, _lamp, _inscribed, _seal, _heart, _deep, _moss, _rune, _table;
 
-        /// <summary>The arch, at ground level, in world voxels.</summary>
-        public readonly int Ox, Oz, Ground;
         /// <summary>The first hall's floor: the first empty layer.</summary>
         public readonly int FloorY;
         /// <summary>The court's floor, one ledge higher.</summary>
         public readonly int CourtY;
-        public readonly List<RuinInscription> Inscriptions = new List<RuinInscription>();
-        public readonly List<RuinMechanism> Mechanisms = new List<RuinMechanism>();
-        /// <summary>Glowing lamps, in metres, for the Game layer to light.</summary>
-        public readonly List<Vec3> Lamps = new List<Vec3>();
-        int _minX, _maxX, _minY, _maxY, _minZ, _maxZ;
-
         public Vec3 EntranceM { get { return ToM(0, Ground + 1, 4); } }
         public Vec3 GateM { get { return ToM(0, FloorY, 110); } }
         public Vec3 StepM { get { return ToM(0, FloorY, 150); } }
@@ -131,7 +116,11 @@ namespace Aruun.Core.Ruins
             return new EchoRuin(field, blocks, x, z);
         }
 
+        /// <summary>The sealed vault in the knoll east of the ruin, or null when the blocks for it are missing.</summary>
+        public SealedVault Vault { get; private set; }
+
         public EchoRuin(HeightField field, BlockRegistry blocks, int ox, int oz)
+            : base(ox, oz, Math.Max(field.HeightAt(ox, oz), HeightField.SeaLevel + 1))
         {
             _air = 0;
             _stone = blocks.Id("ancient_stone");
@@ -144,51 +133,12 @@ namespace Aruun.Core.Ruins
             _table = blocks.Has("inscription_table") ? blocks.Id("inscription_table") : _stone;
             _moss = blocks.Has("mossy_stone") ? blocks.Id("mossy_stone") : _stone;
             _rune = blocks.Has("rune_stone") ? blocks.Id("rune_stone") : _inscribed;
-            Ox = ox;
-            Oz = oz;
-            Ground = Math.Max(field.HeightAt(ox, oz), HeightField.SeaLevel + 1);
+            InscribedBlock = _inscribed;
+            LampBlock = _lamp;
             FloorY = Ground + 1 - StepsDown;
             CourtY = FloorY + 16;
-            _minX = _minY = _minZ = int.MaxValue;
-            _maxX = _maxY = _maxZ = int.MinValue;
             Build(field);
-        }
-
-        // ------------------------------------------------------------------ coordinates
-
-        int WX(int u) { return Ox + u; }
-        int WZ(int v) { return Oz - v; }
-        Vec3 ToM(double u, double y, double v) { return new Vec3((Ox + u + 0.5) / WorldConfig.VoxelsPerMeter, y / (double)WorldConfig.VoxelsPerMeter, (Oz - v + 0.5) / WorldConfig.VoxelsPerMeter); }
-
-        void Put(int u0, int y0, int v0, int u1, int y1, int v1, ushort block, ushort wear = 0)
-        {
-            var b = new Box
-            {
-                X0 = WX(Math.Min(u0, u1)), X1 = WX(Math.Max(u0, u1)),
-                Y0 = Math.Min(y0, y1), Y1 = Math.Max(y0, y1),
-                Z0 = WZ(Math.Max(v0, v1)), Z1 = WZ(Math.Min(v0, v1)),
-                Block = block, Wear = wear,
-            };
-            _boxes.Add(b);
-            _minX = Math.Min(_minX, b.X0); _maxX = Math.Max(_maxX, b.X1);
-            _minY = Math.Min(_minY, b.Y0); _maxY = Math.Max(_maxY, b.Y1);
-            _minZ = Math.Min(_minZ, b.Z0); _maxZ = Math.Max(_maxZ, b.Z1);
-        }
-
-        EditOp Op(int u0, int y0, int v0, int u1, int y1, int v1, ushort block)
-        {
-            return EditOp.Box(WX(Math.Min(u0, u1)), Math.Min(y0, y1), WZ(Math.Max(v0, v1)), WX(Math.Max(u0, u1)), Math.Max(y0, y1), WZ(Math.Min(v0, v1)), block, 98);
-        }
-
-        void Carve(int u0, int y0, int v0, int u1, int y1, int v1, string place, string word)
-        {
-            Put(u0, y0, v0, u1, y1, v1, _inscribed);
-            Inscriptions.Add(new RuinInscription
-            {
-                Place = place, Word = word,
-                X0 = WX(Math.Min(u0, u1)), X1 = WX(Math.Max(u0, u1)), Y0 = y0, Y1 = y1,
-                Z0 = WZ(Math.Max(v0, v1)), Z1 = WZ(Math.Min(v0, v1)),
-            });
+            Vault = SealedVault.Near(this, field, blocks);
         }
 
         /// <summary>A one-voxel band of glowing runes in both long walls of a hall, broken every few voxels.</summary>
@@ -199,12 +149,6 @@ namespace Aruun.Core.Ruins
                 Put(u0 - 1, y, v, u0 - 1, y, v + 3, _rune);
                 Put(u1 + 1, y, v, u1 + 1, y, v + 3, _rune);
             }
-        }
-
-        void Lamp(int u, int y, int v)
-        {
-            Put(u, y, v, u + 1, y + 1, v + 1, _lamp);
-            Lamps.Add(ToM(u + 0.5, y + 1, v + 0.5));
         }
 
         // ------------------------------------------------------------------ layout
@@ -356,51 +300,20 @@ namespace Aruun.Core.Ruins
 
         // ------------------------------------------------------------------ queries
 
-        public RuinMechanism Mechanism(string id)
-        {
-            foreach (var m in Mechanisms) if (m.Id == id) return m;
-            return null;
-        }
-
-        /// <summary>Has this mechanism already answered, judging by the world?</summary>
-        public static bool Done(VoxelWorld world, RuinMechanism m)
-        {
-            bool solid = world.Blocks.Get(world.Get(m.CheckX, m.CheckY, m.CheckZ)).Collision;
-            return solid == m.DoneSolid;
-        }
-
-        public RuinInscription InscriptionAt(int x, int y, int z)
-        {
-            foreach (var i in Inscriptions) if (i.Contains(x, y, z)) return i;
-            return null;
-        }
-
         /// <summary>Is this point (metres) inside the ruin's halls, roughly?</summary>
         public bool Inside(Vec3 p)
         {
             int x = (int)Math.Floor(p.X * WorldConfig.VoxelsPerMeter), y = (int)Math.Floor(p.Y * WorldConfig.VoxelsPerMeter), z = (int)Math.Floor(p.Z * WorldConfig.VoxelsPerMeter);
-            return x >= _minX && x <= _maxX && y >= _minY && y <= _maxY && z >= _minZ && z <= _maxZ && y < Ground - 4;
+            return InBounds(x, y, z) && y < Ground - 4;
         }
 
         // ------------------------------------------------------------------ worldgen
 
-        /// <summary>Writes the ruin's parts into a freshly generated chunk, in order.</summary>
-        public void Stamp(VoxelChunk chunk)
+        /// <summary>Writes the ruin's parts, then the vault's, into a freshly generated chunk.</summary>
+        public override void Stamp(VoxelChunk chunk)
         {
-            const int n = WorldConfig.ChunkSize;
-            int ox = chunk.Coord.OriginX, oy = chunk.Coord.OriginY, oz = chunk.Coord.OriginZ;
-            if (ox > _maxX || ox + n <= _minX || oy > _maxY || oy + n <= _minY || oz > _maxZ || oz + n <= _minZ) return;
-            foreach (var b in _boxes)
-            {
-                int x0 = Math.Max(b.X0, ox), x1 = Math.Min(b.X1, ox + n - 1);
-                int y0 = Math.Max(b.Y0, oy), y1 = Math.Min(b.Y1, oy + n - 1);
-                int z0 = Math.Max(b.Z0, oz), z1 = Math.Min(b.Z1, oz + n - 1);
-                if (x0 > x1 || y0 > y1 || z0 > z1) continue;
-                for (int y = y0; y <= y1; y++)
-                    for (int z = z0; z <= z1; z++)
-                        for (int x = x0; x <= x1; x++)
-                            chunk.Set(x - ox, y - oy, z - oz, b.Wear != 0 && Town.Blueprint.Hash(x, y, z) % 5 == 0 ? b.Wear : b.Block);
-            }
+            base.Stamp(chunk);
+            if (Vault != null) Vault.Stamp(chunk);
         }
     }
 }

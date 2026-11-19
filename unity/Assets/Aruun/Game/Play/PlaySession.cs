@@ -229,6 +229,7 @@ namespace Aruun.Game
             yield return new WaitForSecondsRealtime(1f);
             SmokeElder(note, "after the ruin");
             yield return SmokeM4(note);
+            yield return SmokeVault(note);
             note("end: hp " + me.C.Hp.ToString("0") + ", day " + Host.Day + " " + (Host.TimeOfDay * 24).ToString("0.0") + "h, creatures " + Host.Creatures.Count + ", plants " + Host.PlantsInWorld.Count + ", structures " + Host.Structures.Count);
             File.WriteAllLines(Path.Combine(Application.persistentDataPath, "smoke.txt"), lines.ToArray());
         }
@@ -393,6 +394,134 @@ namespace Aruun.Game
             yield return new WaitForSecondsRealtime(2f);
         }
 
+        /// <summary>
+        /// The sealed vault's chain, end to end: quartz shatters, then comes away rung; the pick
+        /// is tuned; the dressed-stone door breaks; Drai is read twice; Ahm wakes the lift; Drai
+        /// is cut beside Ulun; embersteel splits from its seams; a fire forges the pick.
+        /// </summary>
+        System.Collections.IEnumerator SmokeVault(Action<string> note)
+        {
+            PlayerRec me = Me;
+            SealedVault v = Host.Vault;
+            if (v == null || Host.Inscriptions == null) { note("vault: none in this world"); yield break; }
+            int pick = -1;
+            for (int i = 0; i < 32; i++)
+            {
+                var st = me.C.Inv[i];
+                if (st.HasValue && st.Value.Key == "flint_pick" && Array.IndexOf(st.Value.WordList, "word_sonic") >= 0) pick = i;
+            }
+            if (pick < 0) { note("vault: no Ulun pick in the bag"); yield break; }
+            bool wasGod = me.God;
+            me.God = true;   // the chain, not stamina, is under test
+            me.C.Selected = pick;
+            Func<Vec3, int[]> cell = m => new[] { (int)Math.Floor(m.X * 4), (int)Math.Floor(m.Y * 4), (int)Math.Floor(m.Z * 4) };
+            Func<int, int, int, bool> dig = (x, y, z) =>
+            {
+                DigTick t = default;
+                for (int i = 0; i < 400 && !t.Broken && !t.Refused; i++) { t = Host.Dig(LocalId, x, y, z, 0.05); Host.Time += 0.05; }
+                return t.Broken;
+            };
+            Action ring = () => { Host.Time += 5; Host.UseHeld(LocalId, false, 0, 0, 0, 0, 0, 0); };
+            Func<Vec3, bool, int> quartzAt = (at, rung) =>
+            {
+                ushort q = Host.World.Blocks.Id("singing_quartz");
+                int[] c = cell(at);
+                int n = 0;
+                for (int x = c[0] - 3; x <= c[0] + 3; x++)
+                    for (int y = c[1] - 3; y <= c[1] + 3; y++)
+                        for (int z = c[2] - 3; z <= c[2] + 3; z++)
+                            if (Host.World.Get(x, y, z) == q) { if (rung) ring(); if (dig(x, y, z)) n++; }
+                return n;
+            };
+
+            me.Pos = v.FrontM;
+            me.RespawnAt = me.Pos;
+            me.ArriveYaw = Math.PI;
+            yield return new WaitForSecondsRealtime(2.5f);   // let the knoll's chunks load
+            note("vault: knoll at " + v.Ox + "," + v.Ground + "," + v.Oz + ", objective: " + Host.ObjectiveFor(LocalId).Text);
+            int broke = quartzAt(v.Quartz[1], false);
+            note("vault quartz, plain strike: broke " + broke + ", quartz in bag " + me.C.Inv.Count("singing_quartz"));
+            quartzAt(v.Quartz[0], true);
+            quartzAt(v.Quartz[2], true);
+            note("vault quartz, rung: quartz in bag " + me.C.Inv.Count("singing_quartz"));
+            yield return new WaitForSecondsRealtime(1f);
+
+            EchoRuin r = Host.Ruin;
+            me.Pos = new Vec3(r.TableM.X - 1.6, r.CourtM.Y, r.TableM.Z);
+            me.RespawnAt = me.Pos;
+            yield return new WaitForSecondsRealtime(1.5f);
+            Vec3 eye = me.Pos + new Vec3(0, 1.6, 0);
+            Host.Interact(LocalId, eye, r.TableM - new Vec3(0, 0.1, 0) - eye);
+            note("vault tune: '" + Host.Tune(LocalId, pick) + "' (empty means it worked), now " + me.C.Inv.KeyAt(pick) + " @" + me.C.Inv[pick].Value.Words);
+            PlayHud.SetBag(false);
+
+            me.Pos = v.FrontM;
+            me.RespawnAt = me.Pos;
+            yield return new WaitForSecondsRealtime(1.5f);
+            int[] door = cell(v.DoorM);
+            ushort dressed = Host.World.Blocks.Id("dressed_stone");
+            for (int round = 0; round < 40 && !v.DoorOpen(Host.World); round++)
+            {
+                ring();
+                bool hit = false;
+                for (int y = v.Ground + 1; y <= v.Ground + 14 && !hit; y++)
+                    for (int x = door[0] - 5; x <= door[0] + 4 && !hit; x++)
+                        for (int z = door[2] - 2; z <= door[2] - 1 && !hit; z++)
+                            if (Host.World.Get(x, y, z) == dressed) { dig(x, y, z); hit = true; }
+                if (!hit) break;
+                yield return null;
+            }
+            note("vault door: open " + v.DoorOpen(Host.World) + ", objective: " + Host.ObjectiveFor(LocalId).Text);
+            yield return new WaitForSecondsRealtime(1.5f);
+
+            foreach (var ins in v.Inscriptions) Host.Read(me, ins);
+            note("vault: Drai is " + me.C.Lang.Of(SealedVault.WordSplit));
+            me.Pos = v.HallM;
+            me.RespawnAt = me.Pos;
+            yield return new WaitForSecondsRealtime(2.5f);
+            note("vault lair: woken " + Host.WorldFlags.Contains(SealedVault.FlagWoken) + ", nightstalkers " + Host.Creatures.FindAll(c => c.Def.Key == "nightstalker" && c.State != "dead").Count);
+            foreach (var c in Host.Creatures) if (c.Def.Key == "nightstalker" && Vec3.Distance(c.Pos, v.HallM) < 40) Host.HitCreature(c, 999, 999, new Vec3(0, 0, 0), LocalId);
+            eye = me.Pos + new Vec3(0, 1.6, 0);
+            Host.Time += 5;
+            bool spoke = Host.Speak(LocalId, new List<string> { "word_rise" }, eye, v.LiftM - eye);
+            note("vault lift: spoke " + spoke + ", raised " + RuinSite.Done(Host.World, v.Mechanism("lift")) + ", word fragments " + me.C.Inv.Count("word_fragment"));
+            yield return new WaitForSecondsRealtime(1.5f);
+
+            me.Pos = new Vec3(v.TableM.X - 1.6, v.GalleryY / 4.0, v.TableM.Z);
+            me.RespawnAt = me.Pos;
+            yield return new WaitForSecondsRealtime(1.5f);
+            eye = me.Pos + new Vec3(0, 1.6, 0);
+            Host.Interact(LocalId, eye, v.TableM - new Vec3(0, 0.1, 0) - eye);
+            note("vault inscribe Drai: '" + Host.Inscribe(LocalId, pick, SealedVault.WordSplit) + "', seam splitting " + me.C.Combos.Contains("seam_splitting"));
+            PlayHud.SetBag(false);
+
+            int[] seam = cell(v.SeamM);
+            ushort ore = Host.World.Blocks.Id("embersteel_ore");
+            int sx = seam[0] - 1;
+            me.Pos = new Vec3((sx + 2.5) / 4.0, v.GalleryY / 4.0, seam[2] / 4.0);
+            me.RespawnAt = me.Pos;
+            me.ArriveYaw = -Math.PI / 2;
+            yield return new WaitForSecondsRealtime(1.5f);
+            for (int i = 0; i < 6 && me.C.Inv.Count("embersteel_ore") < 6; i++)
+            {
+                ring();
+                bool hit = false;
+                for (int y = seam[1] - 3; y <= seam[1] + 5 && !hit; y++)
+                    for (int z = seam[2] - 6; z <= seam[2] + 6 && !hit; z++)
+                        for (int x = sx - 1; x <= sx && !hit; x++)
+                            if (Host.World.Get(x, y, z) == ore) { dig(x, y, z); hit = true; }
+                yield return null;
+            }
+            note("vault seams: embersteel ore " + me.C.Inv.Count("embersteel_ore"));
+            Host.Structures.Add(new StructureRec { Id = 9901, Key = "campfire", Pos = me.Pos + new Vec3(1, 0, 0) });
+            me.C.Inv.Add("timber", 2);
+            me.C.Inv.Add("cord", 1);
+            note("vault forge: bar '" + Host.Craft(LocalId, "embersteel_bar") + "', bar '" + Host.Craft(LocalId, "embersteel_bar") + "', pick '" + Host.Craft(LocalId, "embersteel_pick") + "', chain done " + Host.VaultDone(me));
+            Host.Structures.RemoveAll(s => s.Id == 9901);
+            me.God = wasGod;
+            yield return new WaitForSecondsRealtime(1f);
+        }
+
         /// <summary>The rest of the slice in play: Ulun + Vuh on the hammer (shockwave), Tahr and Oshen alone,
         /// then Tahr + Oshen together on the hammer, mending a worn hammer by itself.</summary>
         System.Collections.IEnumerator SmokeInscriptionMore(Action<string> note)
@@ -541,7 +670,9 @@ namespace Aruun.Game
             {
                 _ruinLit = true;
                 var root = new GameObject("Echo ruin lights").transform;
-                foreach (Vec3 at in r.Lamps)
+                var lamps = new List<Vec3>(r.Lamps);
+                if (r.Vault != null) lamps.AddRange(r.Vault.Lamps);
+                foreach (Vec3 at in lamps)
                 {
                     var l = new GameObject("lamp").AddComponent<Light>();
                     l.transform.SetParent(root, false);
@@ -605,6 +736,8 @@ namespace Aruun.Game
                 me.ArriveYaw = 0;
                 Say("The old steading. Set a Tether on the carved plinth to claim it.");
             });
+            DevTools.Register(KeyCode.Z, "Go to the sealed vault's door (the singing quartz knoll)", () => GoToVault(false));
+            DevTools.Register(KeyCode.Z, "Go into the vault's seam gallery", () => GoToVault(true), true);
             DevTools.Register(KeyCode.U, "Know every Avarra word", () =>
             {
                 PlayerRec me = Me;
@@ -630,6 +763,17 @@ namespace Aruun.Game
             me.Pos = at;
             me.RespawnAt = at;
             Say(court ? "The sentinel's court" : "The echo ruin. Read the carved words with E.");
+        }
+
+        void GoToVault(bool gallery)
+        {
+            PlayerRec me = Me;
+            if (me == null || Host.Vault == null) { Say("This world has no sealed vault"); return; }
+            Vec3 at = gallery ? Host.Vault.GalleryM : Host.Vault.FrontM + new Vec3(0, 0, 3);
+            me.Pos = at;
+            me.RespawnAt = at;
+            me.ArriveYaw = Math.PI;   // facing south, into the knoll / toward the way out
+            Say(gallery ? "The seam gallery. Embersteel runs in the walls." : "The sealed vault. Singing quartz grows in the knoll; the door is dressed stone.");
         }
 
         void GiveKit()

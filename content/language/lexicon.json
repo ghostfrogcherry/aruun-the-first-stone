@@ -1,5 +1,5 @@
 {
-  "_comment": "Avarra words. Vuh, Ahm and Sem are canon (docs/WORLD_BIBLE.md section 7); Dohm is still a placeholder; Ulun, Tahr and Oshen are Claude's PROPOSED forms for the concepts SONIC, FORTIFY and RECLAIM, waiting for Bruh's approval. Ids are stable, so a display name can change without breaking saves. Do not use names that already mean something in Aruun canon (Keth, Vael, Kethra, Oru...). 'debt' is the gravitational debt a Graviturge word costs (0-100 scale, see content/survival/rulesets.json). Force words act on creatures and loose things, not terrain: distances in metres, impulses in m/s. 'glyph' is the word's symbol, 5 rows of 5 ('#' is cut): the same glyph is carved in ruins and on inscribed equipment, so the language looks the same everywhere. 'speakable': false marks words that are only ever cut into things (inscriptions, see inscriptions.json), never spoken.",
+  "_comment": "Avarra words. Vuh, Ahm and Sem are canon (docs/WORLD_BIBLE.md section 7); Dohm is still a placeholder; Ulun, Tahr, Oshen and Drai are Claude's PROPOSED forms for the concepts SONIC, FORTIFY, RECLAIM and FRACTURE, waiting for Bruh's approval. Ids are stable, so a display name can change without breaking saves. Do not use names that already mean something in Aruun canon (Keth, Vael, Kethra, Oru...). 'debt' is the gravitational debt a Graviturge word costs (0-100 scale, see content/survival/rulesets.json). Force words act on creatures and loose things, not terrain: distances in metres, impulses in m/s. 'glyph' is the word's symbol, 5 rows of 5 ('#' is cut): the same glyph is carved in ruins and on inscribed equipment, so the language looks the same everywhere. 'speakable': false marks words that are only ever cut into things (inscriptions, see inscriptions.json), never spoken.",
   "words": [
     {
       "id": "word_rise",
@@ -90,6 +90,15 @@
       "speakable": false,
       "glyph": [".###.", "#...#", "#.#..", "#...#", ".###."],
       "note": "The brief's RECLAIM: restore, recover."
+    },
+    {
+      "id": "word_fracture",
+      "display": "Drai (proposed)",
+      "meaning": "Split",
+      "discipline": "resonant",
+      "speakable": false,
+      "glyph": ["..#..", ".#...", "..#..", "...#.", "..#.."],
+      "note": "The brief's FRACTURE: split, break along a seam. Carved on the sealed vault's lintel and in its quartz hall."
     }
   ],
   "effects": [
