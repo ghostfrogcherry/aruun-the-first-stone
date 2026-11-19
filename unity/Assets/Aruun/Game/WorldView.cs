@@ -31,7 +31,9 @@ namespace Aruun.Game
         public int MeshesPerFrame = 6;
 
         public int ShownChunks { get { return _shown.Count; } }
-        public int PendingChunks { get { return _inFlight; } }
+        public int PendingChunks { get { return _inFlight + _wanted.Count; } }
+        /// <summary>Chunk meshes copied to the GPU so far (for --bench).</summary>
+        public int MeshesUploaded { get; private set; }
 
         sealed class Built { public ChunkCoord Coord; public int Version; public MeshData Mesh; public GreedyMesher Mesher; public ushort[] Padded; }
 
@@ -145,6 +147,7 @@ namespace Aruun.Game
                 if (!_done.TryDequeue(out b)) break;
                 _inFlight--;
                 Show(b);
+                MeshesUploaded++;
                 _pool.Add(b);
             }
             UpdateLamps();
@@ -250,6 +253,9 @@ namespace Aruun.Game
                 World.Unload(c);
             }
             _empty.RemoveWhere(c => !InRange(c, centre, 2));
+            // Also let go of chunks loaded only as neighbours or sky. A wide margin, so the
+            // ground under nearby creatures and friends stays loaded.
+            World.UnloadFarFrom(centre.X, centre.Z, ViewChunks + 6);
         }
 
         /// <summary>

@@ -319,6 +319,28 @@ namespace Aruun.Core.Tests
             Assert.That(mesh.IsEmpty, Is.False);
             Assert.That(mesh.VertexCount, Is.LessThan(40000), "greedy meshing should keep a surface chunk small");
         }
+
+        [Test]
+        public void FarChunksUnloadAndEditsComeBack()
+        {
+            BlockRegistry blocks = TestContent.Blocks();
+            var world = new VoxelWorld(42, blocks);
+            int h = world.Generator.Field.HeightAt(5, 5);
+            // A far chunk with a hole dug in it, and one near the centre.
+            int fx = 32 * 40 + 5;
+            int fh = world.Generator.Field.HeightAt(fx, 5);
+            Assert.That(world.Get(fx, fh - 2, 5), Is.Not.EqualTo(0));
+            world.Apply(EditOp.Set(fx, fh - 2, 5, 0));
+            Assert.That(world.Get(fx, fh - 2, 5), Is.EqualTo(0));
+            world.Get(5, h, 5);
+            int before = world.LoadedChunks;
+            int dropped = world.UnloadFarFrom(0, 0, 10);
+            Assert.That(dropped, Is.GreaterThan(0));
+            Assert.That(world.LoadedChunks, Is.EqualTo(before - dropped));
+            Assert.That(world.Get(5, h, 5), Is.Not.EqualTo(0xFFFF));
+            // Brought back from the seed, with the edit put back.
+            Assert.That(world.Get(fx, fh - 2, 5), Is.EqualTo(0));
+        }
     }
 
     public class EditTests

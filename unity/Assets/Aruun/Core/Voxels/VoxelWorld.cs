@@ -64,6 +64,26 @@ namespace Aruun.Core.Voxels
             _chunks.TryRemove(coord, out ignored);
         }
 
+        /// <summary>
+        /// Drops every chunk whose column is more than <paramref name="radius"/> chunks from
+        /// (cx, cz), sideways. Chunks generated only as a mesher's neighbours or as empty sky
+        /// were never shown, so nothing else lets them go; without this the world grows the
+        /// longer the player travels. Returns how many were dropped. Edits are kept.
+        /// </summary>
+        public int UnloadFarFrom(int cx, int cz, int radius)
+        {
+            int dropped = 0;
+            long r2 = (long)radius * radius;
+            foreach (var pair in _chunks)
+            {
+                long dx = pair.Key.X - cx, dz = pair.Key.Z - cz;
+                if (dx * dx + dz * dz <= r2) continue;
+                VoxelChunk ignored;
+                if (_chunks.TryRemove(pair.Key, out ignored)) dropped++;
+            }
+            return dropped;
+        }
+
         public ushort Get(int x, int y, int z)
         {
             return GetChunk(ChunkCoord.FromVoxel(x, y, z))

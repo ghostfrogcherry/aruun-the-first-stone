@@ -143,7 +143,23 @@ namespace Aruun.Game
             if (!fresh)
             {
                 try { c.FromText(File.ReadAllText(_charPath)); }
-                catch (Exception e) { Debug.LogWarning("Could not read the character (" + e.Message + "), starting fresh"); fresh = true; }
+                catch (Exception e)
+                {
+                    // The last good save is kept beside it (SafeFile): try that before starting over.
+                    string bak = _charPath + ".bak";
+                    try
+                    {
+                        c = new CharacterState(items, rules);
+                        c.FromText(File.ReadAllText(bak));
+                        Debug.LogWarning("Could not read the character (" + e.Message + "), loaded the backup");
+                    }
+                    catch (Exception)
+                    {
+                        Debug.LogWarning("Could not read the character (" + e.Message + "), starting fresh");
+                        c = new CharacterState(items, rules);
+                        fresh = true;
+                    }
+                }
             }
             PlayerRec joined = Host.Join(LocalId, c, ToVec(spawnFeet), fresh && _client == null);
             if (_client != null) joined.RespawnAt = ToVec(spawnFeet);
@@ -785,16 +801,16 @@ namespace Aruun.Game
 
         public void Save()
         {
-            if (_smoke) return;
+            if (_smoke || Bench.Running) return;   // test runs never touch the saves
             PlayerRec me = Me;
             if (me == null) return;
             try
             {
-                File.WriteAllText(_charPath, me.C.ToText());
+                SafeFile.WriteAllText(_charPath, me.C.ToText());
                 if (_client != null) return;   // the world and its flags are the host's to keep
                 var flags = new List<string>();
                 foreach (string f in Host.WorldFlags) flags.Add("flag " + f);
-                File.WriteAllLines(_worldPath, flags.ToArray());
+                SafeFile.WriteAllText(_worldPath, string.Join("\n", flags) + "\n");
             }
             catch (Exception e) { Debug.LogWarning("Could not save the character: " + e.Message); }
         }
