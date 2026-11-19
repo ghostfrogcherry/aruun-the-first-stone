@@ -156,6 +156,13 @@ namespace Aruun.Core.Items
             return d - s.Value.Durability;
         }
 
+        /// <summary>Puts this stack in slot i, whatever was there. Used when an item becomes another (tuning).</summary>
+        public void Replace(int i, ItemStack? stack)
+        {
+            if (i < 0 || i >= Size) return;
+            _slots[i] = stack.HasValue && stack.Value.Count > 0 ? stack : null;
+        }
+
         /// <summary>Sets the words cut into the item in slot i (null or empty clears them). False unless it holds an item that never stacks.</summary>
         public bool SetWords(int i, string words)
         {

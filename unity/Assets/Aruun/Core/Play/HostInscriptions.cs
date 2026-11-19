@@ -211,12 +211,17 @@ namespace Aruun.Core.Play
         // ===================================================================== digging
 
         /// <summary>The tool as it digs now: faster while it rings.</summary>
-        ToolDef DiggingTool(PlayerRec p)
+        ToolDef DiggingTool(PlayerRec p, BlockDef block = null)
         {
             ToolDef t = p.C.HeldTool;
             if (!Resonating(p)) return t;
             InscriptionRule r = InscriptionOf(p, p.C.Selected).WithEffect("resonant_mining");
-            return new ToolDef { Key = t.Key, Name = t.Name, Class = t.Class, Power = t.Power, Speed = t.Speed * r.Num("dig_mult", 1) };
+            int power = t.Power + (int)r.Num("power_bonus");
+            // A tuned tool, ringing, breaks the one stone it is tuned to, however hard.
+            ItemDef held;
+            if (block != null && !block.Unbreakable && Items.TryGet(p.C.HeldKey, out held) && block.Key.Length > 0 && MiniJson.Str(held.Raw, "tuned_to") == block.Key)
+                power = Math.Max(power, block.Hardness);
+            return new ToolDef { Key = t.Key, Name = t.Name, Class = t.Class, Power = power, Speed = t.Speed * r.Num("dig_mult", 1) };
         }
 
         /// <summary>

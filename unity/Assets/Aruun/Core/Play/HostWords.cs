@@ -56,7 +56,7 @@ namespace Aruun.Core.Play
             if (Ruin == null || Lexicon == null) return false;
             VoxelHit hit = VoxelRaycast.Cast(World, eye.X * M, eye.Y * M, eye.Z * M, dir.X, dir.Y, dir.Z, ReachM * M);
             if (!hit.Hit) return false;
-            RuinInscription ins = Ruin.InscriptionAt(hit.X, hit.Y, hit.Z);
+            RuinInscription ins = Ruin.InscriptionAt(hit.X, hit.Y, hit.Z) ?? (Vault != null ? Vault.InscriptionAt(hit.X, hit.Y, hit.Z) : null);
             if (ins == null || World.Get(hit.X, hit.Y, hit.Z) != World.Blocks.Id("inscribed_stone")) return false;
             Read(p, ins);
             return true;
@@ -167,10 +167,16 @@ namespace Aruun.Core.Play
             }
             foreach (var op in m.Ops) Apply(op);
             if (m.Sets.Length > 0) WorldFlags.Add(m.Sets);
+
             if (!p.God) p.C.Owe(action.Debt * p.C.Mods["debt_cost_mult"] * 0.5);
             p.NextWord = Time + 1;
             Fx("answer", p.Id, 0, 1, m.Point);
             Say(p.Id, m.Answer);
+            if (m.Gives.Length > 0 && Items.Has(m.Gives))
+            {
+                p.C.Inv.Add(m.Gives, 1);
+                Say(p.Id, "Something drops from the socket into your hand: a " + ItemName(m.Gives) + ".");
+            }
             LearnFrom(p, phrase);
             if (m.Sets == EchoRuin.FlagRemembered) Remembered(p);
             return true;
@@ -205,7 +211,9 @@ namespace Aruun.Core.Play
             if (Ruin == null) return null;
             RuinMechanism best = null;
             double bestAlong = double.MaxValue;
-            foreach (var m in Ruin.Mechanisms)
+            var all = new List<RuinMechanism>(Ruin.Mechanisms);
+            if (Vault != null) all.AddRange(Vault.Mechanisms);
+            foreach (var m in all)
             {
                 if (EchoRuin.Done(World, m)) continue;
                 Vec3 to = m.Point - eye;
@@ -342,6 +350,7 @@ namespace Aruun.Core.Play
             {
                 if (InscriptionObjective(p, ref o)) return o;
                 bool out_ = Vec3.Distance(p.Pos, Ruin.ExitM) < 8 || (!Ruin.Inside(p.Pos) && Vec3.Distance(p.Pos, Ruin.CourtM) > 40);
+                if (out_ && VaultObjective(p, ref o)) return o;
                 o.Done = out_;
                 o.Text = out_ ? "The world remembers. Explore, and use your words." : "Climb the stair behind the heart, back to the light.";
                 o.Target = out_ ? (Vec3?)null : Ruin.ExitM;

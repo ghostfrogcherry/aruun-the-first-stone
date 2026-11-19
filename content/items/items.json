@@ -1,5 +1,5 @@
 {
-  "_comment": "Items. Every diggable block is also an item automatically (kind 'block', same key as the block), so only non-block items are listed here. Names marked (placeholder) are provisional and not canon. Distances are in metres, times in seconds. tool_class: which blocks a tool breaks besides 'hand' blocks ('axe' for wood, 'pick' for stone). dig_speed: block health worn off per second when the tool fits the block. inscribe: how many Avarra words the item can carry (slots) and what kind of thing it is to the words (class); see content/language/inscriptions.json.",
+  "_comment": "Items. Every diggable block is also an item automatically (kind 'block', same key as the block), so only non-block items are listed here. Names marked (placeholder) are provisional and not canon. Distances are in metres, times in seconds. tool_class: which blocks a tool breaks besides 'hand' blocks ('axe' for wood, 'pick' for stone). tuned_to: a block the tool can break whatever its hardness, but only while its Ulun inscription rings (a pick tuned with singing quartz at an inscription table, see 'tune' in content/language/inscriptions.json). dig_speed: block health worn off per second when the tool fits the block. inscribe: how many Avarra words the item can carry (slots) and what kind of thing it is to the words (class); see content/language/inscriptions.json.",
   "block_stack": 999,
   "unarmed": {"damage": 5, "reach_m": 1.6, "arc_deg": 80, "stamina": 6, "cooldown_s": 0.45, "poise": 6, "knockback": 2.0, "guard": 0.35, "dig_power": 1, "tool_class": "hand", "dig_speed": 2},
   "items": [
@@ -40,6 +40,13 @@
     {"key": "fallhammer",      "name": "Fallhammer",   "kind": "weapon", "stack": 1, "color": "#5d4a7a", "durability": 400, "inscribe": {"slots": 2, "class": "hammer"},
       "dig_power": 1, "tool_class": "hand", "dig_speed": 3, "damage": 30, "reach_m": 2.3, "arc_deg": 90, "stamina": 20, "cooldown_s": 1.05, "poise": 40, "knockback": 6.0, "guard": 0.6,
       "slam": {"radius": 2.4, "power": 3}},
+    {"key": "tuned_pick",      "name": "Tuned flint pick", "kind": "tool", "stack": 1, "color": "#8a7fa6", "durability": 300, "inscribe": {"slots": 2, "class": "pick"},
+      "dig_power": 3, "tool_class": "pick", "dig_speed": 6, "damage": 9, "reach_m": 1.9, "arc_deg": 70, "stamina": 9, "cooldown_s": 0.6, "poise": 10, "knockback": 2.5, "guard": 0.4,
+      "tuned_to": "dressed_stone"},
+    {"key": "embersteel_pick", "name": "Embersteel pick (placeholder)", "kind": "tool", "stack": 1, "color": "#b0583a", "durability": 520, "inscribe": {"slots": 2, "class": "pick"},
+      "dig_power": 4, "tool_class": "pick", "dig_speed": 9, "damage": 13, "reach_m": 2.0, "arc_deg": 70, "stamina": 9, "cooldown_s": 0.55, "poise": 14, "knockback": 3.0, "guard": 0.45},
+    {"key": "embersteel_blade", "name": "Embersteel blade (placeholder)", "kind": "weapon", "stack": 1, "color": "#c0603e", "durability": 420, "inscribe": {"slots": 2, "class": "weapon"},
+      "dig_power": 1, "tool_class": "hand", "dig_speed": 2, "damage": 22, "reach_m": 2.4, "arc_deg": 85, "stamina": 10, "cooldown_s": 0.5, "poise": 20, "knockback": 3.5, "guard": 0.55},
 
     {"key": "dust_mask",       "name": "Dust mask",    "kind": "gear", "stack": 1, "color": "#a08060", "grants_flag": "masked"},
 
@@ -47,6 +54,7 @@
     {"key": "wing_dust",       "name": "Wing dust",     "kind": "material", "stack": 50, "color": "#e8d890"},
     {"key": "bronze_fitting",  "name": "Bronze fitting", "kind": "material", "stack": 20, "color": "#a8743a"},
     {"key": "word_fragment",   "name": "Word fragment (placeholder)", "kind": "material", "stack": 10, "color": "#3fb8a8"},
+    {"key": "embersteel_bar",  "name": "Embersteel bar (placeholder)", "kind": "material", "stack": 30, "color": "#c26a42"},
     {"key": "campfire_kit",    "name": "Campfire",     "kind": "structure", "stack": 10, "color": "#e07a30", "structure": "campfire"},
     {"key": "tether_stone",    "name": "Tether stone", "kind": "structure", "stack": 5,  "color": "#3fb8a8", "structure": "tether"}
   ],
@@ -59,7 +67,8 @@
     "grinleaf":     [{"item": "grinleaf_bud"}, {"item": "grinleaf_seed", "chance": 0.5}],
     "gold_flower":  [],
     "white_flower": [],
-    "water":        []
+    "water":        [],
+    "singing_quartz": []
   },
   "structures": {
     "campfire": {"name": "Campfire", "heat_m": 5.0, "station": "fire", "light": "#ff9a50", "color": "#e07a30", "draws_moths": true},
@@ -80,6 +89,9 @@
     {"id": "roast_redroot", "out": "roast_redroot", "n": 1, "in": {"redroot": 1}, "station": "fire"},
     {"id": "roast_meat",    "out": "roast_meat",    "n": 1, "in": {"raw_meat": 1}, "station": "fire"},
     {"id": "grinleaf_roll", "out": "grinleaf_roll", "n": 1, "in": {"grinleaf_bud": 2}, "station": "fire"},
-    {"id": "fallhammer",    "out": "fallhammer",    "n": 1, "in": {"deep_stone": 12, "reed_stalk": 2, "cord": 2, "hide": 1}, "station": "tether"}
+    {"id": "fallhammer",    "out": "fallhammer",    "n": 1, "in": {"deep_stone": 12, "reed_stalk": 2, "cord": 2, "hide": 1}, "station": "tether"},
+    {"id": "embersteel_bar", "out": "embersteel_bar", "n": 1, "in": {"embersteel_ore": 3}, "station": "fire"},
+    {"id": "embersteel_pick", "out": "embersteel_pick", "n": 1, "in": {"embersteel_bar": 2, "timber": 2, "cord": 1}, "station": "fire"},
+    {"id": "embersteel_blade", "out": "embersteel_blade", "n": 1, "in": {"embersteel_bar": 2, "hide": 1, "cord": 1}, "station": "fire"}
   ]
 }

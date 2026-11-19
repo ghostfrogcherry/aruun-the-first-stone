@@ -593,6 +593,21 @@ namespace Aruun.Game
             if (words.Length > 0 && GUI.Button(new Rect(x, y, 170, 24), "Grind off " + h.WordName(words[words.Length - 1]))) h.Erase(PlaySession.LocalId, slot);
             y += 32;
 
+            // Tuning: set a material into the item's channels, and it becomes something else.
+            Tuning tuning = h.TuningFor(PlaySession.LocalId, slot);
+            if (tuning != null && h.Items.Has(tuning.Into))
+            {
+                string why = h.CanTune(PlaySession.LocalId, slot);
+                var need = new List<string>();
+                foreach (var kv in tuning.In) need.Add(kv.Value + " " + (h.Items.Has(kv.Key) ? h.Items.Get(kv.Key).Name.ToLowerInvariant() : kv.Key));
+                GUI.Label(new Rect(x, y, w - 120, 20), "Tune into a " + h.Items.Get(tuning.Into).Name.ToLowerInvariant() + " (" + string.Join(", ", need.ToArray()) + ")");
+                GUI.Label(new Rect(x, y + 16, w - 120, 20), why, _small);
+                GUI.enabled = why.Length == 0;
+                if (GUI.Button(new Rect(x + w - 80, y + 2, 80, 26), "Tune")) h.Tune(PlaySession.LocalId, slot);
+                GUI.enabled = true;
+                y += 40;
+            }
+
             GUI.Label(new Rect(x, y, w, 20), "Words you could cut", _title);
             y += 24;
             bool any = false;

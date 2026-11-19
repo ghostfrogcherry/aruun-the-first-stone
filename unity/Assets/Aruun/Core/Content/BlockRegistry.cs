@@ -25,6 +25,8 @@ namespace Aruun.Core.Content
         public ToolClass Tool = ToolClass.Hand;
         /// <summary>How much digging one bite takes. A fitting tool wears off its dig speed per second.</summary>
         public double Health;
+        /// <summary>Said to the player after a refused dig, as a clue to what might break it ("" for none).</summary>
+        public string Hint = "";
         public byte R, G, B, A = 255;
         /// <summary>
         /// Another colour that means this block in .vox files ("paint" in blocks.json), so art
@@ -95,6 +97,7 @@ namespace Aruun.Core.Content
                 b.Tool = ToolClasses.Parse(MiniJson.Str(o, "tool"), ToolClass.Hand);
                 if (b.Tool == ToolClass.Any) throw new FormatException("blocks.json: " + b.Key + " cannot need tool 'any'");
                 b.Health = MiniJson.Num(o, "health", 2 + 4 * Math.Min(b.Hardness, 10));
+                b.Hint = MiniJson.Str(o, "hint");
                 string hex = MiniJson.Str(o, "color", "#ff00ff");
                 if (hex.Length != 7 || hex[0] != '#') throw new FormatException("blocks.json: bad color '" + hex + "' on " + b.Key);
                 b.R = byte.Parse(hex.Substring(1, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);

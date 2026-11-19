@@ -40,6 +40,16 @@ namespace Aruun.Core.Inscription
     }
 
     /// <summary>
+    /// Changing one item into another at the table (tuning a ringing pick with singing quartz).
+    /// The item keeps its words and wear.
+    /// </summary>
+    public sealed class Tuning
+    {
+        public string From = "", Into = "", NeedsWord = "", Text = "";
+        public Dictionary<string, int> In = new Dictionary<string, int>();
+    }
+
+    /// <summary>
     /// Every inscription rule, read from content/language/inscriptions.json. Immutable after
     /// loading. Effects are a fixed list of code paths with hard limits: content picks numbers
     /// inside those limits, it never names code that does not exist.
@@ -55,6 +65,14 @@ namespace Aruun.Core.Inscription
         readonly List<InscriptionRule> _compositions = new List<InscriptionRule>();
         readonly Dictionary<string, Dictionary<string, object>> _limits = new Dictionary<string, Dictionary<string, object>>();
         readonly List<Dictionary<string, int>> _slotCosts = new List<Dictionary<string, int>>();
+        readonly List<Tuning> _tunings = new List<Tuning>();
+
+        /// <summary>The tuning that changes this item, or null.</summary>
+        public Tuning TuningFrom(string itemKey)
+        {
+            foreach (var t in _tunings) if (t.From == itemKey) return t;
+            return null;
+        }
 
         public IEnumerable<InscriptionRule> WordRules { get { return _words.Values; } }
         public IReadOnlyList<InscriptionRule> Compositions { get { return _compositions; } }
@@ -103,6 +121,15 @@ namespace Aruun.Core.Inscription
                 var o = x as Dictionary<string, object>;
                 if (o != null) foreach (var kv in o) cost[kv.Key] = (int)(double)kv.Value;
                 rules._slotCosts.Add(cost);
+            }
+            foreach (var x in MiniJson.List(root, "tunings"))
+            {
+                var o = x as Dictionary<string, object>;
+                if (o == null) continue;
+                var t = new Tuning { From = MiniJson.Str(o, "from"), Into = MiniJson.Str(o, "into"), NeedsWord = MiniJson.Str(o, "needs_word"), Text = MiniJson.Str(o, "text") };
+                var inn = MiniJson.Obj(o, "in");
+                if (inn != null) foreach (var kv in inn) t.In[kv.Key] = (int)(double)kv.Value;
+                rules._tunings.Add(t);
             }
             foreach (var x in MiniJson.List(root, "effects"))
             {
@@ -209,6 +236,7 @@ namespace Aruun.Core.Inscription
                         if (r.Num("vein_max") < 0 || r.Num("vein_max") > Limit(r.Effect, "max_vein_max", 64)) problems.Add(what + ": vein_max out of bounds");
                         if (r.Num("vein_radius_m") < 0 || r.Num("vein_radius_m") > Limit(r.Effect, "max_vein_radius_m", 3)) problems.Add(what + ": vein_radius_m out of bounds");
                         if (r.DurationS <= 0 || r.DurationS > Limit(r.Effect, "max_duration_s", 30)) problems.Add(what + ": duration out of bounds");
+                        if (r.Num("power_bonus") < 0 || r.Num("power_bonus") > Limit(r.Effect, "max_power_bonus", 2)) problems.Add(what + ": power_bonus out of bounds");
                         break;
                     case "fortify":
                         if (r.Num("wear_mult", -1) < Limit(r.Effect, "min_wear_mult", 0.2) || r.Num("wear_mult", -1) > 1) problems.Add(what + ": wear_mult out of bounds");
@@ -228,6 +256,13 @@ namespace Aruun.Core.Inscription
                 foreach (var kv in _slotCosts)
                     foreach (var c in kv)
                         if (!items.Has(c.Key)) problems.Add("slot cost uses unknown item '" + c.Key + "'");
+            foreach (var t in _tunings)
+            {
+                string what = "tuning of '" + t.From + "'";
+                if (items != null && (!items.Has(t.From) || !items.Has(t.Into))) problems.Add(what + " names an unknown item");
+                if (lexicon != null && t.NeedsWord.Length > 0 && !lexicon.Has(t.NeedsWord)) problems.Add(what + " needs unknown word '" + t.NeedsWord + "'");
+                if (items != null) foreach (var c in t.In) if (!items.Has(c.Key)) problems.Add(what + " uses unknown item '" + c.Key + "'");
+            }
             return problems;
         }
     }
