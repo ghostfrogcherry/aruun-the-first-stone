@@ -54,7 +54,7 @@ namespace Aruun.Core.Tests
             BlockRegistry blocks = TestContent.Blocks();
             var a = new TerrainGenerator(1234, blocks).Generate(new ChunkCoord(3, 1, -2));
             var b = new TerrainGenerator(1234, blocks).Generate(new ChunkCoord(3, 1, -2));
-            Assert.That(a.Ids, Is.EqualTo(b.Ids));
+            Assert.That(a.ToArray(), Is.EqualTo(b.ToArray()));
         }
 
         [Test]
@@ -118,7 +118,7 @@ namespace Aruun.Core.Tests
             for (int cz = 0; cz < 6; cz++)
                 for (int cx = 0; cx < 6; cx++)
                     for (int cy = 0; cy < 4; cy++)
-                        foreach (ushort id in gen.Generate(new ChunkCoord(cx, cy, cz)).Ids)
+                        foreach (ushort id in gen.Generate(new ChunkCoord(cx, cy, cz)).ToArray())
                         {
                             int n; count.TryGetValue(id, out n); count[id] = n + 1;
                         }
@@ -137,7 +137,7 @@ namespace Aruun.Core.Tests
             var left = gen.Generate(new ChunkCoord(0, 1, 0));
             var right = gen.Generate(new ChunkCoord(1, 1, 0));
             var again = new TerrainGenerator(7, blocks).Generate(new ChunkCoord(1, 1, 0));
-            Assert.That(right.Ids, Is.EqualTo(again.Ids));
+            Assert.That(right.ToArray(), Is.EqualTo(again.ToArray()));
             Assert.That(left.Coord, Is.Not.EqualTo(right.Coord));
         }
     }
@@ -319,6 +319,28 @@ namespace Aruun.Core.Tests
             Assert.That(mesh.IsEmpty, Is.False);
             Assert.That(mesh.VertexCount, Is.LessThan(40000), "greedy meshing should keep a surface chunk small");
         }
+
+        [Test]
+        public void FarChunksUnloadAndEditsComeBack()
+        {
+            BlockRegistry blocks = TestContent.Blocks();
+            var world = new VoxelWorld(42, blocks);
+            int h = world.Generator.Field.HeightAt(5, 5);
+            // A far chunk with a hole dug in it, and one near the centre.
+            int fx = 32 * 40 + 5;
+            int fh = world.Generator.Field.HeightAt(fx, 5);
+            Assert.That(world.Get(fx, fh - 2, 5), Is.Not.EqualTo(0));
+            world.Apply(EditOp.Set(fx, fh - 2, 5, 0));
+            Assert.That(world.Get(fx, fh - 2, 5), Is.EqualTo(0));
+            world.Get(5, h, 5);
+            int before = world.LoadedChunks;
+            int dropped = world.UnloadFarFrom(0, 0, 10);
+            Assert.That(dropped, Is.GreaterThan(0));
+            Assert.That(world.LoadedChunks, Is.EqualTo(before - dropped));
+            Assert.That(world.Get(5, h, 5), Is.Not.EqualTo(0xFFFF));
+            // Brought back from the seed, with the edit put back.
+            Assert.That(world.Get(fx, fh - 2, 5), Is.EqualTo(0));
+        }
     }
 
     public class EditTests
@@ -416,7 +438,7 @@ namespace Aruun.Core.Tests
             var reloaded = new VoxelWorld(42, blocks);
             foreach (EditOp op in Journal.Read(new StringReader(text.ToString()), out seed, out gen, out skipped))
                 reloaded.Apply(op);
-            Assert.That(reloaded.GetChunk(coord).Ids, Is.EqualTo(world.GetChunk(coord).Ids));
+            Assert.That(reloaded.GetChunk(coord).ToArray(), Is.EqualTo(world.GetChunk(coord).ToArray()));
         }
 
         [Test]
@@ -455,7 +477,7 @@ namespace Aruun.Core.Tests
             for (int i = 0; i < 12; i++)
             {
                 var c = new ChunkCoord(i % 4, 1, i % 3);
-                Assert.That(world.GetChunk(c).Ids, Is.EqualTo(reference.GetChunk(c).Ids));
+                Assert.That(world.GetChunk(c).ToArray(), Is.EqualTo(reference.GetChunk(c).ToArray()));
             }
         }
 

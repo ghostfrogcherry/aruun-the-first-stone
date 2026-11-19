@@ -1,3 +1,4 @@
+using System;
 using Aruun.Core.Content;
 using Aruun.Core.Ruins;
 using Aruun.Core.Town;
@@ -42,9 +43,14 @@ namespace Aruun.Core.Worldgen
             if (map != null) Ruin = EchoRuin.ForMap(Field, blocks);
         }
 
+        // Each worker thread builds a chunk in its own full-size array, then keeps a small copy.
+        [ThreadStatic] static ushort[] _scratch;
+
         public VoxelChunk Generate(ChunkCoord coord)
         {
-            var chunk = new VoxelChunk(coord);
+            ushort[] scratch = _scratch ?? (_scratch = new ushort[WorldConfig.ChunkVolume]);
+            Array.Clear(scratch, 0, scratch.Length);
+            var chunk = new VoxelChunk(coord, scratch);
             const int n = WorldConfig.ChunkSize;
             int ox = coord.OriginX, oy = coord.OriginY, oz = coord.OriginZ;
             for (int z = 0; z < n; z++)
@@ -77,7 +83,7 @@ namespace Aruun.Core.Worldgen
             if (Field.Map != null) ApplyMarkers(chunk);
             if (Village != null) Village.Stamp(chunk, _blocks);
             if (Ruin != null) Ruin.Stamp(chunk);
-            return chunk;
+            return chunk.Compact();
         }
 
         /// <summary>
@@ -88,8 +94,10 @@ namespace Aruun.Core.Worldgen
         {
             const int n = WorldConfig.ChunkSize;
             int ox = chunk.Coord.OriginX, oy = chunk.Coord.OriginY, oz = chunk.Coord.OriginZ;
-            foreach (MapPlace p in Field.Map.Places)
+            var places = Field.Map.Places;
+            for (int pi = 0; pi < places.Count; pi++)
             {
+                MapPlace p = places[pi];
                 if (p.X + 2 < ox || p.X - 2 >= ox + n || p.Z + 2 < oz || p.Z - 2 >= oz + n) continue;
                 int g = Field.HeightAt(p.X, p.Z);
                 if (g < HeightField.SeaLevel) g = HeightField.SeaLevel;

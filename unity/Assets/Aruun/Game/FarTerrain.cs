@@ -206,8 +206,12 @@ namespace Aruun.Game
 
         static int FloorDiv(int a, int b) { int q = a / b; return (a % b != 0 && a < 0) ? q - 1 : q; }
 
+        /// <summary>How many times the far mesh has been replaced (for --bench).</summary>
+        public int Rebuilds { get; private set; }
+
         void Apply(Data d)
         {
+            Rebuilds++;
             transform.position = new Vector3(d.Centre.x, 0f, d.Centre.y);
             _mesh.Clear();
             _mesh.vertices = d.Positions;

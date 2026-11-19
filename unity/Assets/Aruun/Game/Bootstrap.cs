@@ -142,7 +142,7 @@ namespace Aruun.Game
             far.Init(world, cam.transform, (view.ViewChunks - 2) * WorldConfig.ChunkSize * WorldConfig.VoxelSize);
 
             var player = cam.gameObject.AddComponent<DevPlayer>();
-            player.Init(view, map, options.Seed, options.Fly || options.Pose != null);
+            player.Init(view, map, options.Seed, options.Fly || options.Pose != null || options.Bench > 0);
             var day = cam.gameObject.AddComponent<DayNight>();
             day.Sun = sun;
             if (options.Hour >= 0f) { day.Hour = options.Hour; day.Paused = true; day.SetHourSoon(options.Hour); }
@@ -153,7 +153,8 @@ namespace Aruun.Game
             play.Init(view, options.Seed, player.Feet);
             play.Journal = player.RecordEdit;
             cam.gameObject.AddComponent<PlayHud>();
-            if (!string.IsNullOrEmpty(options.ShotPath)) DevInput.Enabled = false;
+            if (!string.IsNullOrEmpty(options.ShotPath) || options.Bench > 0) DevInput.Enabled = false;
+            if (options.Bench > 0) cam.gameObject.AddComponent<Bench>().Init(options.Bench, view, player, far);
             if (!string.IsNullOrEmpty(options.ShotPath))
                 cam.gameObject.AddComponent<AutoScreenshot>().Init(options.ShotPath, options.ShotAfter, view);
             Debug.Log("Aruun started. Seed " + options.Seed + ", view " + viewMeters + " m, content at " + GameContent.Root);

@@ -25,6 +25,8 @@ namespace Aruun.Core.Voxels
         readonly int[] _mask = new int[N * N];
         /// <summary>Brightness for 0..3 open neighbours at a corner (ambient occlusion), out of 255.</summary>
         static readonly int[] Shade = { 140, 180, 215, 255 };
+        static readonly int[] CrossOrder = { 0, 1, 2, 0, 2, 3, 0, 2, 1, 0, 3, 2 };
+        readonly int[] _pos = new int[3], _step = new int[3];
 
         public GreedyMesher(BlockRegistry blocks)
         {
@@ -48,8 +50,7 @@ namespace Aruun.Core.Voxels
         public void Build(ushort[] padded, MeshData mesh)
         {
             mesh.Clear();
-            int[] pos = new int[3];
-            int[] step = new int[3];
+            int[] pos = _pos, step = _step;
             for (int d = 0; d < 3; d++)
             {
                 int u = (d + 1) % 3, v = (d + 2) % 3;
@@ -121,25 +122,28 @@ namespace Aruun.Core.Voxels
         /// </summary>
         int Occlusion(ushort[] padded, int lx, int ly, int lz, int u, int v)
         {
+            // No arrays here: this runs for every visible face, and the arrays it used to make
+            // were most of the garbage the game produced while flying (600 KB a chunk).
+            int ux = u == 0 ? 1 : 0, uy = u == 1 ? 1 : 0, uz = u == 2 ? 1 : 0;
+            int vx = v == 0 ? 1 : 0, vy = v == 1 ? 1 : 0, vz = v == 2 ? 1 : 0;
             int sig = 0;
-            int[] p = { lx, ly, lz };
             for (int corner = 0; corner < 4; corner++)
             {
                 int su = (corner == 1 || corner == 2) ? 1 : -1;
                 int sv = (corner == 2 || corner == 3) ? 1 : -1;
-                int[] a = { p[0], p[1], p[2] }, b = { p[0], p[1], p[2] }, c = { p[0], p[1], p[2] };
-                a[u] += su; b[v] += sv; c[u] += su; c[v] += sv;
-                bool s1 = Solid(padded, a), s2 = Solid(padded, b), sc = Solid(padded, c);
+                bool s1 = Solid(padded, lx + su * ux, ly + su * uy, lz + su * uz);
+                bool s2 = Solid(padded, lx + sv * vx, ly + sv * vy, lz + sv * vz);
+                bool sc = Solid(padded, lx + su * ux + sv * vx, ly + su * uy + sv * vy, lz + su * uz + sv * vz);
                 int open = s1 && s2 ? 0 : 3 - ((s1 ? 1 : 0) + (s2 ? 1 : 0) + (sc ? 1 : 0));
                 sig |= open << (corner * 2);
             }
             return sig;
         }
 
-        bool Solid(ushort[] padded, int[] p)
+        bool Solid(ushort[] padded, int x, int y, int z)
         {
-            if (p[0] < 0 || p[1] < 0 || p[2] < 0 || p[0] >= Padded || p[1] >= Padded || p[2] >= Padded) return false;
-            ushort id = padded[PaddedIndex(p[0], p[1], p[2])];
+            if (x < 0 || y < 0 || z < 0 || x >= Padded || y >= Padded || z >= Padded) return false;
+            ushort id = padded[PaddedIndex(x, y, z)];
             return id < _opaque.Length && _opaque[id];
         }
 
@@ -149,10 +153,10 @@ namespace Aruun.Core.Voxels
             int first = mesh.VertexCount;
             for (int corner = 0; corner < 4; corner++)
             {
-                float[] p = { origin[0], origin[1], origin[2] };
-                if (corner == 1 || corner == 2) p[u] += w;
-                if (corner == 2 || corner == 3) p[v] += h;
-                mesh.Positions.Add(p[0]); mesh.Positions.Add(p[1]); mesh.Positions.Add(p[2]);
+                float px = origin[0], py = origin[1], pz = origin[2];
+                if (corner == 1 || corner == 2) { if (u == 0) px += w; else if (u == 1) py += w; else pz += w; }
+                if (corner == 2 || corner == 3) { if (v == 0) px += h; else if (v == 1) py += h; else pz += h; }
+                mesh.Positions.Add(px); mesh.Positions.Add(py); mesh.Positions.Add(pz);
                 mesh.Normals.Add(d == 0 ? dir : 0); mesh.Normals.Add(d == 1 ? dir : 0); mesh.Normals.Add(d == 2 ? dir : 0);
                 bool glows = b.Emissive && !b.Transparent;
                 int shade = b.Transparent || glows ? 255 : Shade[(ao >> (corner * 2)) & 3];
@@ -212,8 +216,7 @@ namespace Aruun.Core.Voxels
                     AddCrossVertex(mesh, b, x1, y, z1);
                     AddCrossVertex(mesh, b, x1, y + 1, z1);
                     AddCrossVertex(mesh, b, x0, y + 1, z0);
-                    int[] order = { 0, 1, 2, 0, 2, 3, 0, 2, 1, 0, 3, 2 };
-                    foreach (int k in order) mesh.Opaque.Add(first + k);
+                    foreach (int k in CrossOrder) mesh.Opaque.Add(first + k);
                 }
             }
         }

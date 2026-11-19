@@ -259,8 +259,12 @@ namespace Aruun.Core.Worldgen
                     h -= ((cut * bl.Canyons) >> 16) * One;
                 }
             }
-            foreach (MapPeak p in Map.Peaks)
+            // An indexed loop: foreach over the IReadOnlyList boxed an enumerator on every call,
+            // and this runs for every column of every chunk.
+            var peaks = Map.Peaks;
+            for (int pi = 0; pi < peaks.Count; pi++)
             {
+                MapPeak p = peaks[pi];
                 long dx = x - p.X, dz = z - p.Z;
                 long d2 = dx * dx + dz * dz, r = p.Radius;
                 if (d2 >= r * r) continue;

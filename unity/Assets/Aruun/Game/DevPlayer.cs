@@ -76,7 +76,9 @@ namespace Aruun.Game
             _journalPath = Path.Combine(dir, "journal.txt");
             if (Coop.Joining && File.Exists(_journalPath)) File.Delete(_journalPath);
             LoadJournal();
-            _journal = new StreamWriter(_journalPath, true);
+            // Every edit goes to disk as it happens: a crash must not lose digging and building
+            // the character file (saved every 30 s) already counted in the bag.
+            _journal = new StreamWriter(_journalPath, true) { AutoFlush = true };
             if (new FileInfo(_journalPath).Length == 0) _journal.WriteLine(Journal.Header(seed));
             _journal.Flush();
             Vector3 e = transform.eulerAngles;
@@ -449,6 +451,15 @@ namespace Aruun.Game
         }
 
         /// <summary>Moves the player to column (x, z) in voxels, standing on the ground there.</summary>
+        /// <summary>Puts the flying camera at a point (metres) facing a way (--bench drives this).</summary>
+        public void BenchPose(Vector3 eyeMetres, float yaw, float pitch)
+        {
+            _fly = true;
+            _body = new Body { X = eyeMetres.x / V, Y = (eyeMetres.y - EyeHeight) / V, Z = eyeMetres.z / V };
+            _yaw = yaw; _pitch = pitch;
+            PlaceCamera();
+        }
+
         public void TeleportToVoxel(int x, int z, string label)
         {
             int ground = View.World.Generator.Field.HeightAt(x, z);

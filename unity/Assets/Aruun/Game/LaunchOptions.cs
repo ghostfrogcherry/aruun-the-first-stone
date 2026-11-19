@@ -14,6 +14,7 @@ namespace Aruun.Game
     ///   --host[=port]    open this world to friends (co-op, default port 27461)
     ///   --join=address[:port]   join a friend's world instead (skips the title screen)
     ///   --name=Name      your name in co-op
+    ///   --bench[=secs]   fly a fixed route, measure frame times and memory, write bench.txt, quit
     /// </summary>
     public sealed class LaunchOptions
     {
@@ -29,6 +30,8 @@ namespace Aruun.Game
         public bool SkipTitle;
         /// <summary>--join=address[:port]: join a friend's world instead of opening one.</summary>
         public string JoinAddress;
+        /// <summary>--bench: seconds of measured flight (0 = no bench).</summary>
+        public float Bench;
 
         public static LaunchOptions FromCommandLine()
         {
@@ -39,6 +42,8 @@ namespace Aruun.Game
                 if (arg.StartsWith("--seed=") || arg.StartsWith("--shot=") || arg.StartsWith("--pos=") || arg == "--play" ||
                     arg.StartsWith("--gallery")) o.SkipTitle = true;
                 if (arg == "--fly") o.Fly = true;
+                if (arg == "--bench") { o.Bench = 60f; o.SkipTitle = true; }
+                else if (arg.StartsWith("--bench=") && TryInt(arg.Substring(8), out v)) { o.Bench = Math.Max(10, v); o.SkipTitle = true; }
                 // Co-op: host this world for friends, or join a friend's.
                 if (arg == "--host") Coop.Hosting = true;
                 else if (arg.StartsWith("--host=") && TryInt(arg.Substring(7), out v)) { Coop.Hosting = true; Coop.Port = v; }

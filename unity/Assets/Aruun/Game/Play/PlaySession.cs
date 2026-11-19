@@ -143,7 +143,23 @@ namespace Aruun.Game
             if (!fresh)
             {
                 try { c.FromText(File.ReadAllText(_charPath)); }
-                catch (Exception e) { Debug.LogWarning("Could not read the character (" + e.Message + "), starting fresh"); fresh = true; }
+                catch (Exception e)
+                {
+                    // The last good save is kept beside it (SafeFile): try that before starting over.
+                    string bak = _charPath + ".bak";
+                    try
+                    {
+                        c = new CharacterState(items, rules);
+                        c.FromText(File.ReadAllText(bak));
+                        Debug.LogWarning("Could not read the character (" + e.Message + "), loaded the backup");
+                    }
+                    catch (Exception)
+                    {
+                        Debug.LogWarning("Could not read the character (" + e.Message + "), starting fresh");
+                        c = new CharacterState(items, rules);
+                        fresh = true;
+                    }
+                }
             }
             PlayerRec joined = Host.Join(LocalId, c, ToVec(spawnFeet), fresh && _client == null);
             if (_client != null) joined.RespawnAt = ToVec(spawnFeet);
@@ -366,7 +382,10 @@ namespace Aruun.Game
             Host.Read(me, r.Inscriptions.Find(i => i.Place == "ruin_table"));
             note("inscription: Ulun is " + me.C.Lang.Of("word_sonic"));
             Vec3 feet = new Vec3(r.TableM.X - 1.6, r.CourtM.Y, r.TableM.Z);
+            // The played body follows DevPlayer, which ignores a bare Pos change: move it properly,
+            // or the shockwave below goes off wherever the body was left (and hits nothing).
             me.Pos = feet;
+            me.RespawnAt = feet;
             me.RespawnAt = feet;
             yield return new WaitForSecondsRealtime(1.5f);
             Vec3 eye = me.Pos + new Vec3(0, 1.6, 0);
@@ -404,7 +423,10 @@ namespace Aruun.Game
             foreach (string k in new[] { "fallhammer", "flint_axe", "reed_spear" }) if (me.C.Inv.Count(k) == 0) me.C.Inv.Add(k, 1);
             me.C.Inv.Add("word_fragment", 2);
             Vec3 feet = new Vec3(r.TableM.X - 1.6, r.CourtM.Y, r.TableM.Z);
+            // The played body follows DevPlayer, which ignores a bare Pos change: move it properly,
+            // or the shockwave below goes off wherever the body was left (and hits nothing).
             me.Pos = feet;
+            me.RespawnAt = feet;
             Vec3 eye = me.Pos + new Vec3(0, 1.6, 0);
             Host.Interact(LocalId, eye, r.TableM - new Vec3(0, 0.1, 0) - eye);
             Func<string, int> slotOf = key => { for (int i = 0; i < 32; i++) if (me.C.Inv.KeyAt(i) == key) return i; return -1; };
@@ -418,7 +440,11 @@ namespace Aruun.Game
             Creature target = null;
             foreach (string key in new[] { "redstrider", "skitter" }) if (target == null && Host.CreatureDefs.ContainsKey(key)) target = Host.SpawnCreature(key, new Vec3(feet.X - 3, Host.GroundHeight(feet.X - 3, feet.Z) + 0.05, feet.Z), 9100);
             if (target == null) foreach (var k in Host.CreatureDefs.Keys) { target = Host.SpawnCreature(k, new Vec3(feet.X - 3, Host.GroundHeight(feet.X - 3, feet.Z) + 0.05, feet.Z), 9100); break; }
+            // The table is down in the ruin, below the land's surface where SpawnCreature puts
+            // it: bring the creature down to the court floor beside us.
+            if (target != null) target.Pos = new Vec3(feet.X - 3, feet.Y, feet.Z);
             yield return new WaitForSecondsRealtime(1f);
+            if (target != null) target.Pos = new Vec3(me.Pos.X - 3, me.Pos.Y, me.Pos.Z);
             me.C.Stamina = me.C.StaminaMax;
             double hpBefore = target != null ? target.Hp : 0;
             Vec3 tBefore = target != null ? target.Pos : default;
@@ -785,16 +811,16 @@ namespace Aruun.Game
 
         public void Save()
         {
-            if (_smoke) return;
+            if (_smoke || Bench.Running) return;   // test runs never touch the saves
             PlayerRec me = Me;
             if (me == null) return;
             try
             {
-                File.WriteAllText(_charPath, me.C.ToText());
+                SafeFile.WriteAllText(_charPath, me.C.ToText());
                 if (_client != null) return;   // the world and its flags are the host's to keep
                 var flags = new List<string>();
                 foreach (string f in Host.WorldFlags) flags.Add("flag " + f);
-                File.WriteAllLines(_worldPath, flags.ToArray());
+                SafeFile.WriteAllText(_worldPath, string.Join("\n", flags) + "\n");
             }
             catch (Exception e) { Debug.LogWarning("Could not save the character: " + e.Message); }
         }
