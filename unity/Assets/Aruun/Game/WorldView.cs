@@ -29,6 +29,12 @@ namespace Aruun.Game
         /// <summary>How far out (chunks) the band around the viewer reaches when they are far above the ground.</summary>
         public int AloftChunks = 5;
         public int MeshesPerFrame = 6;
+        /// <summary>
+        /// Milliseconds of mesh copying allowed per frame. Six big chunks at once took 10+ ms and
+        /// showed as stutter; past this budget the rest wait a frame (at least one always goes).
+        /// </summary>
+        public float MeshBudgetMs = 2.5f;
+        readonly System.Diagnostics.Stopwatch _meshClock = new System.Diagnostics.Stopwatch();
 
         public int ShownChunks { get { return _shown.Count; } }
         public int PendingChunks { get { return _inFlight + _wanted.Count; } }
@@ -141,8 +147,10 @@ namespace Aruun.Game
                 _wanted.RemoveAt(_wanted.Count - 1);
                 if (!_shown.ContainsKey(next) && !_empty.Contains(next) && !_requested.Contains(next) && InRange(next, centre)) Request(next);
             }
+            _meshClock.Restart();
             for (int i = 0; i < MeshesPerFrame; i++)
             {
+                if (i > 0 && _meshClock.Elapsed.TotalMilliseconds > MeshBudgetMs) break;
                 Built b;
                 if (!_done.TryDequeue(out b)) break;
                 _inFlight--;

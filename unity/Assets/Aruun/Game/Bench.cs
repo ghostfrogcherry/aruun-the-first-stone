@@ -33,7 +33,7 @@ namespace Aruun.Game
         struct Frame
         {
             public float T, Ms;
-            public int Gc0, Gc2, Meshes, Far;
+            public int Gc, Meshes, Far;
         }
 
         public void Init(float seconds, WorldView view, DevPlayer player, FarTerrain far)
@@ -52,6 +52,7 @@ namespace Aruun.Game
             // Settle: let the first view finish building (at most 30 s) so the start is not counted.
             float t0 = Time.realtimeSinceStartup;
             _player.BenchPose(start, 45f, 8f);
+            for (int i = 0; i < 3; i++) yield return null;     // let the view plan what it wants first
             while (_view.PendingChunks > 0 && Time.realtimeSinceStartup - t0 < 30f) yield return null;
             float settle = Time.realtimeSinceStartup - t0;
             for (int i = 0; i < 30; i++) yield return null;   // a few frames for the far terrain and shaders
@@ -60,7 +61,7 @@ namespace Aruun.Game
             long memStart = GC.GetTotalMemory(false);
             long nativeStart = Profiler.GetTotalAllocatedMemoryLong();
             int loadedPeak = 0, chunksStart = _view.World.LoadedChunks;
-            int gc0 = GC.CollectionCount(0), gc2 = GC.CollectionCount(2), meshes = _view.MeshesUploaded, far = _far != null ? _far.Rebuilds : 0;
+            int gc = GC.CollectionCount(0), meshes = _view.MeshesUploaded, far = _far != null ? _far.Rebuilds : 0;
             float begin = Time.realtimeSinceStartup;
             float lookSecs = _seconds * 0.15f, northSecs = _seconds * 0.5f, turnSecs = _seconds * 0.05f;
             Vector3 pos = start;
@@ -82,9 +83,10 @@ namespace Aruun.Game
                 if (pos.y < ground + 2f) pos.y = ground + 2f;
                 _player.BenchPose(pos, yaw, pitch);
 
-                int g0 = GC.CollectionCount(0), g2 = GC.CollectionCount(2), m = _view.MeshesUploaded, f = _far != null ? _far.Rebuilds : 0;
-                frames.Add(new Frame { T = t, Ms = Time.unscaledDeltaTime * 1000f, Gc0 = g0 - gc0, Gc2 = g2 - gc2, Meshes = m - meshes, Far = f - far });
-                gc0 = g0; gc2 = g2; meshes = m; far = f;
+                // (Unity's collector has no generations, so every collection counts the same.)
+                int g = GC.CollectionCount(0), m = _view.MeshesUploaded, f = _far != null ? _far.Rebuilds : 0;
+                frames.Add(new Frame { T = t, Ms = Time.unscaledDeltaTime * 1000f, Gc = g - gc, Meshes = m - meshes, Far = f - far });
+                gc = g; meshes = m; far = f;
                 loadedPeak = Mathf.Max(loadedPeak, _view.World.LoadedChunks);
             }
 
@@ -124,8 +126,8 @@ namespace Aruun.Game
             int n1 = Math.Max(1, ms.Length / 100);
             double slow = 0; for (int i = ms.Length - n1; i < ms.Length; i++) slow += ms[i];
             float low1 = (float)(1000.0 / (slow / n1));
-            int hitches = 0, gc0 = 0, gc2 = 0, meshes = 0, far = 0;
-            foreach (Frame f in frames) { if (f.Ms > 33.3f) hitches++; gc0 += f.Gc0; gc2 += f.Gc2; meshes += f.Meshes; far += f.Far; }
+            int hitches = 0, gcs = 0, meshes = 0, far = 0;
+            foreach (Frame f in frames) { if (f.Ms > 33.3f) hitches++; gcs += f.Gc; meshes += f.Meshes; far += f.Far; }
 
             sb.Append("frames      ").Append(frames.Count).Append(" in ").Append(_seconds.ToString("0", ci)).Append(" s\n");
             sb.Append("average     ").Append((1000f / avgMs).ToString("0", ci)).Append(" fps (").Append(avgMs.ToString("0.00", ci)).Append(" ms)\n");
@@ -134,9 +136,10 @@ namespace Aruun.Game
             sb.Append("1% low      ").Append(low1.ToString("0", ci)).Append(" fps\n");
             sb.Append("worst       ").Append(ms[ms.Length - 1].ToString("0.0", ci)).Append(" ms\n");
             sb.Append("hitches     ").Append(hitches).Append(" frames over 33 ms\n");
-            sb.Append("GC          ").Append(gc0).Append(" small collections, ").Append(gc2).Append(" full\n");
+            sb.Append("GC          ").Append(gcs).Append(" collections\n");
             sb.Append("chunks      ").Append(meshes).Append(" meshes uploaded, far terrain rebuilt ").Append(far).Append(" times\n");
-            sb.Append("loaded      ").Append(chunksStart).Append(" chunks at start, ").Append(_view.World.LoadedChunks).Append(" at end, peak ").Append(loadedPeak).Append('\n');
+            sb.Append("loaded      ").Append(chunksStart).Append(" chunks at start, ").Append(_view.World.LoadedChunks).Append(" at end, peak ").Append(loadedPeak)
+              .Append(", voxel data ").Append(Mb(_view.World.StorageBytes)).Append(" MB\n");
             sb.Append("memory      managed ").Append(Mb(memStart)).Append(" -> ").Append(Mb(GC.GetTotalMemory(false)))
               .Append(" MB, Unity ").Append(Mb(nativeStart)).Append(" -> ").Append(Mb(Profiler.GetTotalAllocatedMemoryLong())).Append(" MB\n\n");
 
@@ -148,8 +151,7 @@ namespace Aruun.Game
             {
                 Frame f = worst[i];
                 sb.Append("  ").Append(f.T.ToString("0.00", ci).PadLeft(6)).Append(" s ").Append(f.Ms.ToString("0.0", ci).PadLeft(6)).Append(" ms ");
-                if (f.Gc2 > 0) sb.Append(" full-GC");
-                else if (f.Gc0 > 0) sb.Append(" GC");
+                if (f.Gc > 0) sb.Append(" GC");
                 if (f.Far > 0) sb.Append(" far-terrain");
                 if (f.Meshes > 0) sb.Append(' ').Append(f.Meshes).Append("-meshes");
                 sb.Append('\n');

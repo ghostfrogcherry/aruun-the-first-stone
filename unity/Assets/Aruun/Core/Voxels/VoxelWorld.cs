@@ -52,7 +52,7 @@ namespace Aruun.Core.Voxels
                 // chunk was generating cannot fall between the two.
                 Dictionary<int, ushort> edits;
                 if (_edits.TryGetValue(coord, out edits))
-                    foreach (var e in edits) chunk.Ids[e.Key] = e.Value;
+                    foreach (var e in edits) chunk.Set(e.Key, e.Value);
                 return _chunks.GetOrAdd(coord, chunk);
             }
         }
@@ -94,7 +94,8 @@ namespace Aruun.Core.Voxels
         public void FillPadded(ChunkCoord coord, ushort[] padded)
         {
             const int p = GreedyMesher.Padded;
-            var near = new VoxelChunk[27];
+            VoxelChunk[] near = _near ?? (_near = new VoxelChunk[27]);
+            System.Array.Clear(near, 0, near.Length);
             for (int py = 0; py < p; py++)
             {
                 int cy = py == 0 ? -1 : py == p - 1 ? 1 : 0;
@@ -109,11 +110,17 @@ namespace Aruun.Core.Voxels
                         int lx = (px - 1) & WorldConfig.ChunkMask;
                         int slot = (cx + 1) + (cz + 1) * 3 + (cy + 1) * 9;
                         VoxelChunk c = near[slot] ?? (near[slot] = GetChunk(coord.Offset(cx, cy, cz)));
-                        padded[GreedyMesher.PaddedIndex(px, py, pz)] = c.Ids[VoxelChunk.Index(lx, ly, lz)];
+                        padded[GreedyMesher.PaddedIndex(px, py, pz)] = c.Get(VoxelChunk.Index(lx, ly, lz));
                     }
                 }
             }
+            System.Array.Clear(near, 0, near.Length);   // let unloaded chunks go
         }
+
+        [System.ThreadStatic] static VoxelChunk[] _near;
+
+        /// <summary>Bytes of voxel data held in memory (for stats).</summary>
+        public long StorageBytes { get { long n = 0; foreach (var c in _chunks.Values) n += c.StorageBytes; return n; } }
 
         /// <summary>Applies one op. Every machine must apply the same ops in the same order.</summary>
         public EditResult Apply(EditOp op)
@@ -138,14 +145,14 @@ namespace Aruun.Core.Voxels
             }
             int lx = x & WorldConfig.ChunkMask, ly = y & WorldConfig.ChunkMask, lz = z & WorldConfig.ChunkMask;
             int index = VoxelChunk.Index(lx, ly, lz);
-            ushort old = chunk.Ids[index];
+            ushort old = chunk.Get(index);
             if (old == block) return;
             BlockDef was = Blocks.Get(old);
             if (block == 0 && !DigRules.CanBreak(was, tool, power)) return;
             // Building fills empty space (air, water, plants). It never overwrites something solid.
             if (block != 0 && was.Collision) return;
 
-            chunk.Ids[index] = block;
+            chunk.Set(index, block);
             Dictionary<int, ushort> edits;
             if (!_edits.TryGetValue(coord, out edits)) _edits[coord] = edits = new Dictionary<int, ushort>();
             edits[index] = block;

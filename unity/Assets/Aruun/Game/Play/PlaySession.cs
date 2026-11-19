@@ -382,7 +382,10 @@ namespace Aruun.Game
             Host.Read(me, r.Inscriptions.Find(i => i.Place == "ruin_table"));
             note("inscription: Ulun is " + me.C.Lang.Of("word_sonic"));
             Vec3 feet = new Vec3(r.TableM.X - 1.6, r.CourtM.Y, r.TableM.Z);
+            // The played body follows DevPlayer, which ignores a bare Pos change: move it properly,
+            // or the shockwave below goes off wherever the body was left (and hits nothing).
             me.Pos = feet;
+            me.RespawnAt = feet;
             me.RespawnAt = feet;
             yield return new WaitForSecondsRealtime(1.5f);
             Vec3 eye = me.Pos + new Vec3(0, 1.6, 0);
@@ -420,7 +423,10 @@ namespace Aruun.Game
             foreach (string k in new[] { "fallhammer", "flint_axe", "reed_spear" }) if (me.C.Inv.Count(k) == 0) me.C.Inv.Add(k, 1);
             me.C.Inv.Add("word_fragment", 2);
             Vec3 feet = new Vec3(r.TableM.X - 1.6, r.CourtM.Y, r.TableM.Z);
+            // The played body follows DevPlayer, which ignores a bare Pos change: move it properly,
+            // or the shockwave below goes off wherever the body was left (and hits nothing).
             me.Pos = feet;
+            me.RespawnAt = feet;
             Vec3 eye = me.Pos + new Vec3(0, 1.6, 0);
             Host.Interact(LocalId, eye, r.TableM - new Vec3(0, 0.1, 0) - eye);
             Func<string, int> slotOf = key => { for (int i = 0; i < 32; i++) if (me.C.Inv.KeyAt(i) == key) return i; return -1; };
