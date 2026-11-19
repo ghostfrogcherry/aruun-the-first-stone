@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using UnityEngine;
+using Unity.Profiling;
 using UnityEngine.Profiling;
 
 namespace Aruun.Game
@@ -34,6 +35,7 @@ namespace Aruun.Game
         {
             public float T, Ms;
             public int Gc, Meshes, Far;
+            public long AllocKb, Batches, SetPass, ShadowCasters;
         }
 
         public void Init(float seconds, WorldView view, DevPlayer player, FarTerrain far)
@@ -58,6 +60,11 @@ namespace Aruun.Game
             for (int i = 0; i < 30; i++) yield return null;   // a few frames for the far terrain and shaders
 
             var frames = new List<Frame>(20000);
+            // Counters that work in a normal (non-development) build.
+            var alloc = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC Allocated In Frame");
+            var batches = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Batches Count");
+            var setPass = ProfilerRecorder.StartNew(ProfilerCategory.Render, "SetPass Calls Count");
+            var casters = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Shadow Casters Count");
             long memStart = GC.GetTotalMemory(false);
             long nativeStart = Profiler.GetTotalAllocatedMemoryLong();
             int loadedPeak = 0, chunksStart = _view.World.LoadedChunks;
@@ -85,11 +92,14 @@ namespace Aruun.Game
 
                 // (Unity's collector has no generations, so every collection counts the same.)
                 int g = GC.CollectionCount(0), m = _view.MeshesUploaded, f = _far != null ? _far.Rebuilds : 0;
-                frames.Add(new Frame { T = t, Ms = Time.unscaledDeltaTime * 1000f, Gc = g - gc, Meshes = m - meshes, Far = f - far });
+                frames.Add(new Frame { T = t, Ms = Time.unscaledDeltaTime * 1000f, Gc = g - gc, Meshes = m - meshes, Far = f - far,
+                    AllocKb = alloc.Valid ? alloc.LastValue / 1024 : -1, Batches = batches.Valid ? batches.LastValue : -1,
+                    SetPass = setPass.Valid ? setPass.LastValue : -1, ShadowCasters = casters.Valid ? casters.LastValue : -1 });
                 gc = g; meshes = m; far = f;
                 loadedPeak = Mathf.Max(loadedPeak, _view.World.LoadedChunks);
             }
 
+            alloc.Dispose(); batches.Dispose(); setPass.Dispose(); casters.Dispose();
             string report = Report(frames, settle, memStart, nativeStart, chunksStart, loadedPeak);
             string path = Path.Combine(Application.persistentDataPath, "bench.txt");
             try { File.WriteAllText(path, report); } catch (Exception e) { Debug.LogWarning("Could not write " + path + ": " + e.Message); }
@@ -127,7 +137,8 @@ namespace Aruun.Game
             double slow = 0; for (int i = ms.Length - n1; i < ms.Length; i++) slow += ms[i];
             float low1 = (float)(1000.0 / (slow / n1));
             int hitches = 0, gcs = 0, meshes = 0, far = 0;
-            foreach (Frame f in frames) { if (f.Ms > 33.3f) hitches++; gcs += f.Gc; meshes += f.Meshes; far += f.Far; }
+            long allocKb = 0, batchSum = 0;
+            foreach (Frame f in frames) { if (f.Ms > 33.3f) hitches++; gcs += f.Gc; meshes += f.Meshes; far += f.Far; allocKb += Math.Max(0, f.AllocKb); batchSum += Math.Max(0, f.Batches); }
 
             sb.Append("frames      ").Append(frames.Count).Append(" in ").Append(_seconds.ToString("0", ci)).Append(" s\n");
             sb.Append("average     ").Append((1000f / avgMs).ToString("0", ci)).Append(" fps (").Append(avgMs.ToString("0.00", ci)).Append(" ms)\n");
@@ -136,7 +147,8 @@ namespace Aruun.Game
             sb.Append("1% low      ").Append(low1.ToString("0", ci)).Append(" fps\n");
             sb.Append("worst       ").Append(ms[ms.Length - 1].ToString("0.0", ci)).Append(" ms\n");
             sb.Append("hitches     ").Append(hitches).Append(" frames over 33 ms\n");
-            sb.Append("GC          ").Append(gcs).Append(" collections\n");
+            sb.Append("GC          ").Append(gcs).Append(" collections, ").Append((allocKb / (double)frames.Count).ToString("0.0", ci)).Append(" KB allocated a frame\n");
+            sb.Append("draw        ").Append(batchSum / frames.Count).Append(" batches a frame on average\n");
             sb.Append("chunks      ").Append(meshes).Append(" meshes uploaded, far terrain rebuilt ").Append(far).Append(" times\n");
             sb.Append("loaded      ").Append(chunksStart).Append(" chunks at start, ").Append(_view.World.LoadedChunks).Append(" at end, peak ").Append(loadedPeak)
               .Append(", voxel data ").Append(Mb(_view.World.StorageBytes)).Append(" MB\n");
@@ -154,6 +166,8 @@ namespace Aruun.Game
                 if (f.Gc > 0) sb.Append(" GC");
                 if (f.Far > 0) sb.Append(" far-terrain");
                 if (f.Meshes > 0) sb.Append(' ').Append(f.Meshes).Append("-meshes");
+                sb.Append("  (alloc ").Append(f.AllocKb).Append(" KB, batches ").Append(f.Batches).Append(", setpass ").Append(f.SetPass)
+                  .Append(", shadow casters ").Append(f.ShadowCasters).Append(')');
                 sb.Append('\n');
             }
             return sb.ToString();

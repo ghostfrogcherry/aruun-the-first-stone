@@ -440,7 +440,11 @@ namespace Aruun.Game
             Creature target = null;
             foreach (string key in new[] { "redstrider", "skitter" }) if (target == null && Host.CreatureDefs.ContainsKey(key)) target = Host.SpawnCreature(key, new Vec3(feet.X - 3, Host.GroundHeight(feet.X - 3, feet.Z) + 0.05, feet.Z), 9100);
             if (target == null) foreach (var k in Host.CreatureDefs.Keys) { target = Host.SpawnCreature(k, new Vec3(feet.X - 3, Host.GroundHeight(feet.X - 3, feet.Z) + 0.05, feet.Z), 9100); break; }
+            // The table is down in the ruin, below the land's surface where SpawnCreature puts
+            // it: bring the creature down to the court floor beside us.
+            if (target != null) target.Pos = new Vec3(feet.X - 3, feet.Y, feet.Z);
             yield return new WaitForSecondsRealtime(1f);
+            if (target != null) target.Pos = new Vec3(me.Pos.X - 3, me.Pos.Y, me.Pos.Z);
             me.C.Stamina = me.C.StaminaMax;
             double hpBefore = target != null ? target.Hp : 0;
             Vec3 tBefore = target != null ? target.Pos : default;
