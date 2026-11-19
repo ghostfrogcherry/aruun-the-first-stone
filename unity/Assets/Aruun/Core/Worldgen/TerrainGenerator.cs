@@ -94,8 +94,10 @@ namespace Aruun.Core.Worldgen
         {
             const int n = WorldConfig.ChunkSize;
             int ox = chunk.Coord.OriginX, oy = chunk.Coord.OriginY, oz = chunk.Coord.OriginZ;
-            foreach (MapPlace p in Field.Map.Places)
+            var places = Field.Map.Places;
+            for (int pi = 0; pi < places.Count; pi++)
             {
+                MapPlace p = places[pi];
                 if (p.X + 2 < ox || p.X - 2 >= ox + n || p.Z + 2 < oz || p.Z - 2 >= oz + n) continue;
                 int g = Field.HeightAt(p.X, p.Z);
                 if (g < HeightField.SeaLevel) g = HeightField.SeaLevel;

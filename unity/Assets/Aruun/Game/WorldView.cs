@@ -57,6 +57,7 @@ namespace Aruun.Game
         readonly List<Vector3> _positions = new List<Vector3>(), _normals = new List<Vector3>();
         readonly List<Color32> _colors = new List<Color32>();
         Material _opaque, _transparent;
+        Material[] _opaqueOnly, _bothMaterials;
         // Lamps per chunk (world metres, w = voxel count), and the nearest ones handed to the shader.
         readonly Dictionary<ChunkCoord, Vector4[]> _lights = new Dictionary<ChunkCoord, Vector4[]>();
         readonly List<Vector4> _near = new List<Vector4>();
@@ -88,6 +89,8 @@ namespace Aruun.Game
             _transparent.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
             _transparent.SetFloat("_ZWrite", 0f);
             _transparent.SetShaderPassEnabled("ShadowCaster", false); // water casts no shadow
+            _opaqueOnly = new[] { _opaque };
+            _bothMaterials = new[] { _opaque, _transparent };
         }
 
         /// <summary>Viewer position in voxel coordinates.</summary>
@@ -364,7 +367,7 @@ namespace Aruun.Game
                 go.transform.localPosition = new Vector3(b.Coord.OriginX, b.Coord.OriginY, b.Coord.OriginZ);
                 mesh = new Mesh { name = go.name };
                 go.AddComponent<MeshFilter>().sharedMesh = mesh;
-                go.AddComponent<MeshRenderer>().sharedMaterials = new[] { _opaque, _transparent };
+                go.AddComponent<MeshRenderer>().sharedMaterials = _opaqueOnly;
                 _shown[b.Coord] = go;
             }
             else
@@ -386,9 +389,14 @@ namespace Aruun.Game
             mesh.SetVertices(_positions);
             mesh.SetNormals(_normals);
             mesh.SetColors(_colors);
-            mesh.subMeshCount = 2;
+            // Water gets its own submesh (and draw call) only in chunks that have some: most
+            // don't, and an empty second submesh still cost a draw per chunk and shadow pass.
+            bool water = m.Transparent.Count > 0;
+            mesh.subMeshCount = water ? 2 : 1;
             mesh.SetTriangles(m.Opaque, 0, false);
-            mesh.SetTriangles(m.Transparent, 1, false);
+            if (water) mesh.SetTriangles(m.Transparent, 1, false);
+            var r = go.GetComponent<MeshRenderer>();
+            if (r.sharedMaterials.Length != (water ? 2 : 1)) r.sharedMaterials = water ? _bothMaterials : _opaqueOnly;
             mesh.bounds = new Bounds(Vector3.one * (WorldConfig.ChunkSize * 0.5f), Vector3.one * WorldConfig.ChunkSize);
         }
     }
