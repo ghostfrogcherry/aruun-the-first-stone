@@ -157,8 +157,17 @@ namespace Aruun.Core.Town
             {
                 double a = k * Math.PI / 6 + Math.PI / 12;
                 int x = (int)Math.Round(Math.Cos(a) * (PlazaRadius - 4)), z = (int)Math.Round(Math.Sin(a) * (PlazaRadius - 4));
+                if (InFrontOfStall(x, z)) continue;   // the stall has its own lantern; keep the way to the counter clear
                 LampPost(x, z);
             }
+        }
+
+        /// <summary>Is this column in the open ground before a food stall's counter (where customers stand)?</summary>
+        bool InFrontOfStall(int x, int z)
+        {
+            foreach (var b in Buildings)
+                if (b.Key == "food_stall" && x >= b.MinX - 4 && x <= b.MaxX + 8 && z > b.MaxZ && z <= b.MaxZ + 16) return true;
+            return false;
         }
 
         void LampPost(int x, int z)
@@ -279,7 +288,7 @@ namespace Aruun.Core.Town
             _bp.Box(x0 - 5, g + 3, z1 - 3, x0 - 2, g + 3, z1, B("produce_greens"));
 
             // With a height, so she stands on the stall floor (under the awning), not on top of it.
-            Spots["food_stall:" + town] = M(cx, cz - 1, g + 2);
+            Spots["food_stall:" + town] = M(cx, cz + 2, g + 2);
             SpotFacing["food_stall:" + town] = new Vec3(0, 0, 1);
             Buildings.Add(new VillageBuilding { Key = "food_stall", X = cx, Z = cz, Floor = g, MinX = x0, MaxX = x1, MinZ = z0, MaxZ = z1, Height = 17 });
         }

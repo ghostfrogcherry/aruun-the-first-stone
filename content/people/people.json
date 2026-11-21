@@ -170,7 +170,7 @@
       "role": "Food seller",
       "model": "mimmie_lou",
       "spot": "food_stall*",
-      "wander_m": 0.75,
+      "wander_m": 0.4,
       "talk": [
         {
           "when": {"menu": "shop", "quest": "side_cookbook", "state": "done"},

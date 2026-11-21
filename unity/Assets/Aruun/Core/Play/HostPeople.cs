@@ -157,11 +157,11 @@ namespace Aruun.Core.Play
             return y;
         }
 
-        /// <summary>Is there something solid from knee to head height at a person's feet?</summary>
+        /// <summary>Is there something solid from ankle to head height at a person's feet? (They step up at most one block.)</summary>
         bool Blocked(Vec3 feet)
         {
             int vx = (int)Math.Floor(feet.X * M), vz = (int)Math.Floor(feet.Z * M), vy = (int)Math.Floor(feet.Y * M);
-            for (int dy = 2; dy <= 7; dy++)
+            for (int dy = 1; dy <= 7; dy++)
                 if (World.Blocks.Get(World.Get(vx, vy + dy, vz)).Collision) return true;
             return false;
         }
