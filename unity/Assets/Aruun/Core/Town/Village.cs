@@ -55,6 +55,8 @@ namespace Aruun.Core.Town
         public readonly List<VillageBuilding> Buildings = new List<VillageBuilding>();
         /// <summary>Named spots (where people live), in metres. Y = 0 means "on the ground there".</summary>
         public readonly Dictionary<string, Vec3> Spots = new Dictionary<string, Vec3>();
+        /// <summary>Which way someone at a spot faces when they stop (sellers face their counter). Optional.</summary>
+        public readonly Dictionary<string, Vec3> SpotFacing = new Dictionary<string, Vec3>();
         public readonly List<Portal> Portals = new List<Portal>();
         /// <summary>Warm lamps, in metres, for the Game layer to light.</summary>
         public readonly List<Vec3> Lamps = new List<Vec3>();
@@ -227,15 +229,17 @@ namespace Aruun.Core.Town
             _bp.Box(x0 + 1, g + 6, z0 + 1, x1 - 1, g + 6, z0 + 1, B("dark_timber"));
             for (int x = x0 + 2; x <= x1 - 2; x += 3)
                 _bp.Box(x, g + 7, z0 + 1, x, g + 8, z0 + 1, Blueprint.Hash(x, g, z0) % 3 == 0 ? B("produce_greens") : B("clay_tile"));
-            // The counter, with produce at each end and the stew pot in the middle.
-            _bp.Box(x0 + 1, g + 1, z1 - 1, x1 - 1, g + 3, z1, B("plank"));
-            _bp.Box(x0 + 1, g + 4, z1 - 1, x1 - 1, g + 4, z1, B("dark_timber"));
-            _bp.Box(x0 + 2, g + 5, z1 - 1, x0 + 5, g + 5, z1, B("produce_redroot"));
-            _bp.Box(x0 + 3, g + 6, z1 - 1, x0 + 4, g + 6, z1 - 1, B("produce_redroot"));
-            _bp.Box(x1 - 5, g + 5, z1 - 1, x1 - 2, g + 5, z1, B("produce_greens"));
-            _bp.Box(x1 - 4, g + 6, z1 - 1, x1 - 3, g + 6, z1 - 1, B("produce_greens"));
-            _bp.Box(cx - 2, g + 5, z1 - 1, cx + 1, g + 6, z1, B("basalt"));
-            _bp.Box(cx - 1, g + 6, z1 - 1, cx, g + 6, z1, B("stew"));
+            // A waist-high counter, with produce at each end and the stew pot off to one side, so
+            // nothing stands between her and a customer.
+            _bp.Box(x0 + 1, g + 1, z1 - 1, x1 - 1, g + 2, z1, B("plank"));
+            _bp.Box(x0 + 1, g + 3, z1 - 1, x1 - 1, g + 3, z1, B("dark_timber"));
+            _bp.Box(x0 + 2, g + 4, z1 - 1, x0 + 4, g + 4, z1, B("produce_redroot"));
+            _bp.Set(x0 + 3, g + 5, z1 - 1, B("produce_redroot"));
+            _bp.Box(x1 - 4, g + 4, z1 - 1, x1 - 2, g + 4, z1, B("produce_greens"));
+            _bp.Set(x1 - 3, g + 5, z1 - 1, B("produce_greens"));
+            _bp.Box(cx - 7, g + 4, z1 - 1, cx - 5, g + 4, z1, B("basalt"));
+            _bp.Set(cx - 6, g + 4, z1, B("stew"));
+            _bp.Set(cx - 6, g + 4, z1 - 1, B("stew"));
             // A violet awning sloping down to the front, with a scalloped edge.
             for (int z = z0 - 1; z <= z1 + 2; z++)
             {
@@ -249,7 +253,8 @@ namespace Aruun.Core.Town
             Lamp(x1 - 4, g + 10, z1 + 1);
             // The soup-bowl banner on the front-left post: a bowl with steam rising.
             int bx = x0;
-            _bp.Box(bx - 4, g + 5, z1 + 1, bx + 4, g + 13, z1 + 1, B("banner_violet"));
+            _bp.Box(bx - 4, g + 5, z1 + 1, bx + 4, g + 13, z1 + 1, B("banner_violet"));             // dark border...
+            _bp.Box(bx - 3, g + 5, z1 + 1, bx + 3, g + 12, z1 + 1, B("awning_violet"));             // ...round a violet field
             for (int x = bx - 4; x <= bx + 4; x += 2) _bp.Set(x, g + 4, z1 + 1, B("banner_violet"));   // notched hem
             _bp.Box(bx - 1, g + 6, z1 + 1, bx + 1, g + 6, z1 + 1, B("plaster"));                      // the bowl...
             _bp.Box(bx - 2, g + 7, z1 + 1, bx + 2, g + 7, z1 + 1, B("plaster"));
@@ -275,6 +280,7 @@ namespace Aruun.Core.Town
 
             // With a height, so she stands on the stall floor (under the awning), not on top of it.
             Spots["food_stall:" + town] = M(cx, cz - 1, g + 2);
+            SpotFacing["food_stall:" + town] = new Vec3(0, 0, 1);
             Buildings.Add(new VillageBuilding { Key = "food_stall", X = cx, Z = cz, Floor = g, MinX = x0, MaxX = x1, MinZ = z0, MaxZ = z1, Height = 17 });
         }
 

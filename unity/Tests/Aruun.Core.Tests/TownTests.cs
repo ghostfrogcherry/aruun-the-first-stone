@@ -158,6 +158,10 @@ namespace Aruun.Core.Tests
             Assert.That(lantern, Is.True, "a lantern hangs at the stall");
             Run(h, 30);
             Assert.That(Vec3.FlatDistance(m.Pos, m.Home), Is.LessThan(1.0), "she stays behind her counter");
+            Assert.That(m.HomeYaw, Is.Not.Null);
+            for (int i = 0; i < 400 && m.Walking; i++) h.Tick(0.05);
+            Assert.That(m.Walking, Is.False);
+            Assert.That(m.Yaw, Is.EqualTo(m.HomeYaw.Value).Within(1e-9), "standing still, she faces her counter");
         }
 
         /// <summary>Takes away the food a castaway starts with, so the tests count only what they hand over.</summary>

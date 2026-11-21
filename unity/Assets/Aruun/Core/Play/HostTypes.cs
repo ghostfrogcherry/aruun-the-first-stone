@@ -115,6 +115,8 @@ namespace Aruun.Core.Play
         public bool Indoors;
         /// <summary>The player talking to them, or 0.</summary>
         public int TalkingTo;
+        /// <summary>Which way they face when they stop (a seller faces their counter), or null for any.</summary>
+        public double? HomeYaw;
     }
 
     /// <summary>What a person is saying to a player, and the answers the player can give.</summary>

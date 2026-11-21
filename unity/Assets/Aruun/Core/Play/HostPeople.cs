@@ -34,12 +34,17 @@ namespace Aruun.Core.Play
             foreach (var q in quests) Quests[q.Id] = q;
             if (Village == null) return;
             foreach (var d in people)
-                foreach (Vec3 at in SpotsFor(d.Spot))
+                foreach (string key in SpotsFor(d.Spot))
                 {
+                    Vec3 at = Village.Spots[key];
                     // A spot with a height is indoors (the library): stand on the floor below it.
                     bool indoors = at.Y > 0;
                     Vec3 spot = new Vec3(at.X, indoors ? FloorBelow(at.X, at.Y + 1, at.Z) : GroundHeight(at.X, at.Z), at.Z);
-                    People.Add(new PersonRec { Id = _nextPerson++, Def = d, Indoors = indoors, Pos = spot, Home = spot, Goal = spot, Yaw = Math.PI, Wait = 2 + _rng.NextDouble() * 3 });
+                    var rec = new PersonRec { Id = _nextPerson++, Def = d, Indoors = indoors, Pos = spot, Home = spot, Goal = spot, Yaw = Math.PI, Wait = 2 + _rng.NextDouble() * 3 };
+                    // Someone who works a counter turns back to face it whenever they stop.
+                    Vec3 face;
+                    if (Village.SpotFacing.TryGetValue(key, out face)) rec.HomeYaw = rec.Yaw = Brains.YawTo(face);
+                    People.Add(rec);
                 }
         }
 
@@ -48,22 +53,18 @@ namespace Aruun.Core.Play
         /// one copy of the person at each: "food_stall*" puts the food seller at the food stall of
         /// every town (Village adds "food_stall:&lt;town&gt;" for each stall it builds).
         /// </summary>
-        List<Vec3> SpotsFor(string spot)
+        List<string> SpotsFor(string spot)
         {
-            var list = new List<Vec3>();
+            var list = new List<string>();
             if (spot.EndsWith("*", StringComparison.Ordinal))
             {
                 string prefix = spot.Substring(0, spot.Length - 1);
                 var keys = new List<string>();
                 foreach (var k in Village.Spots.Keys) if (k.StartsWith(prefix, StringComparison.Ordinal)) keys.Add(k);
                 keys.Sort(StringComparer.Ordinal);
-                foreach (var k in keys) list.Add(Village.Spots[k]);
+                list.AddRange(keys);
             }
-            else
-            {
-                Vec3 at;
-                if (Village.Spots.TryGetValue(spot, out at)) list.Add(at);
-            }
+            else if (Village.Spots.ContainsKey(spot)) list.Add(spot);
             return list;
         }
 
@@ -128,6 +129,7 @@ namespace Aruun.Core.Play
                 if (len < 0.15)
                 {
                     r.Walking = false;
+                    if (r.HomeYaw.HasValue) r.Yaw = r.HomeYaw.Value;
                     r.Wait = 3 + _rng.NextDouble() * 5;
                     continue;
                 }
