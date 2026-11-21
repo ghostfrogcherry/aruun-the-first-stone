@@ -115,6 +115,8 @@ namespace Aruun.Core.Play
         public bool Indoors;
         /// <summary>The player talking to them, or 0.</summary>
         public int TalkingTo;
+        /// <summary>Which way they face when they stop (a seller faces their counter), or null for any.</summary>
+        public double? HomeYaw;
     }
 
     /// <summary>What a person is saying to a player, and the answers the player can give.</summary>
@@ -126,6 +128,8 @@ namespace Aruun.Core.Play
         /// <summary>The answers, in order; the last one always ends the talk.</summary>
         public readonly List<string> Choices = new List<string>();
         internal readonly List<ChoiceDef> Defs = new List<ChoiceDef>();
+        /// <summary>Which page of the talk the player is on ("" for the first; "shop" for a shop's wares).</summary>
+        internal string Menu = "";
     }
 
     /// <summary>What the player should do next in the echo ruin, and where.</summary>

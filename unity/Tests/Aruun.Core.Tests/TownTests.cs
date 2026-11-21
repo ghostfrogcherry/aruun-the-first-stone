@@ -64,10 +64,11 @@ namespace Aruun.Core.Tests
                 Assert.That(solid, Is.GreaterThan(5), b.Key + " has walls");
                 Assert.That(h.World.Blocks.Get(h.World.Get(b.X, b.Floor - 1, b.Z)).Collision, Is.True, b.Key + " stands on its pad");
             }
-            Assert.That(h.People.Count, Is.EqualTo(4));
+            Assert.That(h.People.Count, Is.EqualTo(5));
             foreach (var r in h.People)
             {
-                if (!r.Indoors) Assert.That(v.InBuilding(r.Pos), Is.False, r.Def.Id + " lives outdoors");
+                // The food seller works under her stall's awning (she counts as indoors); everyone else lives in the open.
+                if (!r.Indoors && r.Def.Id != "mimmie") Assert.That(v.InBuilding(r.Pos), Is.False, r.Def.Id + " lives outdoors");
                 int x = (int)System.Math.Floor(r.Pos.X * 4), z = (int)System.Math.Floor(r.Pos.Z * 4), y = (int)System.Math.Round(r.Pos.Y * 4);
                 Assert.That(h.World.Blocks.Get(h.World.Get(x, y + 4, z)).Collision, Is.False, r.Def.Id + " has room to stand");
             }
@@ -133,6 +134,120 @@ namespace Aruun.Core.Tests
             Assert.That(h.Interact(1, eye, new Vec3(0, 0, -1)), Is.True);
             Assert.That(h.Village.InLibrary(p.Pos), Is.False);
             Assert.That(Vec3.FlatDistance(p.Pos, into.At), Is.LessThan(4), "in front of the college door");
+        }
+
+        [Test]
+        public void MimmieLouKeepsAFoodStallInEveryTown()
+        {
+            var h = NewHost(out var p);
+            int stalls = 0;
+            foreach (var b in h.Village.Buildings) if (b.Key == "food_stall") stalls++;
+            int sellers = 0;
+            foreach (var r in h.People) if (r.Def.Id == "mimmie") sellers++;
+            Assert.That(stalls, Is.GreaterThanOrEqualTo(1));
+            Assert.That(sellers, Is.EqualTo(stalls), "one Mimmie-L'ou behind every food stall");
+            PersonRec m = h.PersonNear("mimmie", p.Pos);
+            Assert.That(m.Def.ShortName, Is.EqualTo("Mimmie-L'ou"));
+            // Behind her counter, under the awning, with a lantern lit nearby.
+            int mx = (int)System.Math.Floor(m.Pos.X * 4), mz = (int)System.Math.Floor(m.Pos.Z * 4), my = (int)System.Math.Round(m.Pos.Y * 4);
+            bool awning = false;
+            for (int dy = 8; dy <= 20; dy++) if (h.World.Get(mx, my + dy, mz) == h.World.Blocks.Id("awning_violet")) awning = true;
+            Assert.That(awning, Is.True, "under the violet awning, not on it");
+            bool lantern = false;
+            foreach (var l in h.Village.Lamps) if (Vec3.FlatDistance(l, m.Pos) < 4) lantern = true;
+            Assert.That(lantern, Is.True, "a lantern hangs at the stall");
+            Run(h, 30);
+            Assert.That(Vec3.FlatDistance(m.Pos, m.Home), Is.LessThan(1.0), "she stays behind her counter");
+            Assert.That(m.HomeYaw, Is.Not.Null);
+            for (int i = 0; i < 400 && m.Walking; i++) h.Tick(0.05);
+            Assert.That(m.Walking, Is.False);
+            Assert.That(m.Yaw, Is.EqualTo(m.HomeYaw.Value).Within(1e-9), "standing still, she faces her counter");
+        }
+
+        /// <summary>Takes away the food a castaway starts with, so the tests count only what they hand over.</summary>
+        static void EmptyLarder(PlayerRec p)
+        {
+            foreach (string k in new[] { "redroot", "glasswort_leaf", "reed_stalk", "raw_meat" }) p.C.Inv.Remove(k, p.C.Inv.Count(k));
+        }
+
+        [Test]
+        public void MimmieLouBartersFoodForIngredients()
+        {
+            var h = NewHost(out var p);
+            EmptyLarder(p);
+            Conversation c = Talk(h, p, "mimmie");
+            Assert.That(c.Say, Does.Contain("cookin'"));
+            int shop = c.Choices.FindIndex(t => t.Contains("selling"));
+            Assert.That(shop, Is.GreaterThanOrEqualTo(0));
+            c = h.Choose(1, shop);
+            Assert.That(c.Choices.FindIndex(t => t.Contains("Grandmother")), Is.EqualTo(-1), "no heirloom soup before the cookbook quest");
+            int stew = c.Choices.FindIndex(t => t.StartsWith("Redroot stew"));
+            Assert.That(stew, Is.GreaterThanOrEqualTo(0));
+
+            // Not enough: nothing changes hands, and she says what is missing.
+            p.C.Inv.Add("redroot", 2);
+            c = h.Choose(1, stew);
+            Assert.That(c.Say, Does.Contain("1 more redroot").And.Contain("glasswort"));
+            Assert.That(p.C.Inv.Count("redroot"), Is.EqualTo(2));
+            Assert.That(p.C.Inv.Count("redroot_stew"), Is.EqualTo(0));
+
+            // Enough: ingredients go, stew comes back, and the shop stays open for more.
+            p.C.Inv.Add("redroot", 1);
+            p.C.Inv.Add("glasswort_leaf", 1);
+            c = h.Choose(1, stew);
+            Assert.That(p.C.Inv.Count("redroot"), Is.EqualTo(0));
+            Assert.That(p.C.Inv.Count("glasswort_leaf"), Is.EqualTo(0));
+            Assert.That(p.C.Inv.Count("redroot_stew"), Is.EqualTo(2));
+            Assert.That(c.Choices.FindIndex(t => t.StartsWith("Redroot stew")), Is.EqualTo(stew), "still in the shop");
+            c = h.Choose(1, c.Choices.FindIndex(t => t == "Something else."));
+            Assert.That(c.Say, Does.Contain("cookin'"), "back to the start");
+        }
+
+        [Test]
+        public void TheIngredientQuestThenGrandmasCookbook()
+        {
+            var h = NewHost(out var p);
+            EmptyLarder(p);
+            Conversation c = Talk(h, p, "mimmie");
+            c = h.Choose(1, c.Choices.FindIndex(t => t.Contains("help")));
+            Assert.That(p.C.Quests.IsActive("side_ingredients"), Is.True);
+            Assert.That(h.CurrentStage(p, "side_ingredients").Text, Does.Contain("redroot"));
+            p.C.Inv.Add("redroot", 3);
+            c = Talk(h, p, "mimmie");
+            Assert.That(c.Say, Does.Contain("Three fresh redroot"), "still short of reeds");
+            p.C.Inv.Add("reed_stalk", 2);
+            c = Talk(h, p, "mimmie");
+            c = h.Choose(1, 0);
+            Assert.That(p.C.Quests.IsDone("side_ingredients"), Is.True);
+            Assert.That(p.C.Inv.Count("redroot_stew"), Is.EqualTo(2));
+
+            // Now she shows you Gran's cookbook.
+            c = Talk(h, p, "mimmie");
+            Assert.That(c.Say, Does.Contain("cookbook"));
+            c = h.Choose(1, c.Choices.FindIndex(t => t.Contains("tomato")));
+            Assert.That(p.C.Quests.Stage("side_cookbook"), Is.EqualTo(0));
+            Assert.That(h.CurrentStage(p, "side_cookbook").Target, Is.EqualTo("person:archivist"));
+
+            // The archivist, in the library, knows the word is not from Aruun.
+            c = Talk(h, p, "archivist");
+            Assert.That(c.Say, Does.Contain("Tomato"));
+            c = h.Choose(1, 0);
+            Assert.That(p.C.Quests.Stage("side_cookbook"), Is.EqualTo(1));
+
+            // Without a tomato she can only wait.
+            c = Talk(h, p, "mimmie");
+            Assert.That(c.Say, Does.Contain("luck"));
+            p.C.Inv.Add("earth_tomato", 1);
+            c = Talk(h, p, "mimmie");
+            c = h.Choose(1, 0);
+            Assert.That(p.C.Quests.IsDone("side_cookbook"), Is.True);
+            Assert.That(p.C.Inv.Count("earth_tomato"), Is.EqualTo(0));
+            Assert.That(p.C.Inv.Count("heirloom_soup"), Is.EqualTo(3));
+
+            // And Gran's soup is on the menu from now on.
+            c = Talk(h, p, "mimmie");
+            c = h.Choose(1, c.Choices.FindIndex(t => t.Contains("selling")));
+            Assert.That(c.Choices.FindIndex(t => t.Contains("Grandmother")), Is.GreaterThanOrEqualTo(0));
         }
 
         [Test]

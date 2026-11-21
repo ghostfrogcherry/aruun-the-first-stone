@@ -1799,6 +1799,241 @@
     }
    }
   },
+  "mimmie_lou": {
+   "file": "creatures/mimmie_lou.vox",
+   "category": "creatures",
+   "voxel_m": 0.0625,
+   "size": [
+    12,
+    32,
+    11
+   ],
+   "height_m": 2.0,
+   "generated_sha256": "9c03e6d1e9c4888a5256bf9ce246cf0fbd5aa021fb161d0d2784c795aabffc9e",
+   "note": "Mimmie-L'ou, food seller: a cheerful human of Aruun (about 1.6 m). From Bruh's concept sheet: olive dress, cream apron with a violet leaf, curly brown hair in a bun, brown boots, wooden spoon.",
+   "rig": {
+    "parts": {
+     "torso": {
+      "parent": "",
+      "pivot": [
+       0,
+       13,
+       0
+      ]
+     },
+     "head": {
+      "parent": "torso",
+      "pivot": [
+       0,
+       21,
+       0
+      ]
+     },
+     "arm_l": {
+      "parent": "torso",
+      "pivot": [
+       -5,
+       19,
+       0
+      ]
+     },
+     "leg_l": {
+      "parent": "torso",
+      "pivot": [
+       -1.5,
+       6,
+       0
+      ]
+     },
+     "arm_r": {
+      "parent": "torso",
+      "pivot": [
+       5,
+       19,
+       0
+      ]
+     },
+     "leg_r": {
+      "parent": "torso",
+      "pivot": [
+       1.5,
+       6,
+       0
+      ]
+     }
+    },
+    "clips": {
+     "idle": [
+      {
+       "part": "torso",
+       "bob": 0.25,
+       "freq": 0.3,
+       "phase": 0.0
+      },
+      {
+       "part": "head",
+       "axis": "y",
+       "amp": 8,
+       "freq": 0.12,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "head",
+       "axis": "z",
+       "amp": 4,
+       "freq": 0.3,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "arm_l",
+       "axis": "z",
+       "amp": 3,
+       "freq": 0.3,
+       "phase": 0,
+       "offset": -18
+      },
+      {
+       "part": "arm_r",
+       "axis": "x",
+       "amp": 4,
+       "freq": 0.3,
+       "phase": 0.5,
+       "offset": 10
+      }
+     ],
+     "walk": [
+      {
+       "part": "leg_l",
+       "axis": "x",
+       "amp": 28,
+       "freq": 1.2,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "leg_r",
+       "axis": "x",
+       "amp": 28,
+       "freq": 1.2,
+       "phase": 0.5,
+       "offset": 0.0
+      },
+      {
+       "part": "arm_l",
+       "axis": "x",
+       "amp": 22,
+       "freq": 1.2,
+       "phase": 0.5,
+       "offset": 0.0
+      },
+      {
+       "part": "arm_r",
+       "axis": "x",
+       "amp": 22,
+       "freq": 1.2,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "torso",
+       "bob": 0.5,
+       "freq": 2.4,
+       "phase": 0.0
+      },
+      {
+       "part": "head",
+       "axis": "z",
+       "amp": 3,
+       "freq": 1.2,
+       "phase": 0.0,
+       "offset": 0.0
+      }
+     ],
+     "talk": [
+      {
+       "part": "arm_r",
+       "axis": "x",
+       "amp": 18,
+       "freq": 0.9,
+       "phase": 0,
+       "offset": 60
+      },
+      {
+       "part": "arm_r",
+       "axis": "z",
+       "amp": 8,
+       "freq": 0.45,
+       "phase": 0,
+       "offset": 8
+      },
+      {
+       "part": "arm_l",
+       "axis": "z",
+       "amp": 3,
+       "freq": 0.3,
+       "phase": 0,
+       "offset": -18
+      },
+      {
+       "part": "head",
+       "axis": "z",
+       "amp": 6,
+       "freq": 0.45,
+       "phase": 0.0,
+       "offset": 0.0
+      },
+      {
+       "part": "head",
+       "axis": "x",
+       "amp": 4,
+       "freq": 0.9,
+       "phase": 0.2,
+       "offset": 0.0
+      },
+      {
+       "part": "torso",
+       "bob": 0.3,
+       "freq": 0.9,
+       "phase": 0.0
+      }
+     ],
+     "cheer": [
+      {
+       "part": "arm_l",
+       "axis": "z",
+       "amp": 10,
+       "freq": 1.4,
+       "phase": 0,
+       "offset": -150
+      },
+      {
+       "part": "arm_r",
+       "axis": "z",
+       "amp": 10,
+       "freq": 1.4,
+       "phase": 0.5,
+       "offset": 150
+      },
+      {
+       "part": "torso",
+       "bob": 0.8,
+       "freq": 2.8,
+       "phase": 0.0
+      },
+      {
+       "part": "head",
+       "axis": "x",
+       "amp": 6,
+       "freq": 1.4,
+       "phase": 0,
+       "offset": -6
+      }
+     ]
+    }
+   }
+  },
   "vaari_river_villager": {
    "file": "creatures/vaari_river_villager.vox",
    "category": "creatures",

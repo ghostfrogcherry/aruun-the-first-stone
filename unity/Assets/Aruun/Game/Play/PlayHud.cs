@@ -7,6 +7,7 @@ using Aruun.Core.People;
 using Aruun.Core.Play;
 using Aruun.Core.Skills;
 using Aruun.Core.Survival;
+using Aruun.Game.Art;
 using UnityEngine;
 
 namespace Aruun.Game
@@ -228,11 +229,15 @@ namespace Aruun.Game
             foreach (PersonRec r in h.People)
             {
                 if (Vec3.Distance(r.Pos, me.Pos) > 14) continue;
-                Vector3 sp = cam.WorldToScreenPoint(PlaySession.ToUnity(r.Pos) + Vector3.up * 2.5f);
+                // The name floats just over their head, however tall they are.
+                float top = ModelLibrary.Has(r.Def.Model) && ModelLibrary.Info(r.Def.Model).HeightMeters > 0 ? ModelLibrary.Info(r.Def.Model).HeightMeters + 0.35f : 2.5f;
+                Vector3 sp = cam.WorldToScreenPoint(PlaySession.ToUnity(r.Pos) + Vector3.up * top);
                 if (sp.z <= 0) continue;
                 float y = Screen.height - sp.y;
+                // A dark backing so the name reads against a bright sky or a lamp.
+                Box(new Rect(sp.x - 70, y - 20, 140, 36), new Color(0.05f, 0.04f, 0.03f, 0.55f));
                 GUI.Label(new Rect(sp.x - 100, y - 20, 200, 20), r.Def.ShortName, _centre);
-                GUI.color = new Color(1, 1, 1, 0.7f);
+                GUI.color = new Color(1, 1, 1, 0.85f);
                 GUI.Label(new Rect(sp.x - 100, y - 4, 200, 18), r.Def.Role, _tinyCentre);
                 GUI.color = Color.white;
             }

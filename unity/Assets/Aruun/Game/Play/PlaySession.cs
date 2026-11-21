@@ -471,7 +471,7 @@ namespace Aruun.Game
                 t.rotation = Quaternion.Slerp(t.rotation, Quaternion.Euler(0f, (float)(r.Yaw * Mathf.Rad2Deg), 0f), Mathf.Clamp01(dt * 8f));
                 if (v.Rig != null)
                 {
-                    string clip = r.Walking ? "walk" : "idle";
+                    string clip = r.Walking ? "walk" : r.TalkingTo != 0 && v.Rig.HasClip("talk") ? "talk" : "idle";
                     if (clip != v.Rig.CurrentClip && v.Rig.HasClip(clip)) v.Rig.Play(clip);
                 }
             }
@@ -605,6 +605,26 @@ namespace Aruun.Game
                 me.ArriveYaw = 0;
                 Say("The old steading. Set a Tether on the carved plinth to claim it.");
             });
+            DevTools.Register(KeyCode.H, "Go to Mimmie-L'ou's food stall", () =>
+            {
+                PlayerRec me = Me;
+                PersonRec cook = me != null ? Host.PersonNear("mimmie", me.Pos) : null;
+                if (cook == null) { Say("Mimmie-L'ou isn't in this world"); return; }
+                Vec3 at = cook.Home + new Vec3(0, 0, 3.2);
+                at = new Vec3(at.X, Host.GroundHeight(at.X, at.Z), at.Z);
+                me.Pos = at;
+                me.RespawnAt = at;
+                me.ArriveYaw = Math.PI;
+                Say("Mimmie-L'ou's food stall. Look at her and press E.");
+            }, true);
+            DevTools.Register(KeyCode.K, "Give cooking ingredients and an Earth tomato (Mimmie-L'ou's quests)", () =>
+            {
+                PlayerRec me = Me;
+                if (me == null) return;
+                foreach (var kv in new[] { ("redroot", 8), ("glasswort_leaf", 4), ("reed_stalk", 6), ("raw_meat", 4), ("earth_tomato", 1) })
+                    if (Host.Items.Has(kv.Item1)) me.C.Inv.Add(kv.Item1, kv.Item2);
+                Say("Ingredients given, and one tomato from Earth (there are no Occlusions to find one in yet)");
+            }, true);
             DevTools.Register(KeyCode.U, "Know every Avarra word", () =>
             {
                 PlayerRec me = Me;

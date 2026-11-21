@@ -430,6 +430,119 @@ def _human(tunic, trousers, sash, skin_key, hair_key, seed):
     return parts, {"parts": rig, "clips": clips}
 
 
+def mimmie_lou():
+    """Mimmie-L'ou, food seller: a cheerful human of Aruun (about 1.6 m). From Bruh's concept sheet:
+    olive dress, cream apron with a violet leaf, curly brown hair in a bun, brown boots, wooden spoon."""
+    seed = 77
+    dress = mix(flat("green_3"), flat("green_1"), 0.1, seed)   # olive green #4f6b3a, not lime
+    dress_dark = flat("green_1")
+    apron = mix(flat("sandstone_5"), flat("cloth_linen"), 0.25, seed + 1)   # cream
+    skin = flat("hide_4")
+    hair = ramp("wood", 3, 0.5, seed + 2)
+    hair_lite = flat("wood_4")
+
+    torso = Vox()
+    torso.box(-4, 14, -2, 3, 19, 1, dress)                                         # bodice
+    for y in range(6, 14):                                                        # full skirt, flaring to the hem
+        t = (14 - y) / 8
+        hw, hd = 4.3 + 1.3 * t, 2.6 + 1.0 * t
+        for x in range(-6, 6):
+            for z in range(-4, 4):
+                if (abs(x + 0.5) / hw) ** 2 + (abs(z + 0.5) / hd) ** 2 <= 1.0:
+                    torso.set(x, y, z, dress)
+    torso.repaint(dress_dark, lambda x, y, z: y == 6)                              # hem
+    front = {}
+    for (x, y, z) in list(torso.v):
+        front[(x, y)] = min(front.get((x, y), 9), z)
+    for (x, y), z in front.items():                                                # apron: bib and skirt panel
+        if (7 <= y <= 13 and -3 <= x <= 2) or (14 <= y <= 18 and -2 <= x <= 1):
+            torso.set(x, y, z, apron)
+    torso.box(-4, 13, -3, 3, 13, -3, dress_dark)                                   # apron waist tie
+    torso.box(-1, 13, 2, 0, 13, 3, flat("sandstone_5"))                            # its bow at the back
+    torso.box(-2, 11, 3, -2, 12, 3, flat("sandstone_5")), torso.box(1, 11, 3, 1, 12, 3, flat("sandstone_5"))
+    for (x, y) in ((-2, 19), (1, 19)):                                             # straps over the shoulders
+        torso.box(x, y, -2, x, y, 1, apron)
+    leaf = flat("violet_3")
+    zf = front[(0, 10)]
+    for (x, y) in ((-2, 8), (-1, 9), (-1, 10), (0, 11)):                        # the leaf emblem: a stem...
+        torso.set(x, y, zf, flat("green_2"))
+    for (x, y) in ((-3, 9), (-2, 10), (0, 10), (1, 11), (0, 12), (-2, 11), (1, 10)):   # ...with violet leaves
+        torso.set(x, y, zf, leaf)
+    torso.set(0, 9, zf, flat("violet_4")), torso.set(-1, 12, zf, flat("violet_4"))
+    torso.box(-1, 20, -1, 0, 20, 0, skin)                                          # neck
+
+    head = Vox()
+    head.box(-4, 21, -3, 3, 28, 2, skin)                                           # a big, friendly head
+    for (x, z) in ((-4, -3), (3, -3), (-4, 2), (3, 2)):
+        head.erase(x, 21, z), head.erase(x, 28, z)
+    head.set(-5, 24, 0, skin), head.set(4, 24, 0, skin)                            # ears
+    for x in (-3, 1):                                                              # eyes, with a glint
+        head.box(x, 24, -4, x + 1, 25, -4, flat("ink_1"))
+        head.set(x + 1, 25, -4, flat("sandstone_5"))
+    for x in (-4, 2):
+        head.box(x, 23, -4, x + 1, 23, -4, flat("crimson_5"))                      # rosy cheeks
+    head.box(-2, 22, -4, 1, 22, -4, flat("crimson_1"))                             # big open smile
+    head.set(-1, 22, -4, flat("sandstone_5")), head.set(0, 22, -4, flat("sandstone_5"))
+    head.box(-1, 21, -4, 0, 21, -4, flat("crimson_2"))
+    head.box(-3, 26, -4, -2, 26, -4, flat("wood_1")), head.box(1, 26, -4, 2, 26, -4, flat("wood_1"))   # brows
+    # Curly hair: a cap with lumpy curls, falling past the ears, and a bun at the back.
+    for x in range(-5, 5):
+        for y in range(22, 32):
+            for z in range(-5, 5):
+                if -4 <= x <= 3 and 21 <= y <= 28 and -3 <= z <= 2:
+                    continue
+                cx, cy, cz = x + 0.5, y - 26.5, z + 0.5
+                r = (cx / 5.2) ** 2 + (max(cy, -1.0) / 5.6) ** 2 + (cz / 4.6) ** 2
+                curl = _hash(x, y, z, seed) * 0.35
+                if r > 1.0 + curl - 0.12:
+                    continue
+                if z < -3 and y < 28:                                             # keep the face clear
+                    continue
+                if z <= -3 and y < 30 and abs(cx) < 4 and _hash(x, y, z, seed + 3) < 0.45:
+                    continue                                                      # ragged fringe
+                if y < 24 and z < 0:
+                    continue
+                if y < 25 and abs(cx) > 4.6 and z < 1:
+                    continue
+                head.set(x, y, z, hair_lite if _hash(x, y, z, seed + 4) < 0.22 else hair)
+    head.ellipsoid(0, 30, 3.6, 1.8, 1.8, 1.6, hair)                                # bun
+    head.set(0, 31, 5, hair_lite)
+
+    parts = [("torso", torso), ("head", head)]
+    rig = {"torso": {"parent": "", "pivot": [0, 13, 0]},
+           "head": {"parent": "torso", "pivot": [0, 21, 0]}}
+    for name, s in (("l", -1), ("r", 1)):
+        x0 = -6 if s < 0 else 4
+        arm = Vox()
+        arm.box(x0, 16, -1, x0 + 1, 19, 0, dress)                                  # puffed short sleeve
+        arm.set(x0 + (0 if s < 0 else 1), 16, -2, dress), arm.set(x0 + (0 if s < 0 else 1), 16, 1, dress)
+        arm.box(x0, 11, -1, x0 + 1, 15, 0, skin)
+        arm.box(x0, 10, -1, x0 + 1, 10, 0, skin)
+        if s > 0:                                                                  # her wooden spoon
+            arm.line((x0 + 0.5, 10.5, -1.5), (x0 + 0.5, 8.5, -3.5), 0.5, flat("wood_4"))
+            arm.ellipsoid(x0 + 0.5, 7.8, -4.2, 0.8, 1.0, 0.8, flat("wood_4"))
+        lx = -3 if s < 0 else 0
+        leg = Vox()
+        leg.box(lx, 4, -1, lx + 2, 6, 0, skin)
+        leg.box(lx, 0, -3, lx + 2, 3, 1, ramp("wood", 2, 0.2, seed + 5))           # chunky boots
+        leg.box(lx, 3, -1, lx + 2, 3, 1, flat("wood_3"))                           # turned-down cuff
+        leg.box(lx, 0, -3, lx + 2, 0, 1, flat("wood_1"))                           # sole
+        parts += [(f"arm_{name}", arm), (f"leg_{name}", leg)]
+        rig[f"arm_{name}"] = {"parent": "torso", "pivot": [x0 + 1, 19, 0]}
+        rig[f"leg_{name}"] = {"parent": "torso", "pivot": [lx + 1.5, 6, 0]}
+    clips = {
+        "idle": [bob("torso", 0.25, 0.3), rot("head", "y", 8, 0.12), rot("head", "z", 4, 0.3),
+                 rot("arm_l", "z", 3, 0.3, 0, -18), rot("arm_r", "x", 4, 0.3, 0.5, 10)],
+        "walk": [rot("leg_l", "x", 28, 1.2), rot("leg_r", "x", 28, 1.2, 0.5), rot("arm_l", "x", 22, 1.2, 0.5),
+                 rot("arm_r", "x", 22, 1.2), bob("torso", 0.5, 2.4), rot("head", "z", 3, 1.2)],
+        "talk": [rot("arm_r", "x", 18, 0.9, 0, 60), rot("arm_r", "z", 8, 0.45, 0, 8), rot("arm_l", "z", 3, 0.3, 0, -18),
+                 rot("head", "z", 6, 0.45), rot("head", "x", 4, 0.9, 0.2), bob("torso", 0.3, 0.9)],
+        "cheer": [rot("arm_l", "z", 10, 1.4, 0, -150), rot("arm_r", "z", 10, 1.4, 0.5, 150), bob("torso", 0.8, 2.8),
+                  rot("head", "x", 6, 1.4, 0, -6)],
+    }
+    return parts, {"parts": rig, "clips": clips}
+
+
 def character(spec):
     if spec.get("body") == "human":
         def pair(value):
@@ -455,5 +568,5 @@ def _load_characters():
     return {row["id"]: (lambda row=row: character(row)) for row in rows}
 
 
-CREATURES = {f.__name__: f for f in (redstrider, nightstalker, mudback, skyblade)}
+CREATURES = {f.__name__: f for f in (redstrider, nightstalker, mudback, skyblade, mimmie_lou)}
 CREATURES.update(_load_characters())

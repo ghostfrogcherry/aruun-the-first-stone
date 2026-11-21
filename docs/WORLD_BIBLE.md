@@ -365,6 +365,52 @@ nations and borders; technology level; daily life.
   and good times; one antagonist group shuns it. Gameplay: homestead or town crop, short Calm
   buff, trade good.
 
+### Notable people
+
+#### Mimmie-L'ou, food seller **[CANON]** (Bruh, 2026-11-21)
+
+- **Species:** Human. **Origin:** born on Aruun, with ancestral Earth heritage. **Occupation:**
+  cook and food merchant; she keeps a food stall in every major town.
+- **Heritage.** Her ancestors were Earthborn people who crossed into Aruun generations ago,
+  when the veil first began to weaken, through early, unstable Occlusions. Some came through
+  by accident; others crossed looking for somewhere safe. Mimmie-L'ou is not an Earth visitor:
+  she was born on Aruun, grew up there and considers it home. She has never needed to see
+  Earth to feel she belongs.
+- **Why she cooks.** Her family brought recipes across. Over generations they became part of
+  local culture, adapted to native ingredients. She grows some ingredients, forages others and
+  makes everything herself: a little piece of Earth history that survived the crossing.
+- **Personality:** cheerful, welcoming, stubborn about food quality.
+- **Story role:** one of the living connections between Earth's past and Aruun's present. Not
+  a warrior, scholar or magical authority: an ordinary person whose family history is quietly
+  tied to the biggest mystery on Aruun.
+- **Grandma's cookbook.** An old handwritten cookbook passed down the generations. Some
+  recipes call for ingredients that no longer exist, or that nobody can identify.
+- **Look** (concept sheet): green dress, cream apron with a purple leaf emblem, curly brown
+  hair, brown boots, wooden spoon; a stall with a purple awning, lantern, barrels, a soup-bowl
+  banner and produce. Line: "Hungry? I got somethin' good cookin'!"
+
+**[CANON]** Quest **Grandma's Cookbook**: she wants to recreate a family recipe, but one
+ingredient is native to Earth. The player must find it during an Earth-Mars Occlusion; when
+they return she makes the dish for the first time in generations.
+
+**[CANON]** (Bruh, 2026-11-21) The missing ingredient is the **tomato**. Her family has
+always cooked with **redroot** in its place, which is why the concept sheet's "tomatoes" become
+redroot in her everyday recipes.
+
+**[PROPOSED]** (in the build, Bruh to confirm)
+- The sheet's "wheat" becomes **vermillion reed** (she grinds the seed heads).
+- After the cookbook quest she keeps the tomato's seeds, so Grandmother's tomato soup joins
+  her menu.
+- She says "the other side", not "Earth": that Earth is inhabited is not common knowledge on
+  Aruun (section 2), even if her family knows where it came from.
+- Archivist Ilen recognises "tomato" as an old human family word and says such things grow
+  only where the world is thin; the college "would rather people did not go looking".
+- No money exists yet, so she barters: you bring ingredients, she cooks them into better food.
+
+**[OPEN]** Does her heritage settle the "few humans" question (section 5, Peoples): are there
+whole human families descended from early crossings, and how many? Is one woman at every
+stall the same person who travels, or family members who all go by the name?
+
 ---
 
 ## 6. The old builders (the lost civilization)
@@ -780,3 +826,5 @@ chat and this file gets updated.
 | Grand College | The great castle-college | CANON, link to Lyceum OPEN |
 | Vaari | The main sapient people | CANON |
 | Castaway | The player: an Earth human stranded by an Occlusion | CANON |
+| Mimmie-L'ou | Human food seller born on Aruun, of Earthborn descent; stall in every major town | CANON |
+| Grandma's Cookbook | Mimmie-L'ou's family cookbook, and the quest to cook an Earth recipe from it | CANON |

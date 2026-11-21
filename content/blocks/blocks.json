@@ -516,6 +516,66 @@
       "hardness": 99,
       "tool": "pick",
       "health": 999
+    },
+    {
+      "id": 50,
+      "key": "awning_violet",
+      "name": "Violet awning cloth",
+      "solid": true,
+      "color": "#9058a6",
+      "hardness": 0,
+      "tool": "hand",
+      "health": 2
+    },
+    {
+      "id": 51,
+      "key": "banner_violet",
+      "name": "Violet banner",
+      "solid": true,
+      "color": "#4b2a5e",
+      "hardness": 0,
+      "tool": "hand",
+      "health": 2
+    },
+    {
+      "id": 52,
+      "key": "barrel",
+      "name": "Barrel",
+      "solid": true,
+      "color": "#3d2a1e",
+      "hardness": 0,
+      "tool": "axe",
+      "health": 6
+    },
+    {
+      "id": 53,
+      "key": "produce_redroot",
+      "name": "Crate of redroot",
+      "solid": true,
+      "color": "#cf4148",
+      "hardness": 0,
+      "tool": "hand",
+      "health": 2
+    },
+    {
+      "id": 54,
+      "key": "produce_greens",
+      "name": "Crate of greens",
+      "solid": true,
+      "color": "#a9cc6a",
+      "hardness": 0,
+      "tool": "hand",
+      "health": 2
+    },
+    {
+      "id": 55,
+      "key": "stew",
+      "name": "Simmering stew",
+      "solid": true,
+      "color": "#e86e5e",
+      "hardness": 0,
+      "tool": "hand",
+      "health": 2
     }
   ],
   "placeable": [
