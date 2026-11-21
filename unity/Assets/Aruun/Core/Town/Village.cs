@@ -95,7 +95,7 @@ namespace Aruun.Core.Town
             House(104, 84, false);
             BellTower(-34, 100);
             Stall(-30, -22, _bp.Id("awning_cloth"));
-            FoodStall(30, -20, "confluence");
+            FoodStall(34, -20, "confluence");
             PlazaLamps();
             RoadLamps();
             WallTowers();
@@ -249,12 +249,17 @@ namespace Aruun.Core.Town
             Lamp(x1 - 4, g + 10, z1 + 1);
             // The soup-bowl banner on the front-left post: a bowl with steam rising.
             int bx = x0;
-            _bp.Box(bx - 3, g + 5, z1 + 1, bx + 3, g + 12, z1 + 1, B("banner_violet"));
-            for (int x = bx - 3; x <= bx + 3; x += 2) _bp.Set(x, g + 4, z1 + 1, B("banner_violet"));
-            _bp.Box(bx - 1, g + 6, z1 + 1, bx + 1, g + 6, z1 + 1, B("plaster"));
+            _bp.Box(bx - 4, g + 5, z1 + 1, bx + 4, g + 13, z1 + 1, B("banner_violet"));
+            for (int x = bx - 4; x <= bx + 4; x += 2) _bp.Set(x, g + 4, z1 + 1, B("banner_violet"));   // notched hem
+            _bp.Box(bx - 1, g + 6, z1 + 1, bx + 1, g + 6, z1 + 1, B("plaster"));                      // the bowl...
             _bp.Box(bx - 2, g + 7, z1 + 1, bx + 2, g + 7, z1 + 1, B("plaster"));
-            _bp.Set(bx - 1, g + 9, z1 + 1, B("plaster")); _bp.Set(bx, g + 10, z1 + 1, B("plaster"));
-            _bp.Set(bx + 1, g + 9, z1 + 1, B("plaster")); _bp.Set(bx, g + 11, z1 + 1, B("plaster"));
+            _bp.Box(bx - 3, g + 8, z1 + 1, bx + 3, g + 8, z1 + 1, B("plaster"));
+            foreach (int sx in new[] { bx - 2, bx + 1 })                                                  // ...and two wisps of steam
+            {
+                _bp.Set(sx, g + 10, z1 + 1, B("plaster"));
+                _bp.Set(sx + 1, g + 11, z1 + 1, B("plaster"));
+                _bp.Set(sx, g + 12, z1 + 1, B("plaster"));
+            }
             // Barrels at the side, and a crate of greens out front.
             foreach (int bz in new[] { z0 + 1, z0 + 6 })
             {
