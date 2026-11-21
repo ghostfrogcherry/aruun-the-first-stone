@@ -126,6 +126,8 @@ namespace Aruun.Core.Play
         /// <summary>The answers, in order; the last one always ends the talk.</summary>
         public readonly List<string> Choices = new List<string>();
         internal readonly List<ChoiceDef> Defs = new List<ChoiceDef>();
+        /// <summary>Which page of the talk the player is on ("" for the first; "shop" for a shop's wares).</summary>
+        internal string Menu = "";
     }
 
     /// <summary>What the player should do next in the echo ruin, and where.</summary>

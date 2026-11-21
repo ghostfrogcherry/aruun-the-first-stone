@@ -34,20 +34,57 @@ namespace Aruun.Core.Play
             foreach (var q in quests) Quests[q.Id] = q;
             if (Village == null) return;
             foreach (var d in people)
+                foreach (Vec3 at in SpotsFor(d.Spot))
+                {
+                    // A spot with a height is indoors (the library): stand on the floor below it.
+                    bool indoors = at.Y > 0;
+                    Vec3 spot = new Vec3(at.X, indoors ? FloorBelow(at.X, at.Y + 1, at.Z) : GroundHeight(at.X, at.Z), at.Z);
+                    People.Add(new PersonRec { Id = _nextPerson++, Def = d, Indoors = indoors, Pos = spot, Home = spot, Goal = spot, Yaw = Math.PI, Wait = 2 + _rng.NextDouble() * 3 });
+                }
+        }
+
+        /// <summary>
+        /// The places a person stands. A spot ending in '*' means every spot that starts that way,
+        /// one copy of the person at each: "food_stall*" puts the food seller at the food stall of
+        /// every town (Village adds "food_stall:&lt;town&gt;" for each stall it builds).
+        /// </summary>
+        List<Vec3> SpotsFor(string spot)
+        {
+            var list = new List<Vec3>();
+            if (spot.EndsWith("*", StringComparison.Ordinal))
             {
-                Vec3 spot;
-                if (!Village.Spots.TryGetValue(d.Spot, out spot)) continue;
-                // A spot with a height is indoors (the library): stand on the floor below it.
-                bool indoors = spot.Y > 0;
-                spot = new Vec3(spot.X, indoors ? FloorBelow(spot.X, spot.Y + 1, spot.Z) : GroundHeight(spot.X, spot.Z), spot.Z);
-                People.Add(new PersonRec { Id = _nextPerson++, Def = d, Indoors = indoors, Pos = spot, Home = spot, Goal = spot, Yaw = Math.PI, Wait = 2 + _rng.NextDouble() * 3 });
+                string prefix = spot.Substring(0, spot.Length - 1);
+                var keys = new List<string>();
+                foreach (var k in Village.Spots.Keys) if (k.StartsWith(prefix, StringComparison.Ordinal)) keys.Add(k);
+                keys.Sort(StringComparer.Ordinal);
+                foreach (var k in keys) list.Add(Village.Spots[k]);
             }
+            else
+            {
+                Vec3 at;
+                if (Village.Spots.TryGetValue(spot, out at)) list.Add(at);
+            }
+            return list;
         }
 
         public PersonRec Person(string id)
         {
             foreach (var r in People) if (r.Def.Id == id) return r;
             return null;
+        }
+
+        /// <summary>The nearest of a person who stands in several towns (or the only one).</summary>
+        public PersonRec PersonNear(string id, Vec3 from)
+        {
+            PersonRec best = null;
+            double bestD = double.MaxValue;
+            foreach (var r in People)
+            {
+                if (r.Def.Id != id) continue;
+                double d = Vec3.Distance(r.Pos, from);
+                if (d < bestD) { bestD = d; best = r; }
+            }
+            return best;
         }
 
         PersonRec PersonById(int id)
@@ -198,10 +235,13 @@ namespace Aruun.Core.Play
             }
             ChoiceDef c = p.Talk.Defs[index];
             string reply = c.Reply;
+            string menu = p.Talk.Menu;
             string failed = Act(p, c.Do);
             if (failed.Length > 0) reply = failed;
+            // A "menu" action turns to another page of the talk (a shop's wares, or "" back to the start).
+            if (failed.Length == 0 && c.Do.ContainsKey("menu")) menu = MiniJson.Str(c.Do, "menu");
             if (reply.Length == 0 && c.Do.Count == 0) { EndTalk(id); return null; }
-            p.Talk = Converse(p, r, reply.Length > 0 ? reply : null);
+            p.Talk = Converse(p, r, reply.Length > 0 ? reply : null, menu);
             return p.Talk;
         }
 
@@ -215,11 +255,19 @@ namespace Aruun.Core.Play
             p.Talk = null;
         }
 
-        Conversation Converse(PlayerRec p, PersonRec r, string sayInstead)
+        Conversation Converse(PlayerRec p, PersonRec r, string sayInstead, string menu = "")
         {
-            var conv = new Conversation { Person = r.Id, Name = r.Def.ShortName };
+            var conv = new Conversation { Person = r.Id, Name = r.Def.ShortName, Menu = menu };
             TalkDef t = null;
-            foreach (var cand in r.Def.Talk) if (Holds(p, cand.When)) { t = cand; break; }
+            foreach (var cand in r.Def.Talk)
+                if (MiniJson.Str(cand.When, "menu") == menu && Holds(p, cand.When)) { t = cand; break; }
+            if (t == null && menu.Length > 0)
+            {
+                // A page with nothing to say goes back to the start.
+                conv.Menu = "";
+                foreach (var cand in r.Def.Talk)
+                    if (MiniJson.Str(cand.When, "menu").Length == 0 && Holds(p, cand.When)) { t = cand; break; }
+            }
             conv.Say = sayInstead ?? (t != null ? t.Say : "...");
             if (t != null)
                 foreach (var c in t.Choices)
@@ -278,6 +326,16 @@ namespace Aruun.Core.Play
         /// <summary>Runs a choice's actions. Returns what the person says if it could not be done, else "".</summary>
         string Act(PlayerRec p, Dictionary<string, object> act)
         {
+            var trade = MiniJson.Obj(act, "trade");
+            if (trade.Count > 0)
+            {
+                string short_ = Trade(p, MiniJson.Obj(trade, "take"), MiniJson.Obj(trade, "give"));
+                if (short_.Length > 0)
+                {
+                    string line = MiniJson.Str(trade, "short");
+                    return (line.Length > 0 ? line + " " : "") + "(You need " + short_ + ".)";
+                }
+            }
             string start = MiniJson.Str(act, "start");
             if (start.Length > 0) StartQuest(p, start);
             string advance = MiniJson.Str(act, "advance");
@@ -292,6 +350,34 @@ namespace Aruun.Core.Play
                 }
                 return "Not yet.";
             }
+            return "";
+        }
+
+        /// <summary>
+        /// A swap with a seller: takes the items in `take` from the bag and gives those in `give`.
+        /// Returns what is missing ("" when the trade went through). Nothing changes hands unless
+        /// the bag holds all of it. There is no money on Aruun yet: sellers barter.
+        /// </summary>
+        public string Trade(PlayerRec p, Dictionary<string, object> take, Dictionary<string, object> give)
+        {
+            var missing = new List<string>();
+            foreach (var kv in take)
+            {
+                int n = Convert.ToInt32(kv.Value), have = p.C.Inv.Count(kv.Key);
+                if (have < n) missing.Add((n - have) + " more " + ItemName(kv.Key));
+            }
+            if (missing.Count > 0) return string.Join(" and ", missing);
+            foreach (var kv in take) p.C.Inv.Remove(kv.Key, Convert.ToInt32(kv.Value));
+            var got = new List<string>();
+            foreach (var kv in give)
+            {
+                if (!Items.Has(kv.Key)) continue;
+                int n = Convert.ToInt32(kv.Value);
+                p.C.Inv.Add(kv.Key, n);
+                got.Add(n + " " + ItemName(kv.Key));
+            }
+            Fx("trade", p.Id, 0, 0, p.Pos);
+            if (got.Count > 0) Say(p.Id, "You get " + string.Join(", ", got) + ".");
             return "";
         }
 
@@ -382,7 +468,7 @@ namespace Aruun.Core.Play
             if (!log.Has(main.Id))
             {
                 if (inRuin && !WorldFlags.Contains(EchoRuin.FlagRemembered)) return RuinObjective(id);
-                PersonRec giver = Person(main.Giver);
+                PersonRec giver = PersonNear(main.Giver, p.Pos);
                 return new Objective
                 {
                     Title = main.Title,
@@ -394,19 +480,19 @@ namespace Aruun.Core.Play
             {
                 StageDef s = CurrentStage(p, main.Id);
                 if (s.Target == "ruin") return RuinObjective(id);
-                return ForStage(main, s);
+                return ForStage(main, s, p.Pos);
             }
             foreach (var q in Quests.Values)
-                if (log.IsActive(q.Id)) return ForStage(q, CurrentStage(p, q.Id));
+                if (log.IsActive(q.Id)) return ForStage(q, CurrentStage(p, q.Id), p.Pos);
             return new Objective { Title = main.Title, Done = true };
         }
 
-        Objective ForStage(QuestDef q, StageDef s)
+        Objective ForStage(QuestDef q, StageDef s, Vec3 from)
         {
             var o = new Objective { Title = q.Title, Text = s.Text };
             if (s.Target.StartsWith("person:", StringComparison.Ordinal))
             {
-                PersonRec r = Person(s.Target.Substring(7));
+                PersonRec r = PersonNear(s.Target.Substring(7), from);
                 if (r != null) o.Target = r.Pos;
             }
             else if (s.Target == "ruin" && Ruin != null) o.Target = Ruin.EntranceM;

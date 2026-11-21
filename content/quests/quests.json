@@ -39,6 +39,25 @@
         {"id": "tell", "text": "Tell Dael the steading has a Tether again.", "target": "person:watcher"}
       ],
       "reward": {"items": {"stone_brick": 160, "dark_timber": 80, "roof_blue": 60}}
+    },
+    {
+      "id": "side_ingredients",
+      "title": "Fresh Ingredients",
+      "giver": "mimmie",
+      "stages": [
+        {"id": "bring", "text": "Bring Mimmie-L'ou 3 fresh redroot and 2 vermillion reed stalks. Redroot grows wild in meadows; vermillion reeds grow along the water.", "target": "person:mimmie", "needs": {"redroot": 3, "reed_stalk": 2}}
+      ],
+      "reward": {"items": {"redroot_stew": 2, "reed_flatbread": 2}}
+    },
+    {
+      "id": "side_cookbook",
+      "title": "Grandma's Cookbook",
+      "giver": "mimmie",
+      "stages": [
+        {"id": "ask", "text": "Ask Archivist Ilen, in the college library, what a 'tomato' is.", "target": "person:archivist"},
+        {"id": "find", "text": "Find a real tomato where the veil fails and Earth breaks through (an Occlusion), and bring it to Mimmie-L'ou.", "target": "person:mimmie", "needs": {"earth_tomato": 1}}
+      ],
+      "reward": {"items": {"heirloom_soup": 3}}
     }
   ]
 }

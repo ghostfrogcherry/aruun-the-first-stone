@@ -22,6 +22,17 @@
     {"key": "moss_bandage",    "name": "Moss bandage",           "kind": "food", "stack": 20, "color": "#7d8a56",
       "use": {"buff": "mending", "verb": "apply"}},
 
+    {"key": "reed_flatbread",  "name": "Reed flatbread",         "kind": "food", "stack": 30, "color": "#d9a066",
+      "use": {"conditions": {"hunger": -24}, "verb": "eat"}},
+    {"key": "redroot_stew",    "name": "Redroot stew",           "kind": "food", "stack": 20, "color": "#b4473a",
+      "use": {"conditions": {"hunger": -55, "thirst": -10}, "buff": "warm_meal", "verb": "eat"}},
+    {"key": "redstrider_pie",  "name": "Redstrider pie",         "kind": "food", "stack": 20, "color": "#a8743e",
+      "use": {"conditions": {"hunger": -70}, "buff": "warm_meal", "verb": "eat"}},
+    {"key": "earth_tomato",    "name": "Tomato (from Earth)",    "kind": "food", "stack": 10, "color": "#e3392f",
+      "use": {"conditions": {"hunger": -8, "thirst": -6}, "verb": "eat"}},
+    {"key": "heirloom_soup",   "name": "Grandmother's tomato soup", "kind": "food", "stack": 10, "color": "#d8452e",
+      "use": {"conditions": {"hunger": -90, "thirst": -20, "cold": -20}, "buff": "warm_meal", "verb": "eat"}},
+
     {"key": "grinleaf_bud",    "name": "Grinleaf bud (placeholder)",  "kind": "material", "stack": 60, "color": "#7a9a4a"},
     {"key": "grinleaf_roll",   "name": "Grinleaf roll (placeholder)", "kind": "food", "stack": 30, "color": "#8a8f5a",
       "use": {"buff": "calm", "conditions": {"fatigue": -10}, "verb": "smoke"}},

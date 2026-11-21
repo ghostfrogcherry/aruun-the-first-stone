@@ -1,5 +1,5 @@
 {
-  "_comment": "The people of the Confluence village. spot names a place in the village layout (Core/Town/Village.cs). talk lines are tried in order and the first whose 'when' holds is said; 'when' can test quest (with state none/active/done, stage, ready) and flag. Each choice can start or advance a quest and has an optional reply. A Goodbye answer is always added. All names are placeholders.",
+  "_comment": "The people of the Confluence village. spot names a place in the village layout (Core/Town/Village.cs). talk lines are tried in order and the first whose 'when' holds is said; 'when' can test quest (with state none/active/done, stage, ready) and flag. Each choice can start or advance a quest and has an optional reply. A Goodbye answer is always added. All names are placeholders. 'menu' in 'when' marks a page of the talk (a choice with do {\"menu\": \"shop\"} turns to it; \"\" goes back). do {\"trade\": {take, give, short}} swaps items with a seller: there is no money on Aruun yet, so sellers barter. A spot ending in '*' places the person at every spot that starts that way (food_stall* = the food stall in every town).",
   "people": [
     {
       "id": "elder",
@@ -142,6 +142,13 @@
       "wander_m": 3,
       "talk": [
         {
+          "when": {"quest": "side_cookbook", "stage": "ask"},
+          "say": "'Tomato'? Not Avarra, and not any Vaari word I know. A few old human families keep words like that, from wherever they lived before. If such a thing grows on Aruun at all, it grows where the world is thin and two places touch. The college would rather people did not go looking.",
+          "choices": [
+            {"text": "Thank you. I'll tell Mimmie-L'ou.", "do": {"advance": "side_cookbook"}, "reply": "Tell her, then. And be careful where you look."}
+          ]
+        },
+        {
           "when": {"flag": "world_remembers"},
           "say": "You went down to the heart, didn't you? Tell me everything you saw. Every carving, every word. I will write it down.",
           "choices": [
@@ -153,6 +160,101 @@
           "choices": [
             {"text": "What are these carved circles?", "reply": "Each ring is one word, copied as the builders carved it. Read the same words in the ruins and they will start to mean something to you."},
             {"text": "Can you teach me the words?", "reply": "Nobody teaches them. You read them where they were carved, in two different places, and then you try them. The elder at the Confluence will tell you where to start."}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mimmie",
+      "name": "Mimmie-L'ou",
+      "role": "Food seller",
+      "model": "mimmie_lou",
+      "spot": "food_stall*",
+      "wander_m": 0.75,
+      "talk": [
+        {
+          "when": {"menu": "shop", "quest": "side_cookbook", "state": "done"},
+          "say": "Everything's made this mornin'. I don't sell yesterday's, and I don't sell anything I wouldn't feed my own. Bring me the makin's and I'll cook it proper.",
+          "choices": [
+            {"text": "Reed flatbread x2, for 3 reed stalks.", "do": {"trade": {"take": {"reed_stalk": 3}, "give": {"reed_flatbread": 2}, "short": "Reeds, love. I can't bake bread out of wishes."}}},
+            {"text": "Redroot stew x2, for 3 redroot and a glasswort leaf.", "do": {"trade": {"take": {"redroot": 3, "glasswort_leaf": 1}, "give": {"redroot_stew": 2}, "short": "Not enough for a pot yet."}}},
+            {"text": "Redstrider pie x2, for 2 raw meat and 2 redroot.", "do": {"trade": {"take": {"raw_meat": 2, "redroot": 2}, "give": {"redstrider_pie": 2}, "short": "A pie with no filling is just a hat."}}},
+            {"text": "Grandmother's soup, for 2 redroot and a glasswort leaf.", "do": {"trade": {"take": {"redroot": 2, "glasswort_leaf": 1}, "give": {"heirloom_soup": 1}, "short": "Gran's soup gets proper makin's or none at all."}}},
+            {"text": "Something else.", "do": {"menu": ""}}
+          ]
+        },
+        {
+          "when": {"menu": "shop"},
+          "say": "Everything's made this mornin'. I don't sell yesterday's, and I don't sell anything I wouldn't feed my own. Bring me the makin's and I'll cook it proper.",
+          "choices": [
+            {"text": "Reed flatbread x2, for 3 reed stalks.", "do": {"trade": {"take": {"reed_stalk": 3}, "give": {"reed_flatbread": 2}, "short": "Reeds, love. I can't bake bread out of wishes."}}},
+            {"text": "Redroot stew x2, for 3 redroot and a glasswort leaf.", "do": {"trade": {"take": {"redroot": 3, "glasswort_leaf": 1}, "give": {"redroot_stew": 2}, "short": "Not enough for a pot yet."}}},
+            {"text": "Redstrider pie x2, for 2 raw meat and 2 redroot.", "do": {"trade": {"take": {"raw_meat": 2, "redroot": 2}, "give": {"redstrider_pie": 2}, "short": "A pie with no filling is just a hat."}}},
+            {"text": "Something else.", "do": {"menu": ""}}
+          ]
+        },
+        {
+          "when": {"quest": "side_cookbook", "stage": "find", "ready": true},
+          "say": "Is that... oh. Oh, look at the colour of it. Is that a real one?",
+          "choices": [
+            {"text": "A tomato, from where the veil was thin.", "do": {"advance": "side_cookbook"}, "reply": "Generations my family's been writin' 'tomato' and cookin' redroot instead. Sit down. Sit! You're eatin' first. And I'm keepin' every last seed."}
+          ]
+        },
+        {
+          "when": {"quest": "side_cookbook", "stage": "find"},
+          "say": "Any luck? Gran's book says they're red and round and 'taste like summer'. Whatever summer is.",
+          "choices": [
+            {"text": "What are you selling?", "do": {"menu": "shop"}},
+            {"text": "Where did your family come from?", "reply": "From the other side, a long way back. They came through when the veil was thin, with a stewpot and Gran's book and not much else. I've never seen it and I don't need to: Aruun's home. But the recipes remember where we started."}
+          ]
+        },
+        {
+          "when": {"quest": "side_cookbook", "stage": "ask"},
+          "say": "Ilen keeps the college library. If anyone knows an old word, it's Ilen. Ask about 'tomato'.",
+          "choices": [
+            {"text": "What are you selling?", "do": {"menu": "shop"}}
+          ]
+        },
+        {
+          "when": {"quest": "side_cookbook", "state": "none", "after": "side_ingredients"},
+          "say": "You've a good nose for fresh things. Can I show you somethin'? This is Gran's cookbook. Her gran's, really, and back and back. Some of the words in it nobody knows any more. Look here: 'tomato'. Half the soups in this book start with it.",
+          "choices": [
+            {"text": "What's a tomato?", "do": {"start": "side_cookbook"}, "reply": "That's just it! My family's always used redroot instead. Gran swore the real ones still grow, wherever the world wears thin. Go and ask Ilen at the college library what the word means. If I could make Gran's soup the way it's written, just once..."},
+            {"text": "Where did your family come from?", "reply": "From the other side, a long way back. They came through when the veil was thin, with a stewpot and Gran's book and not much else. I've never seen it and I don't need to: Aruun's home. But the recipes remember where we started."},
+            {"text": "What are you selling?", "do": {"menu": "shop"}}
+          ]
+        },
+        {
+          "when": {"quest": "side_ingredients", "state": "active", "ready": true},
+          "say": "Ooh, I can smell 'em from here!",
+          "choices": [
+            {"text": "Fresh redroot and reeds, as you asked.", "do": {"advance": "side_ingredients"}, "reply": "Lovely and firm, every one. Here: stew while it's warm, and flatbread for the road. Don't tell Maru at the long hearth I gave you extra."}
+          ]
+        },
+        {
+          "when": {"quest": "side_ingredients", "state": "active"},
+          "say": "Three fresh redroot and two vermillion reed stalks, love. Redroot grows wild in the meadows; the reeds grow along the water. I grind the seed heads for flour.",
+          "choices": [
+            {"text": "What are you selling?", "do": {"menu": "shop"}}
+          ]
+        },
+        {
+          "when": {"quest": "side_ingredients", "state": "none"},
+          "say": "Hungry? I got somethin' good cookin'!",
+          "choices": [
+            {"text": "What are you making?", "reply": "Redroot stew, the way my family's always made it. Recipe's older than this town, I'd bet."},
+            {"text": "Can I help?", "do": {"start": "side_ingredients"}, "reply": "Bless you! I'm short three fresh redroot and two vermillion reed stalks. Fresh, mind. Not the bruised ones."},
+            {"text": "What are you selling?", "do": {"menu": "shop"}},
+            {"text": "You're human, like me.", "reply": "Born and raised right here, love, same as my mum and her mum before her. Folk stare sometimes. Let 'em. They still come back for seconds."}
+          ]
+        },
+        {
+          "when": {},
+          "say": "Back again? Good. Nobody leaves my stall hungry.",
+          "choices": [
+            {"text": "What are you selling?", "do": {"menu": "shop"}},
+            {"text": "Where did your family come from?", "reply": "From the other side, a long way back. They came through when the veil was thin, with a stewpot and Gran's book and not much else. I've never seen it and I don't need to: Aruun's home. But the recipes remember where we started."},
+            {"text": "You're human, like me.", "reply": "Born and raised right here, love, same as my mum and her mum before her. Folk stare sometimes. Let 'em. They still come back for seconds."}
           ]
         }
       ]

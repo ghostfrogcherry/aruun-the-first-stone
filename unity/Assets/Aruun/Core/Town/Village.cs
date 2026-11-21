@@ -95,7 +95,7 @@ namespace Aruun.Core.Town
             House(104, 84, false);
             BellTower(-34, 100);
             Stall(-30, -22, _bp.Id("awning_cloth"));
-            Stall(30, -22, _bp.Id("banner_blue"));
+            FoodStall(30, -20, "confluence");
             PlazaLamps();
             RoadLamps();
             WallTowers();
@@ -201,6 +201,76 @@ namespace Aruun.Core.Town
                 _bp.Box(x, g + 13, z0 + 3, x, g + 13, z1 + 1, b);
             }
             Buildings.Add(new VillageBuilding { Key = "stall", X = cx, Z = cz, Floor = g, MinX = x0, MaxX = x1, MinZ = z0, MaxZ = z1, Height = 14 });
+        }
+
+        /// <summary>
+        /// Mimmie-L'ou's food stall (Bruh's concept sheet): a violet awning, a lantern, a soup-bowl
+        /// banner, a counter with crates of produce and a simmering pot, barrels at the side. Every
+        /// major town gets one; the food seller stands behind each counter (spot "food_stall:town").
+        /// It opens toward +z.
+        /// </summary>
+        void FoodStall(int cx, int cz, string town)
+        {
+            int g = Ground(cx, cz);
+            int x0 = cx - 12, x1 = cx + 11, z0 = cz - 7, z1 = cz + 6;
+            _bp.Box(x0 - 7, g - 6, z0 - 2, x1 + 7, g, z1 + 3, B("cobble"));
+            _bp.Box(x0 - 7, g + 1, z0 - 2, x1 + 7, g + 18, z1 + 3, _air);
+            _bp.Box(x0 - 7, g, z0 - 2, x1 + 7, g, z1 + 3, _paving);
+            _bp.Box(x0, g, z0, x1, g, z1, B("plank"));                                     // floor boards
+            foreach (int x in new[] { x0, x1 })
+                foreach (int z in new[] { z0, z1 })
+                    _bp.Box(x, g + 1, z, x, g + 13, z, B("dark_timber"));
+            _bp.Box(x0, g + 13, z1, x1, g + 13, z1, B("dark_timber"));                     // front beam
+            _bp.Box(x0, g + 13, z0, x1, g + 13, z0, B("dark_timber"));
+            // Back wall of boards, with a shelf of jars and greens.
+            _bp.Box(x0 + 1, g + 1, z0, x1 - 1, g + 9, z0, B("plank"));
+            _bp.Box(x0 + 1, g + 6, z0 + 1, x1 - 1, g + 6, z0 + 1, B("dark_timber"));
+            for (int x = x0 + 2; x <= x1 - 2; x += 3)
+                _bp.Box(x, g + 7, z0 + 1, x, g + 8, z0 + 1, Blueprint.Hash(x, g, z0) % 3 == 0 ? B("produce_greens") : B("clay_tile"));
+            // The counter, with produce at each end and the stew pot in the middle.
+            _bp.Box(x0 + 1, g + 1, z1 - 1, x1 - 1, g + 3, z1, B("plank"));
+            _bp.Box(x0 + 1, g + 4, z1 - 1, x1 - 1, g + 4, z1, B("dark_timber"));
+            _bp.Box(x0 + 2, g + 5, z1 - 1, x0 + 5, g + 5, z1, B("produce_redroot"));
+            _bp.Box(x0 + 3, g + 6, z1 - 1, x0 + 4, g + 6, z1 - 1, B("produce_redroot"));
+            _bp.Box(x1 - 5, g + 5, z1 - 1, x1 - 2, g + 5, z1, B("produce_greens"));
+            _bp.Box(x1 - 4, g + 6, z1 - 1, x1 - 3, g + 6, z1 - 1, B("produce_greens"));
+            _bp.Box(cx - 2, g + 5, z1 - 1, cx + 1, g + 6, z1, B("basalt"));
+            _bp.Box(cx - 1, g + 6, z1 - 1, cx, g + 6, z1, B("stew"));
+            // A violet awning sloping down to the front, with a scalloped edge.
+            for (int z = z0 - 1; z <= z1 + 2; z++)
+            {
+                int y = g + 16 - (z - (z0 - 1)) * 4 / (z1 + 3 - z0);
+                _bp.Box(x0 - 1, y, z, x1 + 1, y, z, B("awning_violet"));
+            }
+            for (int x = x0 - 1; x <= x1 + 1; x += 2)
+                _bp.Set(x, g + 12, z1 + 2, B("banner_violet"));
+            // A lantern hung from the front beam.
+            _bp.Set(x1 - 3, g + 12, z1 + 1, B("dark_timber"));
+            Lamp(x1 - 4, g + 10, z1 + 1);
+            // The soup-bowl banner on the front-left post: a bowl with steam rising.
+            int bx = x0;
+            _bp.Box(bx - 3, g + 5, z1 + 1, bx + 3, g + 12, z1 + 1, B("banner_violet"));
+            for (int x = bx - 3; x <= bx + 3; x += 2) _bp.Set(x, g + 4, z1 + 1, B("banner_violet"));
+            _bp.Box(bx - 1, g + 6, z1 + 1, bx + 1, g + 6, z1 + 1, B("plaster"));
+            _bp.Box(bx - 2, g + 7, z1 + 1, bx + 2, g + 7, z1 + 1, B("plaster"));
+            _bp.Set(bx - 1, g + 9, z1 + 1, B("plaster")); _bp.Set(bx, g + 10, z1 + 1, B("plaster"));
+            _bp.Set(bx + 1, g + 9, z1 + 1, B("plaster")); _bp.Set(bx, g + 11, z1 + 1, B("plaster"));
+            // Barrels at the side, and a crate of greens out front.
+            foreach (int bz in new[] { z0 + 1, z0 + 6 })
+            {
+                _bp.Box(x1 + 2, g + 1, bz, x1 + 5, g + 6, bz + 3, B("barrel"));
+                _bp.Box(x1 + 2, g + 2, bz, x1 + 5, g + 2, bz + 3, B("bronze"));            // bronze hoops
+                _bp.Box(x1 + 2, g + 5, bz, x1 + 5, g + 5, bz + 3, B("bronze"));
+                foreach (int x in new[] { x1 + 2, x1 + 5 })
+                    foreach (int z in new[] { bz, bz + 3 })
+                        _bp.Box(x, g + 1, z, x, g + 6, z, _air);                                  // round off the staves
+            }
+            _bp.Box(x0 - 5, g + 1, z1 - 3, x0 - 2, g + 2, z1, B("plank"));
+            _bp.Box(x0 - 5, g + 3, z1 - 3, x0 - 2, g + 3, z1, B("produce_greens"));
+
+            // With a height, so she stands on the stall floor (under the awning), not on top of it.
+            Spots["food_stall:" + town] = M(cx, cz - 1, g + 2);
+            Buildings.Add(new VillageBuilding { Key = "food_stall", X = cx, Z = cz, Floor = g, MinX = x0, MaxX = x1, MinZ = z0, MaxZ = z1, Height = 17 });
         }
 
         // ------------------------------------------------------------------ houses
