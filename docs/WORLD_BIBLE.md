@@ -393,10 +393,12 @@ nations and borders; technology level; daily life.
 ingredient is native to Earth. The player must find it during an Earth-Mars Occlusion; when
 they return she makes the dish for the first time in generations.
 
+**[CANON]** (Bruh, 2026-11-21) The missing ingredient is the **tomato**. Her family has
+always cooked with **redroot** in its place, which is why the concept sheet's "tomatoes" become
+redroot in her everyday recipes.
+
 **[PROPOSED]** (in the build, Bruh to confirm)
-- The missing ingredient is the **tomato**. Her family has always cooked with **redroot** in
-  its place, which is why the concept sheet's "tomatoes" become redroot in her everyday
-  recipes. The sheet's "wheat" becomes **vermillion reed** (she grinds the seed heads).
+- The sheet's "wheat" becomes **vermillion reed** (she grinds the seed heads).
 - After the cookbook quest she keeps the tomato's seeds, so Grandmother's tomato soup joins
   her menu.
 - She says "the other side", not "Earth": that Earth is inhabited is not common knowledge on
